@@ -427,6 +427,10 @@ impl fmt::Display for BigInteger {
             digits_str.insert(0, char::from_digit(remainder.digit(0) as u32, 10).unwrap());
         }
 
+        if digits_str.is_empty() {
+            digits_str.push('0');
+        }
+
         write!(f, "{}{}", sign_str, digits_str)
     }
 }
