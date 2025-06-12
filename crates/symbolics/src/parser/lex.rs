@@ -1,4 +1,4 @@
-use crate::error::LexError;
+use crate::parser::error::LexError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenPos {

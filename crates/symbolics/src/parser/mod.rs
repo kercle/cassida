@@ -1,6 +1,10 @@
+pub mod ast;
+pub mod error;
+pub mod lex;
+
 use numbers::RealScalar;
 
-use crate::{
+use crate::parser::{
     ast::{AstNode, BinaryOp, UnaryOp},
     error::{BoxedError, ParseError},
     lex::{Token, TokenStream},
@@ -233,8 +237,8 @@ pub fn parse(input: &str) -> Result<AstNode, BoxedError> {
 mod tests {
     use super::*;
 
-    use AstNode::*;
-    use BinaryOp::*;
+    use super::ast::AstNode::*;
+    use super::ast::BinaryOp::*;
 
     #[test]
     fn test_parse_expression_long() {
@@ -455,7 +459,8 @@ mod tests {
                             .into(),
                             rhs: Number(RealScalar::from_str("2").unwrap()).into()
                         }])]
-                    }.into()
+                    }
+                    .into()
                 }
                 .into(),
                 rhs: AstNode::FunctionCall {

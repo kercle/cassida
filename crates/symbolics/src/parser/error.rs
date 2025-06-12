@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::lex::{Token, TokenPos};
+use crate::parser::lex::{Token, TokenPos};
 
 pub type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 
