@@ -7,7 +7,7 @@ name = "numbers"
 version = "0.1.0"
 
 [[package]]
-name = "parse"
+name = "symbolics"
 version = "0.1.0"
 dependencies = [
  "numbers",
