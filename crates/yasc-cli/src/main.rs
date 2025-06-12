@@ -6,7 +6,7 @@ use symbolics::parser::parse;
 struct Args {
     input: String,
 
-    #[arg(short, long, default_value = "markdown")]
+    #[arg(short, long, default_value = "latex")]
     output_type: String,
 }
 
@@ -17,14 +17,14 @@ fn print_markdown(input: &str) {
     });
 
     let latex = ast.to_latex();
-    println!("```latex\n{}\n```", latex);
+    println!("$$\n{}\n$$", latex);
 }
 
 fn main() {
     let args = Args::parse();
 
     match args.output_type.as_str() {
-        "markdown" => {
+        "latex" => {
             print_markdown(&args.input);
         }
         _ => {
