@@ -3,6 +3,7 @@ use std::fmt;
 use crate::integer::BigInteger;
 
 pub mod ops;
+pub mod alg;
 
 pub mod integer;
 pub mod rational;

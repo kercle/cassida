@@ -1,4 +1,5 @@
 use crate::LatexDisplay;
+use numbers::RealScalar;
 use symbolics::parser::ast::AstNode;
 
 impl LatexDisplay for AstNode {
@@ -66,7 +67,23 @@ fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
 
     use AstNode::*;
     match ast {
-        Constant(value) => greek_letter(&value.to_string()),
+        Constant(value) => {
+            if let RealScalar::Rational(rational) = value {
+                if rational.is_zero() {
+                    "0".to_string()
+                } else if rational.denominator().is_one() {
+                    rational.numerator().to_string()
+                } else {
+                    format!(
+                        "\\frac{{{}}}{{{}}}",
+                        rational.numerator(),
+                        rational.denominator()
+                    )
+                }
+            } else {
+                greek_letter(&value.to_string())
+            }
+        }
         NamedValue(name) => greek_letter(name),
         Negate(node) => {
             format!("-{}", ast_to_latex(node, precedence))

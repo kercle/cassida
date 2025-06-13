@@ -50,6 +50,46 @@ impl ops::Mul for &BigInteger {
     }
 }
 
+impl ops::Div for &BigInteger {
+    type Output = Option<BigInteger>;
+
+    fn div(self, other: &BigInteger) -> Self::Output {
+        if let Some((quotient, _)) = BigInteger::div(&self, &other) {
+            Some(quotient)
+        } else {
+            None
+        }
+    }
+}
+
+impl ops::Div for BigInteger {
+    type Output = Option<Self>;
+
+    fn div(self, other: Self) -> Self::Output {
+        &self / &other
+    }
+}
+
+impl ops::Rem for &BigInteger {
+    type Output = Option<BigInteger>;
+
+    fn rem(self, other: &BigInteger) -> Self::Output {
+        if let Some((_, remainder)) = BigInteger::div(&self, &other) {
+            Some(remainder)
+        } else {
+            None
+        }
+    }
+}
+
+impl ops::Rem for BigInteger {
+    type Output = Option<Self>;
+
+    fn rem(self, other: Self) -> Self::Output {
+        &self % &other
+    }
+}
+
 impl cmp::PartialEq for BigInteger {
     fn eq(&self, other: &Self) -> bool {
         self.eq(other)

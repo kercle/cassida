@@ -1,4 +1,4 @@
-use numbers::RealScalar;
+use numbers::{RealScalar, rational::Rational};
 
 use crate::parser::ast::AstNode;
 
@@ -15,6 +15,19 @@ fn simplify_constant_expression(node: AstNode) -> AstNode {
         }
         Mul(lhs, rhs) => {
             return simplify_constant_expression(MulSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+        }
+        Div(lhs, rhs) => {
+            if let (Constant(RealScalar::Integer(l)), Constant(RealScalar::Integer(r))) =
+                (lhs.as_ref(), rhs.as_ref())
+            {
+                if r.is_zero() {
+                    todo!("Handle division by zero");
+                }
+                let rational = Rational::new(l.clone().into(), r.clone().into())
+                    .expect("todo: handle invalid rational");
+
+                return Constant(RealScalar::Rational(rational));
+            }
         }
         AddSeq(nodes) => {
             let mut sum = RealScalar::zero();

@@ -1,4 +1,4 @@
-use crate::integer::BigInteger;
+use crate::{alg::gcd, integer::BigInteger};
 
 #[derive(Debug, Clone)]
 pub struct Rational {
@@ -11,10 +11,14 @@ impl Rational {
         if denominator.is_zero() {
             return Err("Denominator cannot be zero".to_string());
         }
-        Ok(Self {
+
+        let mut r = Self {
             numerator,
             denominator,
-        })
+        };
+
+        r.reduce();
+        Ok(r)
     }
 
     pub fn from_decimal_str(value: &str) -> Result<Self, String> {
@@ -54,8 +58,11 @@ impl Rational {
         self.numerator == self.denominator
     }
 
-    pub fn reduce(&self) -> Self {
-        todo!()
+    pub fn reduce(&mut self) {
+        let q = gcd(self.numerator.clone(), self.denominator.clone());
+
+        self.numerator = (&self.numerator / &q).unwrap_or(self.numerator.clone());
+        self.denominator = (&self.denominator / &q).unwrap_or(self.denominator.clone());
     }
 }
 
