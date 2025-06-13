@@ -1,4 +1,4 @@
-use numbers::RealScalar;
+use numbers::{RealScalar, rational::Rational};
 
 pub trait Operator {
     fn precedence(&self) -> u8;
@@ -69,8 +69,7 @@ pub enum AstNode {
 impl AstNode {
     pub fn from_named_value(name: String) -> Self {
         match name.as_str() {
-            "pi" | "π" => AstNode::Constant(RealScalar::Pi),
-            "e" => AstNode::Constant(RealScalar::EulerNumber),
+            "pi" | "π" => AstNode::Constant(RealScalar::PiMultiple(Rational::one())),
             _ => AstNode::NamedValue(name),
         }
     }

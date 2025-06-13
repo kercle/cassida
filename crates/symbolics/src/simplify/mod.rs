@@ -118,6 +118,11 @@ fn simplify_constant_expression(node: AstNode) -> AstNode {
                 }
             }
         }
+        Negate(node) => {
+            if let Constant(val) = node.as_ref() {
+                return Constant(-val.clone());
+            }
+        }
         _ => {}
     };
 

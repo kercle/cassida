@@ -49,6 +49,20 @@ impl Rational {
         Self::from_decimal_str(&s).expect("Failed to convert f64 to Rational")
     }
 
+    pub fn zero() -> Self {
+        Self {
+            numerator: BigInteger::from_u64(0),
+            denominator: BigInteger::from_u64(1),
+        }
+    }
+
+    pub fn one() -> Self {
+        Self {
+            numerator: BigInteger::from_u64(1),
+            denominator: BigInteger::from_u64(1),
+        }
+    }
+
     pub fn numerator(&self) -> &BigInteger {
         &self.numerator
     }

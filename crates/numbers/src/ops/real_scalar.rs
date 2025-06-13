@@ -66,3 +66,23 @@ impl ops::Mul for RealScalar {
         &self * &other
     }
 }
+
+impl ops::Neg for &RealScalar {
+    type Output = RealScalar;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            RealScalar::Integer(a) => RealScalar::Integer(-a),
+            RealScalar::Rational(_a) => todo!("Implement negation for Rational"),
+            RealScalar::PiMultiple(_a) => todo!("Implement negation for Rational"),
+        }
+    }
+}
+
+impl ops::Neg for RealScalar {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        -&self
+    }
+}

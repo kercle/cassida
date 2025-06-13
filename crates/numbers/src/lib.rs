@@ -2,8 +2,8 @@ use std::fmt;
 
 use crate::integer::BigInteger;
 
-pub mod ops;
 pub mod alg;
+pub mod ops;
 
 pub mod integer;
 pub mod rational;
@@ -12,8 +12,7 @@ pub mod rational;
 pub enum RealScalar {
     Integer(integer::BigInteger),
     Rational(rational::Rational),
-    Pi,
-    EulerNumber,
+    PiMultiple(rational::Rational),
 }
 
 pub enum Scalar {
@@ -48,7 +47,7 @@ impl RealScalar {
         match self {
             RealScalar::Integer(i) => i.is_zero(),
             RealScalar::Rational(r) => r.is_zero(),
-            RealScalar::Pi | RealScalar::EulerNumber => false,
+            RealScalar::PiMultiple(r) => r.is_zero(),
         }
     }
 
@@ -56,7 +55,7 @@ impl RealScalar {
         match self {
             RealScalar::Integer(i) => i.is_one(),
             RealScalar::Rational(r) => r.is_one(),
-            RealScalar::Pi | RealScalar::EulerNumber => false,
+            RealScalar::PiMultiple(_) => false,
         }
     }
 }
@@ -66,8 +65,7 @@ impl fmt::Display for RealScalar {
         match self {
             RealScalar::Integer(i) => write!(f, "{}", i),
             RealScalar::Rational(r) => write!(f, "{}/{}", r.numerator(), r.denominator()),
-            RealScalar::Pi => write!(f, "π"),
-            RealScalar::EulerNumber => write!(f, "e"),
+            RealScalar::PiMultiple(r) => write!(f, "{}π/{}", r.numerator(), r.denominator()),
         }
     }
 }

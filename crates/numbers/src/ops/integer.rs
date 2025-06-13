@@ -50,6 +50,24 @@ impl ops::Mul for &BigInteger {
     }
 }
 
+impl ops::Neg for &BigInteger {
+    type Output = BigInteger;
+
+    fn neg(self) -> Self::Output {
+        let mut ret = self.clone();
+        ret.flip_sign();
+        ret
+    }
+}
+
+impl ops::Neg for BigInteger {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        -&self
+    }
+}
+
 impl ops::Div for &BigInteger {
     type Output = Option<BigInteger>;
 
