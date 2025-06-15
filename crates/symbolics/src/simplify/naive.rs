@@ -6,19 +6,19 @@ fn fold_constants(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
         Add { lhs, rhs, .. } => {
-            return fold_constants(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+            return fold_constants(AstNode::add_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        Sub(lhs, rhs) => {
+        Sub { lhs, rhs, .. } => {
             if let (Constant { value: l, .. }, Constant { value: r, .. }) =
                 (lhs.as_ref(), rhs.as_ref())
             {
                 return (l - r).map_or_else(|| node, |value| AstNode::constant(value));
             }
         }
-        Mul(lhs, rhs) => {
-            return fold_constants(MulSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+        Mul { lhs, rhs, .. } => {
+            return fold_constants(AstNode::mul_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        Div(lhs, rhs) => {
+        Div { lhs, rhs, .. } => {
             if let (
                 Constant {
                     value: RealScalar::Integer(l),
@@ -39,7 +39,7 @@ fn fold_constants(node: AstNode) -> AstNode {
                 return AstNode::constant(RealScalar::Rational(rational));
             }
         }
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut sum = RealScalar::zero();
             let mut new_nodes = vec![];
 
@@ -58,10 +58,10 @@ fn fold_constants(node: AstNode) -> AstNode {
             if new_nodes.len() == 1 {
                 return new_nodes.pop().unwrap();
             } else {
-                return AddSeq(new_nodes);
+                return AstNode::add_seq(new_nodes);
             }
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mut product = RealScalar::one();
             let mut new_nodes = vec![];
 
@@ -88,10 +88,10 @@ fn fold_constants(node: AstNode) -> AstNode {
             if new_nodes.len() == 1 {
                 return new_nodes.pop().unwrap();
             } else {
-                return MulSeq(new_nodes);
+                return AstNode::mul_seq(new_nodes);
             }
         }
-        Pow(lhs, rhs) => {
+        Pow { lhs, rhs, .. } => {
             if let (
                 Constant {
                     value: RealScalar::Integer(base),
@@ -124,8 +124,8 @@ fn fold_constants(node: AstNode) -> AstNode {
                 }
             }
         }
-        Negation(node) => {
-            if let Constant { value, .. } = node.as_ref() {
+        Negation { arg, .. } => {
+            if let Constant { value, .. } = arg.as_ref() {
                 return AstNode::constant(-value.clone());
             }
         }
@@ -139,20 +139,26 @@ fn gather_common_terms(node: AstNode) -> AstNode {
     use AstNode::*;
 
     fn split_multiple_of_constant(node: AstNode) -> (RealScalar, AstNode) {
-        if let MulSeq(nodes) = &node {
+        if let MulSeq { nodes, .. } = &node {
             if let Some((constant, rest)) = nodes.split_first() {
                 if let Constant { value, .. } = constant {
-                    return (value.clone(), flatten_commutative(MulSeq(rest.to_vec())));
+                    return (
+                        value.clone(),
+                        flatten_commutative(AstNode::mul_seq(rest.to_vec())),
+                    );
                 }
             }
-        } else if let Mul(lhs, rhs) = &node {
-            return split_multiple_of_constant(MulSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+        } else if let Mul { lhs, rhs, .. } = &node {
+            return split_multiple_of_constant(AstNode::mul_seq(vec![
+                *lhs.to_owned(),
+                *rhs.to_owned(),
+            ]));
         }
         (RealScalar::one(), node)
     }
 
     match &node {
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut terms_with_factors: Vec<(RealScalar, AstNode)> = vec![];
 
             for node in nodes.iter() {
@@ -173,14 +179,14 @@ fn gather_common_terms(node: AstNode) -> AstNode {
                 }
             }
 
-            return AddSeq(
+            return AstNode::add_seq(
                 terms_with_factors
                     .into_iter()
                     .map(|(factor, term)| {
                         if factor.is_one() {
                             term
                         } else {
-                            MulSeq(vec![AstNode::constant(factor), term])
+                            AstNode::mul_seq(vec![AstNode::constant(factor), term])
                         }
                     })
                     .collect(),
@@ -195,11 +201,11 @@ fn gather_common_terms(node: AstNode) -> AstNode {
 fn expand_subtraction(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
-        Sub(lhs, rhs) => {
+        Sub { lhs, rhs, .. } => {
             let lhs = expand_subtraction(*lhs.to_owned());
             let rhs = expand_subtraction(*rhs.to_owned());
 
-            return AstNode::add(lhs, Negation(Box::new(rhs)));
+            return AstNode::add(lhs, AstNode::negation(rhs));
         }
         _ => {}
     }
@@ -230,11 +236,14 @@ fn flatten_commutative(node: AstNode) -> AstNode {
 
     match &node {
         Add { lhs, rhs, .. } => {
-            return flatten_commutative(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+            return flatten_commutative(AstNode::add_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
-                if let AddSeq(inner_nodes) = node {
+                if let AddSeq {
+                    nodes: inner_nodes, ..
+                } = node
+                {
                     Some(inner_nodes.clone())
                 } else {
                     None
@@ -246,21 +255,24 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return AddSeq(flattened_nodes);
+                return AstNode::add_seq(flattened_nodes);
             }
         }
-        Negation(node) => {
-            return flatten_commutative(MulSeq(vec![
+        Negation { arg, .. } => {
+            return flatten_commutative(AstNode::mul_seq(vec![
                 AstNode::constant(RealScalar::minus_one()),
-                *node.to_owned(),
+                *arg.to_owned(),
             ]));
         }
-        Mul(lhs, rhs) => {
-            return flatten_commutative(MulSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+        Mul { lhs, rhs, .. } => {
+            return flatten_commutative(AstNode::mul_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
-                if let MulSeq(inner_nodes) = node {
+                if let MulSeq {
+                    nodes: inner_nodes, ..
+                } = node
+                {
                     Some(inner_nodes.clone())
                 } else {
                     None
@@ -272,7 +284,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return MulSeq(flattened_nodes);
+                return AstNode::mul_seq(flattened_nodes);
             }
         }
         _ => {}
@@ -285,15 +297,15 @@ fn cannonical_order(node: AstNode) -> AstNode {
     use AstNode::*;
 
     match &node {
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return AddSeq(sorted_nodes);
+            return AstNode::add_seq(sorted_nodes);
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return MulSeq(sorted_nodes);
+            return AstNode::mul_seq(sorted_nodes);
         }
         _ => {}
     }
@@ -305,24 +317,24 @@ fn unflatten_commutative(node: AstNode) -> AstNode {
     use AstNode::*;
 
     let altered_node = match &node {
-        AddSeq(nodes) => Some(if nodes.len() == 1 {
+        AddSeq { nodes, .. } => Some(if nodes.len() == 1 {
             nodes[0].clone()
         } else if nodes.len() == 2 {
             AstNode::add(nodes[0].clone(), nodes[1].clone())
         } else {
-            AddSeq(vec![
+            AstNode::add_seq(vec![
                 AstNode::add(nodes[0].clone(), nodes[1].clone()),
-                AddSeq(nodes[2..].to_vec()),
+                AstNode::add_seq(nodes[2..].to_vec()),
             ])
         }),
-        MulSeq(nodes) => Some(if nodes.len() == 1 {
+        MulSeq { nodes, .. } => Some(if nodes.len() == 1 {
             nodes[0].clone()
         } else if nodes.len() == 2 {
-            Mul(Box::new(nodes[0].clone()), Box::new(nodes[1].clone()))
+            AstNode::mul(nodes[0].clone(), nodes[1].clone())
         } else {
-            MulSeq(vec![
-                Mul(Box::new(nodes[0].clone()), Box::new(nodes[1].clone())),
-                MulSeq(nodes[2..].to_vec()),
+            AstNode::mul_seq(vec![
+                AstNode::mul(nodes[0].clone(), nodes[1].clone()),
+                AstNode::mul_seq(nodes[2..].to_vec()),
             ])
         }),
         _ => None,
@@ -340,24 +352,21 @@ fn simplify_add_neg_to_sub(node: AstNode) -> AstNode {
             let lhs = simplify_add_neg_to_sub(*lhs.clone());
             let rhs = simplify_add_neg_to_sub(*rhs.clone());
 
-            if let (Negation(neg_lhs), Negation(neg_rhs)) = (&lhs, &rhs) {
-                return Negation(Box::new(AstNode::add(
-                    *neg_lhs.to_owned(),
-                    *neg_rhs.to_owned(),
-                )));
-            } else if let Negation(neg_rhs) = rhs {
-                return Sub(Box::new(lhs), neg_rhs);
-            } else if let Negation(neg_lhs) = lhs {
-                return Sub(Box::new(rhs), neg_lhs);
+            if let (Negation { arg: neg_lhs, .. }, Negation { arg: neg_rhs, .. }) = (&lhs, &rhs) {
+                return AstNode::negation(AstNode::add(*neg_lhs.to_owned(), *neg_rhs.to_owned()));
+            } else if let Negation { arg: neg_rhs, .. } = rhs {
+                return AstNode::sub(lhs, *neg_rhs);
+            } else if let Negation { arg: neg_lhs, .. } = lhs {
+                return AstNode::sub(rhs, *neg_lhs);
             }
         }
-        Mul(lhs, rhs) => {
+        Mul { lhs, rhs, .. } => {
             if let Constant { value, .. } = *lhs.clone() {
                 if value < RealScalar::zero() {
-                    return Negation(Box::new(Mul(
-                        Box::new(AstNode::constant(-value.clone())),
-                        Box::new(simplify_add_neg_to_sub(*rhs.to_owned())),
-                    )));
+                    return AstNode::negation(AstNode::mul(
+                        AstNode::constant(-value.clone()),
+                        simplify_add_neg_to_sub(*rhs.to_owned()),
+                    ));
                 }
             }
         }

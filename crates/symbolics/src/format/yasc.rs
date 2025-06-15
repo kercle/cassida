@@ -3,17 +3,17 @@ use numbers::RealScalar;
 
 fn operator_precedence(ast: &AstNode) -> Option<u32> {
     match ast {
-        AstNode::Negation(_) => Some(3),
-        AstNode::Reciprocal(_) => Some(3),
+        AstNode::Negation { .. } => Some(3),
+        AstNode::Reciprocal { .. } => Some(3),
         AstNode::Add { .. } => Some(1),
-        AstNode::Sub(_, _) => Some(1),
-        AstNode::Mul(_, _) => Some(2),
-        AstNode::Div(_, _) => Some(2),
+        AstNode::Sub { .. } => Some(1),
+        AstNode::Mul { .. } => Some(2),
+        AstNode::Div { .. } => Some(2),
         AstNode::Constant {
-            value: RealScalar::Rational(_),
+            value: RealScalar::Rational { .. },
             ..
         } => Some(2),
-        AstNode::Pow(_, _) => Some(4),
+        AstNode::Pow { .. } => Some(4),
         _ => None,
     }
 }
@@ -41,13 +41,13 @@ pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
         } => wrap_with_parentheses(value.to_string(), precedence, parent_precedence),
         Constant { value, .. } => value.to_string(),
         NamedValue { name, .. } => name.to_string(),
-        Negation(node) => {
-            format!("-{}", ast_to_yasc(node, precedence))
+        Negation { arg, .. } => {
+            format!("-{}", ast_to_yasc(arg, precedence))
         }
-        Reciprocal(node) => {
-            format!("1/{}", ast_to_yasc(node, precedence))
+        Reciprocal { arg, .. } => {
+            format!("1/{}", ast_to_yasc(arg, precedence))
         }
-        Sub(lhs, rhs) => wrap_with_parentheses(
+        Sub { lhs, rhs, .. } => wrap_with_parentheses(
             format!(
                 "{}-{}",
                 ast_to_yasc(lhs, precedence),
@@ -56,12 +56,15 @@ pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             precedence,
             parent_precedence,
         ),
-        Add { lhs, rhs, .. } | Mul(lhs, rhs) | Div(lhs, rhs) | Pow(lhs, rhs) => {
+        Add { lhs, rhs, .. }
+        | Mul { lhs, rhs, .. }
+        | Div { lhs, rhs, .. }
+        | Pow { lhs, rhs, .. } => {
             let op = match ast {
                 AstNode::Add { .. } => "+",
-                AstNode::Mul(_, _) => "*",
-                AstNode::Div(_, _) => "/",
-                AstNode::Pow(_, _) => "^",
+                AstNode::Mul { .. } => "*",
+                AstNode::Div { .. } => "/",
+                AstNode::Pow { .. } => "^",
                 _ => unreachable!(),
             };
             wrap_with_parentheses(
@@ -74,8 +77,8 @@ pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
                 parent_precedence,
             )
         }
-        AddSeq(nodes) | MulSeq(nodes) => {
-            let op = if matches!(ast, AstNode::AddSeq(_)) {
+        AddSeq { nodes, .. } | MulSeq { nodes, .. } => {
+            let op = if matches!(ast, AstNode::AddSeq { .. }) {
                 "+"
             } else {
                 "*"
@@ -87,19 +90,19 @@ pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
                 .join(op);
             wrap_with_parentheses(add_str, precedence, parent_precedence)
         }
-        Sin(node) => {
-            format!("sin[{}]", ast_to_yasc(node, precedence))
+        Sin { arg, .. } => {
+            format!("sin[{}]", ast_to_yasc(arg, precedence))
         }
-        Cos(node) => {
-            format!("cos[{}]", ast_to_yasc(node, precedence))
+        Cos { arg, .. } => {
+            format!("cos[{}]", ast_to_yasc(arg, precedence))
         }
-        Tan(node) => {
-            format!("tan[{}]", ast_to_yasc(node, precedence))
+        Tan { arg, .. } => {
+            format!("tan[{}]", ast_to_yasc(arg, precedence))
         }
-        Sqrt(node) => {
-            format!("sqrt[{}]", ast_to_yasc(node, precedence))
+        Sqrt { arg, .. } => {
+            format!("sqrt[{}]", ast_to_yasc(arg, precedence))
         }
-        FunctionCall { name, args } => {
+        FunctionCall { name, args, .. } => {
             let args_str = args
                 .iter()
                 .map(|arg| ast_to_yasc(arg, None))

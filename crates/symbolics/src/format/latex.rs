@@ -33,13 +33,13 @@ fn greek_letter(name: &str) -> String {
 
 fn operator_precedence(ast: &AstNode) -> Option<u32> {
     match ast {
-        AstNode::Negation(_) => Some(3),
-        AstNode::Reciprocal(_) => Some(3),
+        AstNode::Negation { .. } => Some(3),
+        AstNode::Reciprocal { .. } => Some(3),
         AstNode::Add { .. } => Some(1),
-        AstNode::Sub(_, _) => Some(1),
-        AstNode::Mul(_, _) => Some(2),
-        AstNode::Div(_, _) => Some(2),
-        AstNode::Pow(_, _) => Some(4),
+        AstNode::Sub { .. } => Some(1),
+        AstNode::Mul { .. } => Some(2),
+        AstNode::Div { .. } => Some(2),
+        AstNode::Pow { .. } => Some(4),
         _ => None,
     }
 }
@@ -79,11 +79,11 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             }
         }
         NamedValue { name, .. } => greek_letter(name),
-        Negation(node) => {
-            format!("-{}", ast_to_latex(node, precedence))
+        Negation { arg, .. } => {
+            format!("-{}", ast_to_latex(arg, precedence))
         }
-        Reciprocal(node) => {
-            format!("\\frac{{1}}{{{}}}", ast_to_latex(node, precedence))
+        Reciprocal { arg, .. } => {
+            format!("\\frac{{1}}{{{}}}", ast_to_latex(arg, precedence))
         }
         Add { lhs, rhs, .. } => wrap_with_parentheses(
             format!(
@@ -94,7 +94,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             precedence,
             parent_precedence,
         ),
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let add_str = nodes
                 .iter()
                 .map(|node| ast_to_latex(node, precedence))
@@ -102,7 +102,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
                 .join(" + ");
             wrap_with_parentheses(add_str, precedence, parent_precedence)
         }
-        Sub(lhs, rhs) => wrap_with_parentheses(
+        Sub { lhs, rhs, .. } => wrap_with_parentheses(
             format!(
                 "{} - {}",
                 ast_to_latex(lhs, precedence),
@@ -111,7 +111,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
             precedence,
             parent_precedence,
         ),
-        Mul(lhs, rhs) => {
+        Mul { lhs, rhs, .. } => {
             let lhs_str = ast_to_latex(lhs, precedence);
             let rhs_str = ast_to_latex(rhs, precedence);
             let mul_str = if lhs.is_constant() && rhs.is_constant() {
@@ -122,7 +122,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
 
             wrap_with_parentheses(mul_str, precedence, parent_precedence)
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mul_str = nodes
                 .iter()
                 .map(|node| ast_to_latex(node, precedence))
@@ -130,7 +130,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
                 .join(" \\cdot ");
             wrap_with_parentheses(mul_str, precedence, parent_precedence)
         }
-        Div(lhs, rhs) => {
+        Div { lhs, rhs, .. } => {
             let frac_str = format!(
                 "\\frac{{{}}}{{{}}}",
                 ast_to_latex(lhs, None),
@@ -139,7 +139,7 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
 
             wrap_with_parentheses(frac_str, precedence, parent_precedence)
         }
-        Pow(lhs, rhs) => {
+        Pow { lhs, rhs, .. } => {
             let pow_str = format!(
                 "{}^{{{}}}",
                 ast_to_latex(lhs, precedence),
@@ -148,19 +148,19 @@ pub fn ast_to_latex(ast: &AstNode, parent_precedence: Option<u32>) -> String {
 
             wrap_with_parentheses(pow_str, precedence, parent_precedence)
         }
-        Sin(node) => {
-            format!("\\sin\\left({}\\right)", ast_to_latex(node, precedence))
+        Sin { arg, .. } => {
+            format!("\\sin\\left({}\\right)", ast_to_latex(arg, precedence))
         }
-        Cos(node) => {
-            format!("\\cos\\left({}\\right)", ast_to_latex(node, precedence))
+        Cos { arg, .. } => {
+            format!("\\cos\\left({}\\right)", ast_to_latex(arg, precedence))
         }
-        Tan(node) => {
-            format!("\\tan\\left({}\\right)", ast_to_latex(node, precedence))
+        Tan { arg, .. } => {
+            format!("\\tan\\left({}\\right)", ast_to_latex(arg, precedence))
         }
-        Sqrt(node) => {
-            format!("\\sqrt{{{}}}", ast_to_latex(node, precedence))
+        Sqrt { arg, .. } => {
+            format!("\\sqrt{{{}}}", ast_to_latex(arg, precedence))
         }
-        FunctionCall { name, args } => {
+        FunctionCall { name, args, .. } => {
             let args_str = args
                 .iter()
                 .map(|arg| ast_to_latex(arg, None))

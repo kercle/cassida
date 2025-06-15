@@ -25,11 +25,14 @@ fn flatten_commutative(node: AstNode) -> AstNode {
 
     match &node {
         Add { lhs, rhs, .. } => {
-            return flatten_commutative(AddSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+            return flatten_commutative(AstNode::add_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
-                if let AddSeq(inner_nodes) = node {
+                if let AddSeq {
+                    nodes: inner_nodes, ..
+                } = node
+                {
                     Some(inner_nodes.clone())
                 } else {
                     None
@@ -41,21 +44,24 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return AddSeq(flattened_nodes);
+                return AstNode::add_seq(flattened_nodes);
             }
         }
-        Negation(node) => {
-            return flatten_commutative(MulSeq(vec![
+        Negation { arg, .. } => {
+            return flatten_commutative(AstNode::mul_seq(vec![
                 AstNode::constant(RealScalar::minus_one()),
-                *node.to_owned(),
+                *arg.to_owned(),
             ]));
         }
-        Mul(lhs, rhs) => {
-            return flatten_commutative(MulSeq(vec![*lhs.to_owned(), *rhs.to_owned()]));
+        Mul { lhs, rhs, .. } => {
+            return flatten_commutative(AstNode::mul_seq(vec![*lhs.to_owned(), *rhs.to_owned()]));
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mut flattened_nodes = flatten_commutative_inner(nodes, |node| {
-                if let MulSeq(inner_nodes) = node {
+                if let MulSeq {
+                    nodes: inner_nodes, ..
+                } = node
+                {
                     Some(inner_nodes.clone())
                 } else {
                     None
@@ -67,7 +73,7 @@ fn flatten_commutative(node: AstNode) -> AstNode {
             } else if flattened_nodes.len() == 1 {
                 return flattened_nodes.pop().unwrap();
             } else {
-                return MulSeq(flattened_nodes);
+                return AstNode::mul_seq(flattened_nodes);
             }
         }
         _ => {}
@@ -79,17 +85,17 @@ fn flatten_commutative(node: AstNode) -> AstNode {
 fn transform_inverses(node: AstNode) -> AstNode {
     use AstNode::*;
     match &node {
-        Sub(lhs, rhs) => {
+        Sub { lhs, rhs, .. } => {
             let lhs = transform_inverses(*lhs.to_owned());
-            let rhs = Box::new(transform_inverses(*rhs.to_owned()));
+            let rhs = transform_inverses(*rhs.to_owned());
 
-            return AstNode::add(lhs, Negation(rhs));
+            return AstNode::add(lhs, AstNode::negation(rhs));
         }
-        Div(lhs, rhs) => {
-            let lhs = Box::new(transform_inverses(*lhs.to_owned()));
-            let rhs = Box::new(transform_inverses(*rhs.to_owned()));
+        Div { lhs, rhs, .. } => {
+            let lhs = transform_inverses(*lhs.to_owned());
+            let rhs = transform_inverses(*rhs.to_owned());
 
-            return Mul(lhs, Box::new(Reciprocal(rhs)));
+            return AstNode::mul(lhs, AstNode::reciprocal(rhs));
         }
         _ => {}
     }
@@ -101,15 +107,15 @@ fn cannonical_order(node: AstNode) -> AstNode {
     use AstNode::*;
 
     match &node {
-        AddSeq(nodes) => {
+        AddSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return AddSeq(sorted_nodes);
+            return AstNode::add_seq(sorted_nodes);
         }
-        MulSeq(nodes) => {
+        MulSeq { nodes, .. } => {
             let mut sorted_nodes = nodes.clone();
             sorted_nodes.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            return MulSeq(sorted_nodes);
+            return AstNode::mul_seq(sorted_nodes);
         }
         _ => {}
     }

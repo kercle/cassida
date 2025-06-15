@@ -21,21 +21,62 @@ where
         rhs: Box<AstNode>,
         annotation: Annotation,
     },
-    AddSeq(Vec<AstNode>),
-    Negation(Box<AstNode>),
-    Sub(Box<AstNode>, Box<AstNode>),
-    Mul(Box<AstNode>, Box<AstNode>),
-    MulSeq(Vec<AstNode>),
-    Reciprocal(Box<AstNode>),
-    Div(Box<AstNode>, Box<AstNode>),
-    Pow(Box<AstNode>, Box<AstNode>),
-    Sin(Box<AstNode>),
-    Cos(Box<AstNode>),
-    Tan(Box<AstNode>),
-    Sqrt(Box<AstNode>),
+    AddSeq {
+        nodes: Vec<AstNode>,
+        annotation: Annotation,
+    },
+    Negation {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Sub {
+        lhs: Box<AstNode>,
+        rhs: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Mul {
+        lhs: Box<AstNode>,
+        rhs: Box<AstNode>,
+        annotation: Annotation,
+    },
+    MulSeq {
+        nodes: Vec<AstNode>,
+        annotation: Annotation,
+    },
+    Reciprocal {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Div {
+        lhs: Box<AstNode>,
+        rhs: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Pow {
+        lhs: Box<AstNode>,
+        rhs: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Sin {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Cos {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Tan {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
+    Sqrt {
+        arg: Box<AstNode>,
+        annotation: Annotation,
+    },
     FunctionCall {
         name: String,
         args: Vec<AstNode>,
+        annotation: Annotation,
     },
     Block(Vec<AstNode>),
 }
@@ -65,6 +106,106 @@ where
             annotation: Annotation::default(),
         }
     }
+
+    pub fn add_seq(nodes: Vec<AstNode>) -> Self {
+        AstNode::AddSeq {
+            nodes,
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn negation(arg: AstNode) -> Self {
+        AstNode::Negation {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn sub(lhs: AstNode, rhs: AstNode) -> Self {
+        AstNode::Sub {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn mul(lhs: AstNode, rhs: AstNode) -> Self {
+        AstNode::Mul {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn mul_seq(nodes: Vec<AstNode>) -> Self {
+        AstNode::MulSeq {
+            nodes,
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn reciprocal(arg: AstNode) -> Self {
+        AstNode::Reciprocal {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn div(lhs: AstNode, rhs: AstNode) -> Self {
+        AstNode::Div {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn pow(lhs: AstNode, rhs: AstNode) -> Self {
+        AstNode::Pow {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn sin(arg: AstNode) -> Self {
+        AstNode::Sin {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn cos(arg: AstNode) -> Self {
+        AstNode::Cos {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn tan(arg: AstNode) -> Self {
+        AstNode::Tan {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn sqrt(arg: AstNode) -> Self {
+        AstNode::Sqrt {
+            arg: Box::new(arg),
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn function_call(name: String, args: Vec<AstNode>) -> Self {
+        AstNode::FunctionCall {
+            name,
+            args,
+            annotation: Annotation::default(),
+        }
+    }
+
+    pub fn block(nodes: Vec<AstNode>) -> Self {
+        AstNode::Block(nodes)
+    }
 }
 
 impl AstNode {
@@ -72,23 +213,14 @@ impl AstNode {
         let initial_args_len = args.len();
 
         let result = match name.as_str() {
-            "sin" => Ok(AstNode::Sin(Box::new(
-                args.pop().ok_or("sin requires one argument")?,
-            ))),
-            "cos" => Ok(AstNode::Cos(Box::new(
-                args.pop().ok_or("cos requires one argument")?,
-            ))),
-            "tan" => Ok(AstNode::Tan(Box::new(
-                args.pop().ok_or("tan requires one argument")?,
-            ))),
-            "sqrt" => Ok(AstNode::Sqrt(Box::new(
+            "sin" => Ok(AstNode::sin(args.pop().ok_or("sin requires one argument")?)),
+            "cos" => Ok(AstNode::cos(args.pop().ok_or("cos requires one argument")?)),
+            "tan" => Ok(AstNode::tan(args.pop().ok_or("tan requires one argument")?)),
+            "sqrt" => Ok(AstNode::sqrt(
                 args.pop().ok_or("sqrt requires one argument")?,
-            ))),
+            )),
             _ => {
-                return Ok(AstNode::FunctionCall {
-                    name: name.clone(),
-                    args: args,
-                });
+                return Ok(AstNode::function_call(name.clone(), args));
             }
         };
 
@@ -126,22 +258,25 @@ impl AstNode {
         use AstNode::*;
         let mapped = match self {
             Add { lhs, rhs, .. } => AstNode::add(lhs.map_inner(f), rhs.map_inner(f)),
-            AddSeq(nodes) => AddSeq(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
-            Negation(x) => Negation(Box::new(x.map_inner(f))),
-            Sub(l, r) => Sub(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
-            Mul(l, r) => Mul(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
-            MulSeq(nodes) => MulSeq(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
-            Reciprocal(x) => Reciprocal(Box::new(x.map_inner(f))),
-            Div(l, r) => Div(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
-            Pow(l, r) => Pow(Box::new(l.map_inner(f)), Box::new(r.map_inner(f))),
-            Sin(x) => Sin(Box::new(x.map_inner(f))),
-            Cos(x) => Cos(Box::new(x.map_inner(f))),
-            Tan(x) => Tan(Box::new(x.map_inner(f))),
-            Sqrt(x) => Sqrt(Box::new(x.map_inner(f))),
-            FunctionCall { name, args } => FunctionCall {
-                name,
-                args: args.into_iter().map(|a| a.map_inner(f)).collect(),
-            },
+            AddSeq { nodes, .. } => {
+                AstNode::add_seq(nodes.into_iter().map(|n| n.map_inner(f)).collect())
+            }
+            Negation { arg, .. } => AstNode::negation(arg.map_inner(f)),
+            Sub { lhs, rhs, .. } => AstNode::sub(lhs.map_inner(f), rhs.map_inner(f)),
+            Mul { lhs, rhs, .. } => AstNode::mul(lhs.map_inner(f), rhs.map_inner(f)),
+            MulSeq { nodes, .. } => {
+                AstNode::mul_seq(nodes.into_iter().map(|n| n.map_inner(f)).collect())
+            }
+            Reciprocal { arg, .. } => AstNode::reciprocal(arg.map_inner(f)),
+            Div { lhs, rhs, .. } => AstNode::div(lhs.map_inner(f), rhs.map_inner(f)),
+            Pow { lhs, rhs, .. } => AstNode::pow(lhs.map_inner(f), rhs.map_inner(f)),
+            Sin { arg, .. } => AstNode::sin(arg.map_inner(f)),
+            Cos { arg, .. } => AstNode::cos(arg.map_inner(f)),
+            Tan { arg, .. } => AstNode::tan(arg.map_inner(f)),
+            Sqrt { arg, .. } => AstNode::sqrt(arg.map_inner(f)),
+            FunctionCall { name, args, .. } => {
+                AstNode::function_call(name, args.into_iter().map(|a| a.map_inner(f)).collect())
+            }
             Block(nodes) => Block(nodes.into_iter().map(|n| n.map_inner(f)).collect()),
             Constant { .. } | NamedValue { .. } => self,
         };
@@ -187,19 +322,24 @@ impl<'a> Iterator for AstNodeIter<'a> {
 
         use AstNode::*;
         match node {
-            Negation(x) | Reciprocal(x) | Sin(x) | Cos(x) | Tan(x) | Sqrt(x) => {
-                self.stack.push(x);
+            Negation { arg, .. }
+            | Reciprocal { arg, .. }
+            | Sin { arg, .. }
+            | Cos { arg, .. }
+            | Tan { arg, .. }
+            | Sqrt { arg, .. } => {
+                self.stack.push(arg);
             }
             Add { lhs, rhs, .. }
-            | Sub(lhs, rhs)
-            | Mul(lhs, rhs)
-            | Div(lhs, rhs)
-            | Pow(lhs, rhs) => {
+            | Sub { lhs, rhs, .. }
+            | Mul { lhs, rhs, .. }
+            | Div { lhs, rhs, .. }
+            | Pow { lhs, rhs, .. } => {
                 self.stack.push(rhs);
                 self.stack.push(lhs);
             }
-            AddSeq(args) | MulSeq(args) => {
-                for arg in args.iter().rev() {
+            AddSeq { nodes, .. } | MulSeq { nodes, .. } => {
+                for arg in nodes.iter().rev() {
                     self.stack.push(arg);
                 }
             }
