@@ -64,8 +64,15 @@ impl AstPattern<'_> {
     }
 }
 
-struct PatternRewriter {
+pub struct PatternRewriteIter {
     flagged_ast: AstNode<bool>,
+}
+
+impl PatternRewriteIter {
+    pub fn with_ast<A: Clone>(ast: AstNode<A>) -> Self {
+        let flagged_ast = ast.map_annotation(&mut |_| false);
+        Self { flagged_ast }
+    }
 }
 
 #[cfg(test)]
