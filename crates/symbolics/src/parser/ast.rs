@@ -207,6 +207,78 @@ where
         AstNode::Block(nodes)
     }
 
+    pub fn drop_annotation(self) -> AstNode {
+        self.map_annotation(&mut |_| ())
+    }
+
+    pub fn with_annotation(self, annotation: A) -> Self {
+        match self {
+            AstNode::Constant { value, .. } => AstNode::Constant { value, annotation },
+            AstNode::NamedValue { name, .. } => AstNode::NamedValue { name, annotation },
+            AstNode::Add { lhs, rhs, .. } => AstNode::Add {
+                lhs,
+                rhs,
+                annotation,
+            },
+            AstNode::AddSeq { nodes, .. } => AstNode::AddSeq { nodes, annotation },
+            AstNode::Negation { arg, .. } => AstNode::Negation { arg, annotation },
+            AstNode::Sub { lhs, rhs, .. } => AstNode::Sub {
+                lhs,
+                rhs,
+                annotation,
+            },
+            AstNode::Mul { lhs, rhs, .. } => AstNode::Mul {
+                lhs,
+                rhs,
+                annotation,
+            },
+            AstNode::MulSeq { nodes, .. } => AstNode::MulSeq { nodes, annotation },
+            AstNode::Reciprocal { arg, .. } => AstNode::Reciprocal { arg, annotation },
+            AstNode::Div { lhs, rhs, .. } => AstNode::Div {
+                lhs,
+                rhs,
+                annotation,
+            },
+            AstNode::Pow { lhs, rhs, .. } => AstNode::Pow {
+                lhs,
+                rhs,
+                annotation,
+            },
+            AstNode::Sin { arg, .. } => AstNode::Sin { arg, annotation },
+            AstNode::Cos { arg, .. } => AstNode::Cos { arg, annotation },
+            AstNode::Tan { arg, .. } => AstNode::Tan { arg, annotation },
+            AstNode::Sqrt { arg, .. } => AstNode::Sqrt { arg, annotation },
+            AstNode::FunctionCall { name, args, .. } => AstNode::FunctionCall {
+                name,
+                args,
+                annotation,
+            },
+            AstNode::Block(nodes) => AstNode::Block(nodes),
+        }
+    }
+
+    pub fn annotation(&self) -> Option<&A> {
+        Some(match self {
+            AstNode::Constant { annotation, .. } => annotation,
+            AstNode::NamedValue { annotation, .. } => annotation,
+            AstNode::Add { annotation, .. } => annotation,
+            AstNode::AddSeq { annotation, .. } => annotation,
+            AstNode::Negation { annotation, .. } => annotation,
+            AstNode::Sub { annotation, .. } => annotation,
+            AstNode::Mul { annotation, .. } => annotation,
+            AstNode::MulSeq { annotation, .. } => annotation,
+            AstNode::Reciprocal { annotation, .. } => annotation,
+            AstNode::Div { annotation, .. } => annotation,
+            AstNode::Pow { annotation, .. } => annotation,
+            AstNode::Sin { annotation, .. } => annotation,
+            AstNode::Cos { annotation, .. } => annotation,
+            AstNode::Tan { annotation, .. } => annotation,
+            AstNode::Sqrt { annotation, .. } => annotation,
+            AstNode::FunctionCall { annotation, .. } => annotation,
+            AstNode::Block(..) => return None,
+        })
+    }
+
     pub fn from_function_call(name: String, mut args: Vec<AstNode<A>>) -> Result<Self, String> {
         let initial_args_len = args.len();
 
@@ -249,9 +321,9 @@ where
         self.map_inner(&mut f)
     }
 
-    fn map_inner<F>(self, f: &mut F) -> AstNode<A>
+    fn map_inner<F>(self, f: &mut F) -> Self
     where
-        F: FnMut(AstNode<A>) -> AstNode<A>,
+        F: FnMut(Self) -> Self,
     {
         use AstNode::*;
         let mapped = match self {
