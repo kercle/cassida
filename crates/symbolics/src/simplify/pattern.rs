@@ -20,8 +20,10 @@ impl ops::Add for AstPattern<'_> {
     }
 }
 
+pub type BindingType<A = ()> = HashMap<String, AstNode<A>>;
+
 impl AstPattern<'_> {
-    pub fn matches<A: Clone>(&self, tree: &AstNode<A>) -> Option<HashMap<String, AstNode<A>>> {
+    pub fn matches<A: Clone>(&self, tree: &AstNode<A>) -> Option<BindingType<A>> {
         let mut matches = HashMap::new();
 
         match self {
@@ -67,19 +69,19 @@ impl AstPattern<'_> {
 
 pub struct PatternRewriteOnceIter<F>
 where
-    F: FnMut(&HashMap<String, AstNode>) -> AstNode,
+    F: FnMut(&BindingType) -> AstNode,
 {
     annotated_ast: AstNode<Option<usize>>,
-    bindings: Vec<HashMap<String, AstNode>>,
+    bindings: Vec<BindingType>,
     mapping: F,
     iter_index: usize,
 }
 
 impl<'a, F> PatternRewriteOnceIter<F>
 where
-    F: FnMut(&HashMap<String, AstNode>) -> AstNode,
+    F: FnMut(&BindingType) -> AstNode,
 {
-    pub fn new<A: Clone>(ast: AstNode<A>, pattern: AstPattern<'a>, mapping: F) -> Self {
+    pub fn new<A: Clone>(ast: AstNode<A>, pattern: &AstPattern<'a>, mapping: F) -> Self {
         let mut bindings = Vec::new();
         let annotated_ast =
             Self::mark_matches(&pattern, ast.map_annotation(&mut |_| None), &mut bindings);
@@ -95,7 +97,7 @@ where
     fn mark_matches(
         pattern: &AstPattern<'a>,
         ast: AstNode<Option<usize>>,
-        bindings: &mut Vec<HashMap<String, AstNode>>,
+        bindings: &mut Vec<BindingType>,
     ) -> AstNode<Option<usize>> {
         ast.map(|node| {
             let node = node.with_annotation(Some(0));
@@ -175,7 +177,8 @@ mod tests {
         use AstPattern::*;
 
         // Implements commutative addition pattern
-        let mut iter = PatternRewriteOnceIter::new(ast, Any("X") + Any("Y"), |bindings| {
+        let pattern = Any("X") + Any("Y");
+        let mut iter = PatternRewriteOnceIter::new(ast, &pattern, |bindings| {
             let x = bindings.get("X").unwrap();
             let y = bindings.get("Y").unwrap();
 
