@@ -73,7 +73,7 @@ impl PatternRewrite for AstNode {
         Some(matches)
     }
 
-    fn rewrite<F>(&self, pattern: &AstPattern, apply_func: F) -> Self
+    fn rewrite<F>(&self, _pattern: &AstPattern, _apply_func: F) -> Self
     where
         F: Fn(&Self) -> Self,
     {
