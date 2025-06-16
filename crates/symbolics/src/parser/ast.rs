@@ -6,7 +6,7 @@ use numbers::RealScalar;
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode<Annotation = ()>
 where
-    Annotation: Clone,
+    Annotation: Clone + PartialEq,
 {
     Constant {
         value: RealScalar,
@@ -83,7 +83,7 @@ where
 
 impl<A> AstNode<A>
 where
-    A: Default + Clone,
+    A: Default + Clone + PartialEq,
 {
     pub fn constant(value: RealScalar) -> Self {
         AstNode::Constant {
@@ -423,7 +423,7 @@ where
 
 impl<A> AstNode<A>
 where
-    A: Clone,
+    A: Clone + PartialEq,
 {
     pub fn is_constant(&self) -> bool {
         matches!(self, AstNode::Constant { .. })
@@ -431,7 +431,7 @@ where
 
     pub fn map_annotation<B, F>(self, f: &mut F) -> AstNode<B>
     where
-        B: Clone,
+        B: Clone + PartialEq,
         F: FnMut(A) -> B,
     {
         match self {

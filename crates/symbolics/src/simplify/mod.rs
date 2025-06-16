@@ -177,9 +177,8 @@ mod tests {
 
     #[test]
     fn test_simplify_ast() {
-        let ast = parse("x+x").unwrap();
+        let ast = parse("x+x+x").unwrap();
         let simplified_ast = simplify_ast(ast);
-
-        println!("Simplified AST: {}", simplified_ast.to_yasc());
+        println!("Simplified: {}", simplified_ast.to_yasc());
     }
 }

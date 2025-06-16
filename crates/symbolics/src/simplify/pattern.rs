@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops};
+use std::{collections::HashMap, fmt::Debug, ops};
 
 use numbers::RealScalar;
 
@@ -23,7 +23,10 @@ impl ops::Add for AstPattern<'_> {
 pub type BindingType<A = ()> = HashMap<String, AstNode<A>>;
 
 impl AstPattern<'_> {
-    pub fn matches<A: Clone>(&self, tree: &AstNode<A>) -> Option<BindingType<A>> {
+    pub fn matches<A: Clone + PartialEq + Debug>(
+        &self,
+        tree: &AstNode<A>,
+    ) -> Option<BindingType<A>> {
         let mut matches = HashMap::new();
 
         match self {
@@ -55,8 +58,16 @@ impl AstPattern<'_> {
                         return None;
                     }
 
-                    matches.extend(left_matches.unwrap());
-                    matches.extend(right_matches.unwrap());
+                    matches = left_matches.unwrap();
+                    for (k, v) in right_matches.unwrap() {
+                        if let Some(existing) = matches.get_mut(&k) {
+                            if existing != &v {
+                                return None; // Conflict in bindings
+                            }
+                        } else {
+                            matches.insert(k, v);
+                        }
+                    }
                 } else {
                     return None;
                 }
@@ -81,7 +92,11 @@ impl<'a, F> PatternRewriteOnceIter<F>
 where
     F: FnMut(&BindingType) -> AstNode,
 {
-    pub fn new<A: Clone>(ast: AstNode<A>, pattern: &AstPattern<'a>, mapping: F) -> Self {
+    pub fn new<A: Clone + PartialEq>(
+        ast: AstNode<A>,
+        pattern: &AstPattern<'a>,
+        mapping: F,
+    ) -> Self {
         let mut bindings = Vec::new();
         let annotated_ast =
             Self::mark_matches(&pattern, ast.map_annotation(&mut |_| None), &mut bindings);
@@ -168,6 +183,43 @@ mod tests {
         let x = matches.get("X").unwrap();
         let y = matches.get("Y").unwrap();
         assert_eq!(ast, AstNode::add(x.clone(), y.clone()));
+    }
+    #[test]
+    fn test_repeated_term_matching() {
+        let ast = parse("x+x").unwrap();
+
+        use AstPattern::*;
+        let pattern = Any("X") + Any("X");
+        let matches = pattern.matches(&ast);
+
+        assert!(matches.is_some());
+    }
+
+    #[test]
+    fn test_rewrite_x_plus_x() {
+        let ast = parse("x+x").unwrap();
+
+        use AstPattern::*;
+
+        // Implements commutative addition pattern
+        let pattern = Any("X") + Any("X");
+        let mut iter = PatternRewriteOnceIter::new(ast, &pattern, |bindings| {
+            let x = bindings.get("X").unwrap();
+            AstNode::mul(
+                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
+                x.clone(),
+            )
+        });
+
+        assert_eq!(
+            iter.next().unwrap(),
+            AstNode::mul(
+                AstNode::constant(RealScalar::Integer(BigInteger::from_u64(2))),
+                AstNode::named_value("x".to_string()),
+            )
+        );
+
+        assert!(iter.next().is_none());
     }
 
     #[test]
