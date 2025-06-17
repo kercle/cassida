@@ -70,15 +70,21 @@ impl AstPattern<'_> {
                     _ => return None,
                 };
 
-                let left_matches = left_pattern.matches(lhs);
-                let right_matches = right_pattern.matches(rhs);
+                let (matches_a, matches_b) = if let (Some(lm), Some(rm)) =
+                    (left_pattern.matches(lhs), right_pattern.matches(rhs))
+                {
+                    (lm, rm)
+                } else if let (Some(rm), Some(lm)) =
+                    (right_pattern.matches(lhs), left_pattern.matches(rhs))
+                {
+                    // Operations are commutative, so also test the reverse order
+                    (rm, lm)
+                } else {
+                    return None; // No valid match found
+                };
 
-                if left_matches.is_none() || right_matches.is_none() {
-                    return None;
-                }
-
-                matches = left_matches.unwrap();
-                for (k, v) in right_matches.unwrap() {
+                matches = matches_a;
+                for (k, v) in matches_b {
                     if let Some(existing) = matches.get_mut(&k) {
                         if existing != &v {
                             return None; // Conflict in bindings
