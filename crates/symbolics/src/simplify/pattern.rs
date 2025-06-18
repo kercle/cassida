@@ -32,10 +32,10 @@ impl ops::Mul for AstPattern<'_> {
 pub type BindingType<A = ()> = HashMap<String, AstNode<A>>;
 
 impl AstPattern<'_> {
-    pub fn matches<A: Clone + PartialEq + Debug>(
-        &self,
-        tree: &AstNode<A>,
-    ) -> Option<BindingType<A>> {
+    pub fn matches<A>(&self, tree: &AstNode<A>) -> Option<BindingType<A>>
+    where
+        A: Clone + Debug + PartialEq + Default,
+    {
         let mut matches = HashMap::new();
 
         match self {
@@ -114,7 +114,7 @@ impl<'a, F> PatternRewriteOnceIter<F>
 where
     F: FnMut(&BindingType) -> AstNode,
 {
-    pub fn new<A: Clone + PartialEq>(
+    pub fn new<A: Clone + PartialEq + Debug>(
         ast: AstNode<A>,
         pattern: &AstPattern<'a>,
         mapping: F,
@@ -138,6 +138,7 @@ where
     ) -> AstNode<Option<usize>> {
         ast.map(|node| {
             let node = node.with_annotation(Some(0));
+
             if let Some(node_bindings) = pattern.matches(&node) {
                 let current_index = bindings.len();
 
@@ -206,6 +207,7 @@ mod tests {
         let y = matches.get("Y").unwrap();
         assert_eq!(ast, AstNode::new_add(x.clone(), y.clone()));
     }
+
     #[test]
     fn test_repeated_term_matching() {
         let ast = parse("x+x").unwrap();
@@ -289,4 +291,29 @@ mod tests {
 
         assert!(iter.next_pattern().is_none());
     }
+
+    // #[test]
+    // fn test_rewrite_addseq() {
+    //     let ast = normalize_tree(parse("x+a+x+b+x").unwrap());
+
+    //     dbg!(&ast);
+
+    //     use AstPattern::*;
+    //     let (pattern, rewrite_rule) = rw_rule!(
+    //         AddSeq(|node| {
+    //             if matches!(node, AstNode::Constant { .. }) {
+    //                 "c".to_string()
+    //             } else {
+    //                 "rest".to_string()
+    //             }
+    //         }) =>
+    //         |c, rest| {
+    //             let c = bindings.get("c").unwrap();
+    //             let rest = bindings.get("rest").unwrap();
+    //             AstNode::new_add(c.clone(), rest.clone())
+    //         }
+    //     );
+
+    //     assert!(matches.is_some());
+    // }
 }

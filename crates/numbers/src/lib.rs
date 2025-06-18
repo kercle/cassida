@@ -49,6 +49,13 @@ impl RealScalar {
             RealScalar::Rational(r) => r.is_one(),
         }
     }
+
+    pub fn to_hex_string(&self) -> String {
+        match self {
+            RealScalar::Integer(i) => i.to_hex_string(),
+            RealScalar::Rational(r) => r.to_hex_string(),
+        }
+    }
 }
 
 impl FromStr for RealScalar {

@@ -516,6 +516,34 @@ impl BigInteger {
 
         Ok(result)
     }
+
+    pub fn to_hex_string(&self) -> String {
+        let mut s = String::with_capacity(self.digits.len() * 16);
+        use std::fmt::Write;
+
+        let mut iter = self.digits.iter().rev();
+        while let Some(&digit) = iter.next() {
+            if digit != 0 {
+                if s.is_empty() {
+                    if self.sign == Sign::Negative {
+                        write!(s, "-").unwrap();
+                    };
+                    write!(s, "0x").unwrap();
+                }
+                write!(s, "{:x}", digit).unwrap();
+                break;
+            }
+        }
+
+        if s.is_empty() {
+            return "0x0".to_string();
+        }
+
+        while let Some(&n) = iter.next() {
+            write!(s, "{:016x}", n).unwrap();
+        }
+        s
+    }
 }
 
 impl fmt::Display for BigInteger {
@@ -739,5 +767,20 @@ mod tests {
         let c = BigInteger::from_str_radix("0", 10).unwrap();
         assert_eq!(c.digits, vec![0]);
         assert_eq!(c.sign, Sign::Positive);
+    }
+
+    #[test]
+    fn test_to_hex_string() {
+        let a = BigInteger::from_slice(Sign::Positive, &[0]);
+        assert_eq!(a.to_hex_string(), "0x0");
+
+        let a = BigInteger::from_slice(Sign::Positive, &[1, 2]);
+        assert_eq!(a.to_hex_string(), "0x20000000000000001");
+
+        let a = BigInteger::from_slice(Sign::Negative, &[1, 2]);
+        assert_eq!(a.to_hex_string(), "-0x20000000000000001");
+
+        let a = BigInteger::from_slice(Sign::Positive, &[1, 2, 3]);
+        assert_eq!(a.to_hex_string(), "0x300000000000000020000000000000001");
     }
 }

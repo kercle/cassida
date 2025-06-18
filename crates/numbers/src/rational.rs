@@ -85,6 +85,14 @@ impl Rational {
         self.numerator = (&self.numerator / &q).unwrap_or(self.numerator.clone());
         self.denominator = (&self.denominator / &q).unwrap_or(self.denominator.clone());
     }
+
+    pub fn to_hex_string(&self) -> String {
+        format!(
+            "{}:{}",
+            self.numerator.to_hex_string(),
+            self.denominator.to_hex_string()
+        )
+    }
 }
 
 impl PartialEq for Rational {

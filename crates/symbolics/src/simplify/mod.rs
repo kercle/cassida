@@ -1,6 +1,6 @@
 // mod naive;
 pub mod macros;
-pub mod normalize;
+pub mod modifiers;
 pub mod pattern;
 
 use std::collections::{HashMap, HashSet};

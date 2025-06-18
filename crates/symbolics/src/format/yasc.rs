@@ -1,7 +1,10 @@
 use crate::parser::ast::AstNode;
 use numbers::RealScalar;
 
-fn operator_precedence(ast: &AstNode) -> Option<u32> {
+fn operator_precedence<A>(ast: &AstNode<A>) -> Option<u32>
+where
+    A: Clone + PartialEq,
+{
     match ast {
         AstNode::Negation { .. } => Some(3),
         AstNode::Reciprocal { .. } => Some(3),
@@ -30,7 +33,10 @@ fn wrap_with_parentheses(
     }
 }
 
-pub fn ast_to_yasc(ast: &AstNode, parent_precedence: Option<u32>) -> String {
+pub fn ast_to_yasc<A>(ast: &AstNode<A>, parent_precedence: Option<u32>) -> String
+where
+    A: Clone + PartialEq,
+{
     let precedence = operator_precedence(ast);
 
     use AstNode::*;

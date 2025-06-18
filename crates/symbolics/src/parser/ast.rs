@@ -550,7 +550,10 @@ where
     }
 }
 
-impl cmp::PartialOrd for AstNode {
+impl<A> cmp::PartialOrd for AstNode<A>
+where
+    A: Clone + PartialEq,
+{
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         use AstNode::*;
         match (self, other) {

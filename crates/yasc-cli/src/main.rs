@@ -18,7 +18,7 @@ fn print_markdown(input: &str) {
     });
 
     let ast = simplify_exhaustive(ast);
-    dbg!(&ast);
+    // println!(" -- {}", ast.to_string());
 
     let latex = ast.to_latex();
     println!("$$\n{}\n$$", latex);
