@@ -341,7 +341,7 @@ where
                 } else if flattened_nodes.len() == 1 {
                     flattened_nodes.pop().unwrap()
                 } else {
-                    flattened_nodes.sort_by(|a, b| a.cmp_struct(b));
+                    flattened_nodes.sort_by(|a, b| a.cmp_nodes(b));
                     AstNode::new_add(flattened_nodes)
                 }
             }
@@ -363,7 +363,7 @@ where
                 } else if flattened_nodes.len() == 1 {
                     flattened_nodes.pop().unwrap()
                 } else {
-                    flattened_nodes.sort_by(|a, b| a.cmp_struct(b));
+                    flattened_nodes.sort_by(|a, b| a.cmp_nodes(b));
                     AstNode::new_mul(flattened_nodes)
                 }
             }
@@ -591,14 +591,14 @@ where
         }
     }
 
-    pub fn cmp_struct(&self, other: &Self) -> Ordering {
+    pub fn cmp_nodes(&self, other: &Self) -> Ordering {
         fn cmp_vec<A: Clone + PartialEq>(a: &[AstNode<A>], b: &[AstNode<A>]) -> Ordering {
             let len_cmp = a.len().cmp(&b.len());
             if len_cmp != Ordering::Equal {
                 return len_cmp;
             }
             for (x, y) in a.iter().zip(b.iter()) {
-                let c = x.cmp_struct(y);
+                let c = x.cmp_nodes(y);
                 if c != Ordering::Equal {
                     return c;
                 }
@@ -615,7 +615,7 @@ where
         match (self, other) {
             (Constant { value: a, .. }, Constant { value: b, .. }) => a.cmp(b),
             (NamedValue { name: a, .. }, NamedValue { name: b, .. }) => a.cmp(b),
-            (Negation { arg: a, .. }, Negation { arg: b, .. }) => a.cmp_struct(b),
+            (Negation { arg: a, .. }, Negation { arg: b, .. }) => a.cmp_nodes(b),
             (
                 Pow {
                     lhs: a1, rhs: a2, ..
@@ -623,7 +623,7 @@ where
                 Pow {
                     lhs: b1, rhs: b2, ..
                 },
-            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            ) => a1.cmp_nodes(b1).then_with(|| a2.cmp_nodes(b2)),
             (
                 Div {
                     lhs: a1, rhs: a2, ..
@@ -631,7 +631,7 @@ where
                 Div {
                     lhs: b1, rhs: b2, ..
                 },
-            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            ) => a1.cmp_nodes(b1).then_with(|| a2.cmp_nodes(b2)),
             (
                 Sub {
                     lhs: a1, rhs: a2, ..
@@ -639,7 +639,7 @@ where
                 Sub {
                     lhs: b1, rhs: b2, ..
                 },
-            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            ) => a1.cmp_nodes(b1).then_with(|| a2.cmp_nodes(b2)),
             (Add { nodes: a, .. }, Add { nodes: b, .. })
             | (Mul { nodes: a, .. }, Mul { nodes: b, .. })
             | (Block { nodes: a, .. }, Block { nodes: b, .. }) => cmp_vec(a, b),
@@ -679,7 +679,7 @@ mod tests {
 
     fn assert_struct_eq(a: &AstNode<()>, b: &AstNode<()>) {
         assert!(
-            a.cmp_struct(b).is_eq(),
+            a.cmp_nodes(b).is_eq(),
             "ASTs not structurally equal.\nleft:  {:#?}\nright: {:#?}",
             a,
             b
