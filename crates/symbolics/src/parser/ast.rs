@@ -454,7 +454,9 @@ where
                     }
                 }
 
-                if !running_constant.is_one() {
+                if running_constant.is_zero() {
+                    return AstNode::constant_from_i64(0);
+                } else if !running_constant.is_one() {
                     new_nodes.push(AstNode::new_constant(running_constant));
                 }
 
