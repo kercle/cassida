@@ -25,6 +25,13 @@ impl ops::Add for RealScalar {
     }
 }
 
+impl ops::AddAssign for RealScalar {
+    fn add_assign(&mut self, other: RealScalar) {
+        let new_value = self.clone() + other;
+        *self = new_value;
+    }
+}
+
 impl ops::Add<u64> for RealScalar {
     type Output = RealScalar;
 
@@ -39,21 +46,21 @@ impl ops::Add<u64> for RealScalar {
 }
 
 impl ops::Sub for &RealScalar {
-    type Output = Option<RealScalar>;
+    type Output = RealScalar;
 
     fn sub(self, other: Self) -> Self::Output {
         match (self, other) {
-            (RealScalar::Integer(a), RealScalar::Integer(b)) => Some(RealScalar::Integer(a - b)),
+            (RealScalar::Integer(a), RealScalar::Integer(b)) => RealScalar::Integer(a - b),
             (RealScalar::Rational(_a), RealScalar::Rational(_b)) => {
                 todo!("Implement subtraction for Rational")
             }
-            _ => None, // Handle mixed types or unsupported operations
+            _ => todo!("Implement subtraction for mixed"),
         }
     }
 }
 
 impl ops::Sub for RealScalar {
-    type Output = Option<Self>;
+    type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
         &self - &other
@@ -61,24 +68,31 @@ impl ops::Sub for RealScalar {
 }
 
 impl ops::Mul for &RealScalar {
-    type Output = Option<RealScalar>;
+    type Output = RealScalar;
 
     fn mul(self, other: Self) -> Self::Output {
         match (self, other) {
-            (RealScalar::Integer(a), RealScalar::Integer(b)) => Some(RealScalar::Integer(a * b)),
+            (RealScalar::Integer(a), RealScalar::Integer(b)) => RealScalar::Integer(a * b),
             (RealScalar::Rational(_a), RealScalar::Rational(_b)) => {
                 todo!("Implement multiplication for Rational")
             }
-            _ => None, // Handle mixed types or unsupported operations
+            _ => todo!("Implement multiplication for mixed types")
         }
     }
 }
 
 impl ops::Mul for RealScalar {
-    type Output = Option<Self>;
+    type Output = RealScalar;
 
     fn mul(self, other: Self) -> Self::Output {
         &self * &other
+    }
+}
+
+impl ops::MulAssign for RealScalar {
+    fn mul_assign(&mut self, other: RealScalar) {
+        let new_value = self.clone() * other;
+        *self = new_value;
     }
 }
 

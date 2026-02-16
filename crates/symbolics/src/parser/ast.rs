@@ -213,16 +213,16 @@ where
     pub fn annotation(&self) -> &A {
         use AstNode::*;
         match self {
-            Constant { annotation, .. } => annotation,
-            NamedValue { annotation, .. } => annotation,
-            Add { annotation, .. } => annotation,
-            Negation { annotation, .. } => annotation,
-            Sub { annotation, .. } => annotation,
-            Mul { annotation, .. } => annotation,
-            Div { annotation, .. } => annotation,
-            Pow { annotation, .. } => annotation,
-            FunctionCall { annotation, .. } => annotation,
-            Block { annotation, .. } => annotation,
+            Constant { annotation, .. }
+            | NamedValue { annotation, .. }
+            | Add { annotation, .. }
+            | Negation { annotation, .. }
+            | Sub { annotation, .. }
+            | Mul { annotation, .. }
+            | Div { annotation, .. }
+            | Pow { annotation, .. }
+            | FunctionCall { annotation, .. }
+            | Block { annotation, .. } => annotation,
         }
     }
 
@@ -370,6 +370,102 @@ where
             )
             .normalize(),
             Pow { lhs, rhs, .. } => AstNode::new_pow(lhs.normalize(), rhs.normalize()),
+        }
+    }
+
+    pub fn fold_constants(self) -> Self {
+        use AstNode::*;
+
+        match self {
+            Constant { .. } => self,
+            NamedValue { .. } => self,
+            Negation { arg, .. } => {
+                if let Constant { value, .. } = *arg {
+                    AstNode::new_constant(-value)
+                } else {
+                    AstNode::new_negation(*arg)
+                }
+            }
+            Sub { lhs, rhs, .. } => {
+                if let (Constant { value: a, .. }, Constant { value: b, .. }) = (&*lhs, &*rhs) {
+                    AstNode::new_constant(a - b)
+                } else {
+                    AstNode::new_sub(*lhs, *rhs)
+                }
+            }
+            Div { lhs, rhs, .. } => {
+                if let (Constant { .. }, Constant { .. }) = (&*lhs, &*rhs) {
+                    todo!("Handle division of constants");
+                } else {
+                    AstNode::new_div(*lhs, *rhs)
+                }
+            }
+            Pow { lhs, rhs, .. } => {
+                if let (Constant { .. }, Constant { .. }) = (&*lhs, &*rhs) {
+                    todo!("Handle division of constants");
+                } else {
+                    AstNode::new_pow(*lhs, *rhs)
+                }
+            }
+            Block { nodes, .. } => {
+                let new_nodes = nodes
+                    .iter()
+                    .map(|a| a.to_owned().fold_constants())
+                    .collect();
+                AstNode::new_block(new_nodes)
+            }
+            FunctionCall { name, args, .. } => {
+                let new_args = args.iter().map(|a| a.to_owned().fold_constants()).collect();
+                AstNode::new_function_call(name, new_args)
+            }
+            Add { nodes, .. } => {
+                let mut new_nodes = vec![];
+                let mut running_constant = RealScalar::zero();
+
+                for n in nodes {
+                    let n = n.fold_constants();
+                    match n {
+                        Constant { value, .. } => running_constant += value,
+                        _ => new_nodes.push(n),
+                    }
+                }
+
+                if !running_constant.is_zero() {
+                    new_nodes.push(AstNode::new_constant(running_constant));
+                }
+
+                if new_nodes.is_empty() {
+                    AstNode::constant_from_i64(0)
+                } else if new_nodes.len() == 1 {
+                    new_nodes.pop().unwrap()
+                } else {
+                    AstNode::new_add(new_nodes)
+                }
+            }
+            Mul { nodes, .. } => {
+                let mut new_nodes = vec![];
+                let mut running_constant = RealScalar::one();
+
+                for n in nodes {
+                    let n = n.fold_constants();
+                    match n {
+                        Constant { value, .. } => running_constant *= value,
+                        _ => new_nodes.push(n),
+                    }
+                }
+
+                if !running_constant.is_one() {
+                    new_nodes.push(AstNode::new_constant(running_constant));
+                }
+
+                if new_nodes.is_empty() {
+                    AstNode::constant_from_i64(1)
+                } else if new_nodes.len() == 1 {
+                    new_nodes.pop().unwrap()
+                } else {
+                    AstNode::new_mul(new_nodes)
+                }
+            }
         }
     }
 }
