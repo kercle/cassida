@@ -94,7 +94,7 @@ impl BigInteger {
             Sign::Positive
         };
 
-        let mut result = Self::from_u64(0);
+        let mut result = Self::zero();
         for chunk in chars_iter.collect::<Vec<_>>().chunks(18) {
             let chunk_str: String = chunk.iter().collect();
             let factor = 10u64.pow(chunk.len() as u32);
@@ -137,7 +137,7 @@ impl BigInteger {
     }
 
     pub fn is_one(&self) -> bool {
-        self.eq_inner(&BigInteger::from_u64(1))
+        self.eq_inner(&BigInteger::one())
     }
 
     pub fn is_negative(&self) -> bool {
@@ -434,7 +434,7 @@ impl BigInteger {
     }
 
     pub fn increment(&mut self) -> Self {
-        Self::add(self, &BigInteger::from_u64(1))
+        Self::add(self, &BigInteger::one())
     }
 
     pub fn sub(lhs: &Self, rhs: &Self) -> Self {
@@ -475,10 +475,20 @@ impl BigInteger {
     }
 
     pub fn decrement(&mut self) -> Self {
-        Self::sub(self, &BigInteger::from_u64(1))
+        Self::sub(self, &BigInteger::one())
     }
 
     pub fn mul(lhs: &Self, rhs: &Self) -> Self {
+        if lhs.is_one() {
+            return rhs.clone();
+        } else if rhs.is_one() {
+            return lhs.clone();
+        } else if lhs.is_zero() {
+            return BigInteger::zero();
+        } else if rhs.is_zero() {
+            return BigInteger::zero();
+        }
+
         let (lhs, rhs) = if Self::cmp_digits(CompareFunction::Greater, &lhs.digits, &rhs.digits) {
             (lhs, rhs)
         } else {
@@ -496,6 +506,16 @@ impl BigInteger {
     }
 
     pub fn div(lhs: &Self, rhs: &Self) -> Option<(Self, Self)> {
+        if rhs.is_one() {
+            return Some((lhs.clone(), Self::zero()));
+        } else if lhs.is_zero() {
+            if rhs.is_zero() {
+                return None;
+            } else {
+                return Some((Self::zero(), Self::zero()));
+            }
+        }
+
         let (digits, rem) = if rhs.digits.len() > 1 {
             Self::div_multi_digit_with_reminder_naive(&lhs.digits, &rhs.digits)?
         } else {
@@ -520,7 +540,7 @@ impl BigInteger {
             return Err("Failsafe: Exponent too large".to_string());
         }
 
-        let mut result = BigInteger::from_u64(1);
+        let mut result = BigInteger::one();
         while !exp.is_zero() {
             result = BigInteger::mul(&result, self);
             exp = exp.decrement();
@@ -564,7 +584,7 @@ impl fmt::Display for BigInteger {
         let mut num = self.clone();
 
         loop {
-            if num.eq_inner(&BigInteger::from_u64(0)) {
+            if num.eq_inner(&BigInteger::zero()) {
                 break;
             }
 
