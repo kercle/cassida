@@ -1,6 +1,6 @@
-use std::{cmp, fmt, str::FromStr};
+use std::{cmp::Ordering, fmt, str::FromStr};
 
-use crate::integer::BigInteger;
+use crate::{integer::BigInteger, rational::BigRational};
 
 pub mod alg;
 pub mod ops;
@@ -11,7 +11,7 @@ pub mod rational;
 #[derive(Debug, Clone, PartialEq)]
 pub enum RealScalar {
     Integer(integer::BigInteger),
-    Rational(rational::Rational),
+    Rational(rational::BigRational),
 }
 
 pub enum Scalar {
@@ -64,7 +64,7 @@ impl FromStr for RealScalar {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(i) = BigInteger::from_str_radix(s, 10) {
             Ok(RealScalar::Integer(i))
-        } else if let Ok(r) = rational::Rational::from_decimal_str(s) {
+        } else if let Ok(r) = rational::BigRational::from_decimal_str(s) {
             Ok(RealScalar::Rational(r))
         } else {
             Err(format!("Invalid real scalar: {}", s))
@@ -72,17 +72,25 @@ impl FromStr for RealScalar {
     }
 }
 
-impl cmp::PartialOrd for RealScalar {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+impl PartialOrd for RealScalar {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for RealScalar {
+    fn cmp(&self, other: &Self) -> Ordering {
+        use RealScalar::*;
         match (self, other) {
-            (RealScalar::Integer(i1), RealScalar::Integer(i2)) => i1.partial_cmp(i2),
-            (RealScalar::Rational(_r1), RealScalar::Rational(_r2)) => {
-                todo!("Implement comparison for Rational")
-            }
-            _ => None, // Different types cannot be compared
+            (Integer(i1), Integer(i2)) => i1.cmp(i2),
+            (Rational(r1), Rational(r2)) => r1.cmp(r2),
+            (Integer(i1), Rational(r2)) => BigRational::from_big_integer(i1).cmp(r2),
+            (Rational(r1), Integer(i2)) => r1.cmp(&BigRational::from_big_integer(i2)),
         }
     }
 }
+
+impl Eq for RealScalar {}
 
 impl fmt::Display for RealScalar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

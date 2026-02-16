@@ -1,4 +1,4 @@
-use std::cmp::{self, Ordering};
+use std::cmp::Ordering;
 
 use numbers::RealScalar;
 
@@ -67,6 +67,25 @@ where
         nodes: Vec<AstNode<Annotation>>,
         annotation: Annotation,
     },
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+enum Kind {
+    Constant = 0,
+    NamedValue = 1,
+    Negation = 2,
+    Pow = 3,
+    Mul = 4,
+    Div = 5,
+    Add = 6,
+    Sub = 7,
+    Sin = 8,
+    Cos = 9,
+    Tan = 10,
+    Sqrt = 11,
+    FunctionCall = 12,
+    Block = 13,
 }
 
 impl<A> AstNode<A>
@@ -188,56 +207,58 @@ where
     }
 
     pub fn with_annotation(self, annotation: A) -> Self {
+        use AstNode::*;
         match self {
-            AstNode::Constant { value, .. } => AstNode::Constant { value, annotation },
-            AstNode::NamedValue { name, .. } => AstNode::NamedValue { name, annotation },
-            AstNode::Add { nodes, .. } => AstNode::Add { nodes, annotation },
-            AstNode::Negation { arg, .. } => AstNode::Negation { arg, annotation },
-            AstNode::Sub { lhs, rhs, .. } => AstNode::Sub {
+            Constant { value, .. } => Constant { value, annotation },
+            NamedValue { name, .. } => NamedValue { name, annotation },
+            Add { nodes, .. } => Add { nodes, annotation },
+            Negation { arg, .. } => Negation { arg, annotation },
+            Sub { lhs, rhs, .. } => Sub {
                 lhs,
                 rhs,
                 annotation,
             },
-            AstNode::Mul { nodes, .. } => AstNode::Mul { nodes, annotation },
-            AstNode::Div { lhs, rhs, .. } => AstNode::Div {
+            Mul { nodes, .. } => Mul { nodes, annotation },
+            Div { lhs, rhs, .. } => Div {
                 lhs,
                 rhs,
                 annotation,
             },
-            AstNode::Pow { lhs, rhs, .. } => AstNode::Pow {
+            Pow { lhs, rhs, .. } => Pow {
                 lhs,
                 rhs,
                 annotation,
             },
-            AstNode::Sin { arg, .. } => AstNode::Sin { arg, annotation },
-            AstNode::Cos { arg, .. } => AstNode::Cos { arg, annotation },
-            AstNode::Tan { arg, .. } => AstNode::Tan { arg, annotation },
-            AstNode::Sqrt { arg, .. } => AstNode::Sqrt { arg, annotation },
-            AstNode::FunctionCall { name, args, .. } => AstNode::FunctionCall {
+            Sin { arg, .. } => Sin { arg, annotation },
+            Cos { arg, .. } => Cos { arg, annotation },
+            Tan { arg, .. } => Tan { arg, annotation },
+            Sqrt { arg, .. } => Sqrt { arg, annotation },
+            FunctionCall { name, args, .. } => FunctionCall {
                 name,
                 args,
                 annotation,
             },
-            AstNode::Block { nodes, annotation } => AstNode::Block { nodes, annotation },
+            Block { nodes, annotation } => Block { nodes, annotation },
         }
     }
 
     pub fn annotation(&self) -> &A {
+        use AstNode::*;
         match self {
-            AstNode::Constant { annotation, .. } => annotation,
-            AstNode::NamedValue { annotation, .. } => annotation,
-            AstNode::Add { annotation, .. } => annotation,
-            AstNode::Negation { annotation, .. } => annotation,
-            AstNode::Sub { annotation, .. } => annotation,
-            AstNode::Mul { annotation, .. } => annotation,
-            AstNode::Div { annotation, .. } => annotation,
-            AstNode::Pow { annotation, .. } => annotation,
-            AstNode::Sin { annotation, .. } => annotation,
-            AstNode::Cos { annotation, .. } => annotation,
-            AstNode::Tan { annotation, .. } => annotation,
-            AstNode::Sqrt { annotation, .. } => annotation,
-            AstNode::FunctionCall { annotation, .. } => annotation,
-            AstNode::Block { annotation, .. } => annotation,
+            Constant { annotation, .. } => annotation,
+            NamedValue { annotation, .. } => annotation,
+            Add { annotation, .. } => annotation,
+            Negation { annotation, .. } => annotation,
+            Sub { annotation, .. } => annotation,
+            Mul { annotation, .. } => annotation,
+            Div { annotation, .. } => annotation,
+            Pow { annotation, .. } => annotation,
+            Sin { annotation, .. } => annotation,
+            Cos { annotation, .. } => annotation,
+            Tan { annotation, .. } => annotation,
+            Sqrt { annotation, .. } => annotation,
+            FunctionCall { annotation, .. } => annotation,
+            Block { annotation, .. } => annotation,
         }
     }
 
@@ -391,98 +412,172 @@ where
         B: Clone + PartialEq,
         F: FnMut(A) -> B,
     {
+        use AstNode::*;
         match self {
-            AstNode::Constant { value, annotation } => AstNode::Constant {
+            Constant { value, annotation } => Constant {
                 value,
                 annotation: f(annotation),
             },
-            AstNode::NamedValue { name, annotation } => AstNode::NamedValue {
+            NamedValue { name, annotation } => NamedValue {
                 name,
                 annotation: f(annotation),
             },
-            AstNode::Add { nodes, annotation } => AstNode::Add {
+            Add { nodes, annotation } => Add {
                 nodes: nodes.into_iter().map(|n| n.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
-            AstNode::Negation { arg, annotation } => AstNode::Negation {
+            Negation { arg, annotation } => Negation {
                 arg: Box::new(arg.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Sub {
+            Sub {
                 lhs,
                 rhs,
                 annotation,
-            } => AstNode::Sub {
+            } => Sub {
                 lhs: Box::new(lhs.map_annotation(f)),
                 rhs: Box::new(rhs.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Mul { nodes, annotation } => AstNode::Mul {
+            Mul { nodes, annotation } => Mul {
                 nodes: nodes.into_iter().map(|n| n.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
-            AstNode::Div {
+            Div {
                 lhs,
                 rhs,
                 annotation,
-            } => AstNode::Div {
+            } => Div {
                 lhs: Box::new(lhs.map_annotation(f)),
                 rhs: Box::new(rhs.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Pow {
+            Pow {
                 lhs,
                 rhs,
                 annotation,
-            } => AstNode::Pow {
+            } => Pow {
                 lhs: Box::new(lhs.map_annotation(f)),
                 rhs: Box::new(rhs.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Sin { arg, annotation } => AstNode::Sin {
+            Sin { arg, annotation } => Sin {
                 arg: Box::new(arg.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Cos { arg, annotation } => AstNode::Cos {
+            Cos { arg, annotation } => Cos {
                 arg: Box::new(arg.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Tan { arg, annotation } => AstNode::Tan {
+            Tan { arg, annotation } => Tan {
                 arg: Box::new(arg.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::Sqrt { arg, annotation } => AstNode::Sqrt {
+            Sqrt { arg, annotation } => Sqrt {
                 arg: Box::new(arg.map_annotation(f)),
                 annotation: f(annotation),
             },
-            AstNode::FunctionCall {
+            FunctionCall {
                 name,
                 args,
                 annotation,
-            } => AstNode::FunctionCall {
+            } => FunctionCall {
                 name,
                 args: args.into_iter().map(|a| a.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
-            AstNode::Block { nodes, annotation } => AstNode::Block {
+            Block { nodes, annotation } => Block {
                 nodes: nodes.into_iter().map(|n| n.map_annotation(f)).collect(),
                 annotation: f(annotation),
             },
         }
     }
-}
 
-impl<A> cmp::PartialOrd for AstNode<A>
-where
-    A: Clone + PartialEq,
-{
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+    fn kind(&self) -> Kind {
         use AstNode::*;
-        match (self, other) {
-            (Constant { value: a, .. }, Constant { value: b, .. }) => a.partial_cmp(b),
-            (Constant { .. }, _) => Some(Ordering::Less),
-            (_, Constant { .. }) => Some(Ordering::Greater),
-            (_a, _b) => todo!(),
+        match self {
+            Constant { .. } => Kind::Constant,
+            NamedValue { .. } => Kind::NamedValue,
+            Negation { .. } => Kind::Negation,
+            Pow { .. } => Kind::Pow,
+            Mul { .. } => Kind::Mul,
+            Div { .. } => Kind::Div,
+            Add { .. } => Kind::Add,
+            Sub { .. } => Kind::Sub,
+            Sin { .. } => Kind::Sin,
+            Cos { .. } => Kind::Cos,
+            Tan { .. } => Kind::Tan,
+            Sqrt { .. } => Kind::Sqrt,
+            FunctionCall { .. } => Kind::FunctionCall,
+            Block { .. } => Kind::Block,
         }
     }
+
+    pub fn cmp_struct(&self, other: &Self) -> Ordering {
+        let k = self.kind().cmp(&other.kind());
+        if k != Ordering::Equal {
+            return k;
+        }
+
+        use AstNode::*;
+        match (self, other) {
+            (Constant { value: a, .. }, Constant { value: b, .. }) => a.cmp(b),
+            (NamedValue { name: a, .. }, NamedValue { name: b, .. }) => a.cmp(b),
+            (Negation { arg: a, .. }, Negation { arg: b, .. }) => a.cmp_struct(b),
+            (
+                Pow {
+                    lhs: a1, rhs: a2, ..
+                },
+                Pow {
+                    lhs: b1, rhs: b2, ..
+                },
+            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            (
+                Div {
+                    lhs: a1, rhs: a2, ..
+                },
+                Div {
+                    lhs: b1, rhs: b2, ..
+                },
+            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            (
+                Sub {
+                    lhs: a1, rhs: a2, ..
+                },
+                Sub {
+                    lhs: b1, rhs: b2, ..
+                },
+            ) => a1.cmp_struct(b1).then_with(|| a2.cmp_struct(b2)),
+            (Add { nodes: a, .. }, Add { nodes: b, .. })
+            | (Mul { nodes: a, .. }, Mul { nodes: b, .. })
+            | (Block { nodes: a, .. }, Block { nodes: b, .. }) => cmp_vec(a, b),
+            (Sin { arg: a, .. }, Sin { arg: b, .. })
+            | (Cos { arg: a, .. }, Cos { arg: b, .. })
+            | (Tan { arg: a, .. }, Tan { arg: b, .. })
+            | (Sqrt { arg: a, .. }, Sqrt { arg: b, .. }) => a.cmp_struct(b),
+            (
+                FunctionCall {
+                    name: an, args: aa, ..
+                },
+                FunctionCall {
+                    name: bn, args: ba, ..
+                },
+            ) => an.cmp(bn).then_with(|| cmp_vec(aa, ba)),
+            _ => Ordering::Equal,
+        }
+    }
+}
+
+fn cmp_vec<A: Clone + PartialEq>(a: &[AstNode<A>], b: &[AstNode<A>]) -> Ordering {
+    let len_cmp = a.len().cmp(&b.len());
+    if len_cmp != Ordering::Equal {
+        return len_cmp;
+    }
+    for (x, y) in a.iter().zip(b.iter()) {
+        let c = x.cmp_struct(y);
+        if c != Ordering::Equal {
+            return c;
+        }
+    }
+    Ordering::Equal
 }

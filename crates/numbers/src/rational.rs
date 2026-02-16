@@ -6,12 +6,12 @@ use std::{
 use crate::{alg::gcd, integer::BigInteger};
 
 #[derive(Clone)]
-pub struct Rational {
+pub struct BigRational {
     numerator: BigInteger,
     denominator: BigInteger,
 }
 
-impl Rational {
+impl BigRational {
     pub fn new(mut numerator: BigInteger, mut denominator: BigInteger) -> Result<Self, String> {
         if denominator.is_zero() {
             return Err("Denominator cannot be zero".to_string());
@@ -29,6 +29,10 @@ impl Rational {
 
         r.reduce();
         Ok(r)
+    }
+
+    pub fn from_big_integer(value: &BigInteger) -> Self {
+        BigRational::new(value.clone(), BigInteger::one()).unwrap()
     }
 
     pub fn from_decimal_str(value: &str) -> Result<Self, String> {
@@ -98,19 +102,19 @@ impl Rational {
     }
 }
 
-impl PartialEq for Rational {
+impl PartialEq for BigRational {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
     }
 }
 
-impl PartialOrd for Rational {
+impl PartialOrd for BigRational {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Rational {
+impl Ord for BigRational {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         let v = &self.numerator * &other.denominator - &other.numerator * &self.denominator;
         if v.is_zero() {
@@ -123,9 +127,9 @@ impl Ord for Rational {
     }
 }
 
-impl Eq for Rational {}
+impl Eq for BigRational {}
 
-impl Display for Rational {
+impl Display for BigRational {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.denominator.is_one() {
             write!(f, "{}", self.numerator)
@@ -135,7 +139,7 @@ impl Display for Rational {
     }
 }
 
-impl Debug for Rational {
+impl Debug for BigRational {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
     }
@@ -148,26 +152,26 @@ mod tests {
 
     #[test]
     fn test_rational_creation() {
-        let r = Rational::new(BigInteger::from_u64(1), BigInteger::from_u64(2));
+        let r = BigRational::new(BigInteger::from_u64(1), BigInteger::from_u64(2));
         assert!(r.is_ok());
     }
 
     #[test]
     fn test_rational_zero_denominator() {
-        let r = Rational::new(BigInteger::from_u64(1), BigInteger::from_u64(0));
+        let r = BigRational::new(BigInteger::from_u64(1), BigInteger::from_u64(0));
         assert!(r.is_err());
     }
 
     #[test]
     fn test_from_decimal_str() {
-        let r = Rational::from_decimal_str("3.14").unwrap();
+        let r = BigRational::from_decimal_str("3.14").unwrap();
         assert_eq!(r.numerator, BigInteger::from_u64(157));
         assert_eq!(r.denominator, BigInteger::from_u64(50));
     }
 
     #[test]
     fn test_from_f64() {
-        let r = Rational::from_f64(2.53447e-5);
+        let r = BigRational::from_f64(2.53447e-5);
         assert_eq!(r.numerator, BigInteger::from_u64(253447));
         assert_eq!(r.denominator, BigInteger::from_u64(10000000000));
     }
