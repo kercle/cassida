@@ -17,7 +17,7 @@ fn print_markdown(input: &str) {
         std::process::exit(1);
     });
 
-    let latex = ast.to_latex();
+    let latex = ast.normalize().to_latex();
     println!("$$\n{}\n$$", latex);
 }
 

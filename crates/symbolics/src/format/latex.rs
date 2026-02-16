@@ -31,7 +31,7 @@ fn greek_letter(name: &str) -> String {
     }
 }
 
-fn operator_precedence<A>(ast: &AstNode<A>) -> Option<u32>
+fn node_weight<A>(ast: &AstNode<A>) -> Option<u32>
 where
     A: Clone + PartialEq,
 {
@@ -48,21 +48,21 @@ where
 
 fn wrap_with_parentheses(
     sub_tree_str: String,
-    precedence: Option<u32>,
-    parent_precedence: Option<u32>,
+    weight: Option<u32>,
+    parent_weight: Option<u32>,
 ) -> String {
-    if parent_precedence > precedence {
+    if parent_weight > weight {
         format!("\\left({}\\right)", sub_tree_str)
     } else {
         sub_tree_str
     }
 }
 
-pub fn ast_to_latex<A>(ast: &AstNode<A>, parent_precedence: Option<u32>) -> String
+pub fn ast_to_latex<A>(ast: &AstNode<A>, parent_weight: Option<u32>) -> String
 where
     A: Clone + PartialEq,
 {
-    let precedence = operator_precedence(ast);
+    let weight = node_weight(ast);
 
     use AstNode::*;
     match ast {
@@ -85,32 +85,32 @@ where
         }
         NamedValue { name, .. } => greek_letter(name),
         Negation { arg, .. } => {
-            format!("-{}", ast_to_latex(arg, precedence))
+            format!("-{}", ast_to_latex(arg, weight))
         }
         Add { nodes, .. } => {
             let add_str = nodes
                 .iter()
-                .map(|node| ast_to_latex(node, precedence))
+                .map(|node| ast_to_latex(node, weight))
                 .collect::<Vec<_>>()
                 .join(" + ");
-            wrap_with_parentheses(add_str, precedence, parent_precedence)
+            wrap_with_parentheses(add_str, weight, parent_weight)
         }
         Sub { lhs, rhs, .. } => wrap_with_parentheses(
             format!(
                 "{} - {}",
-                ast_to_latex(lhs, precedence),
-                ast_to_latex(rhs, precedence)
+                ast_to_latex(lhs, weight),
+                ast_to_latex(rhs, weight)
             ),
-            precedence,
-            parent_precedence,
+            weight,
+            parent_weight,
         ),
         Mul { nodes, .. } => {
             let mul_str = nodes
                 .iter()
-                .map(|node| ast_to_latex(node, precedence))
+                .map(|node| ast_to_latex(node, weight))
                 .collect::<Vec<_>>()
                 .join(" \\cdot ");
-            wrap_with_parentheses(mul_str, precedence, parent_precedence)
+            wrap_with_parentheses(mul_str, weight, parent_weight)
         }
         Div { lhs, rhs, .. } => {
             let frac_str = format!(
@@ -119,39 +119,39 @@ where
                 ast_to_latex(rhs, None)
             );
 
-            wrap_with_parentheses(frac_str, precedence, parent_precedence)
+            wrap_with_parentheses(frac_str, weight, parent_weight)
         }
         Pow { lhs, rhs, .. } => {
             let pow_str = format!(
                 "{}^{{{}}}",
-                ast_to_latex(lhs, precedence),
-                ast_to_latex(rhs, precedence)
+                ast_to_latex(lhs, weight),
+                ast_to_latex(rhs, weight)
             );
 
-            wrap_with_parentheses(pow_str, precedence, parent_precedence)
+            wrap_with_parentheses(pow_str, weight, parent_weight)
         }
         FunctionCall { name, args, .. } if name == "sin" && args.len() == 1 => {
             format!(
                 "\\sin\\left({}\\right)",
-                ast_to_latex(args.first().unwrap(), precedence)
+                ast_to_latex(args.first().unwrap(), weight)
             )
         }
         FunctionCall { name, args, .. } if name == "cos" && args.len() == 1 => {
             format!(
                 "\\cos\\left({}\\right)",
-                ast_to_latex(args.first().unwrap(), precedence)
+                ast_to_latex(args.first().unwrap(), weight)
             )
         }
         FunctionCall { name, args, .. } if name == "tan" && args.len() == 1 => {
             format!(
                 "\\tan\\left({}\\right)",
-                ast_to_latex(args.first().unwrap(), precedence)
+                ast_to_latex(args.first().unwrap(), weight)
             )
         }
         FunctionCall { name, args, .. } if name == "sqrt" && args.len() == 1 => {
             format!(
                 "\\sqrt{{{}}}",
-                ast_to_latex(args.first().unwrap(), precedence)
+                ast_to_latex(args.first().unwrap(), weight)
             )
         }
         FunctionCall { name, args, .. } => {
@@ -169,7 +169,7 @@ where
                 if !block_str.is_empty() {
                     block_str.push_str(" \\\\\n");
                 }
-                block_str.push_str(&ast_to_latex(node, parent_precedence));
+                block_str.push_str(&ast_to_latex(node, parent_weight));
             }
             block_str
         }
