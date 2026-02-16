@@ -16,7 +16,7 @@ pub enum Number {
 
 impl Number {
     pub fn from_i64(value: i64) -> Self {
-        Number::Integer(BigInteger::from_i64(value))
+        Self::Integer(BigInteger::from_i64(value))
     }
 
     pub fn from_f64(_value: f64) -> Self {
@@ -37,22 +37,15 @@ impl Number {
 
     pub fn is_zero(&self) -> bool {
         match self {
-            Number::Integer(i) => i.is_zero(),
-            Number::Rational(r) => r.is_zero(),
+            Self::Integer(i) => i.is_zero(),
+            Self::Rational(r) => r.is_zero(),
         }
     }
 
     pub fn is_one(&self) -> bool {
         match self {
-            Number::Integer(i) => i.is_one(),
-            Number::Rational(r) => r.is_one(),
-        }
-    }
-
-    pub fn to_hex_string(&self) -> String {
-        match self {
-            Number::Integer(i) => i.to_hex_string(),
-            Number::Rational(r) => r.to_hex_string(),
+            Self::Integer(i) => i.is_one(),
+            Self::Rational(r) => r.is_one(),
         }
     }
 }
