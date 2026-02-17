@@ -123,7 +123,7 @@ where
     A: Clone + PartialEq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(cmp_expr(self, other))
+        Some(self.cmp(other))
     }
 }
 

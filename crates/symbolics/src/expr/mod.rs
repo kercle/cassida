@@ -3,8 +3,8 @@ pub mod fmt;
 pub mod norm;
 pub mod ops;
 
-use numbers::Number;
 use atom::Atom;
+use numbers::Number;
 
 use crate::parser::ast::AstNode;
 
@@ -24,10 +24,48 @@ where
     },
 }
 
+impl<A, T: Into<Atom>> From<T> for Expr<A>
+where
+    A: Default + Clone + PartialEq,
+{
+    fn from(x: T) -> Self {
+        Expr::Atom {
+            entry: x.into(),
+            ann: A::default(),
+        }
+    }
+}
+
+impl<A: Clone + PartialEq> Expr<A> {
+    pub fn new_app_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
+        Expr::App {
+            head: Box::new(head),
+            args,
+            ann,
+        }
+    }
+
+    pub fn from_ast(_ast: &AstNode<A>) -> Self {
+        todo!()
+    }
+
+    pub fn is_symbol<T: AsRef<str>>(&self, s: T) -> bool {
+        matches!(self, Expr::Atom { entry: Atom::Symbol(t), .. } if t == s.as_ref())
+    }
+}
+
 impl<A> Expr<A>
 where
     A: Default + Clone + PartialEq,
 {
+    pub fn new_app(head: Expr<A>, args: Vec<Expr<A>>) -> Self {
+        Expr::App {
+            head: Box::new(head),
+            args,
+            ann: A::default(),
+        }
+    }
+
     pub fn new_number(value: Number) -> Self {
         Expr::Atom {
             entry: Atom::Number(value),
@@ -35,9 +73,9 @@ where
         }
     }
 
-    pub fn new_symbol<T: ToString>(symb: T) -> Self {
+    pub fn new_symbol<T: AsRef<str>>(symb: T) -> Self {
         Expr::Atom {
-            entry: Atom::Symbol(symb.to_string()),
+            entry: Atom::Symbol(symb.as_ref().to_string()),
             ann: A::default(),
         }
     }
@@ -45,11 +83,19 @@ where
     pub fn from_i64(value: i64) -> Self {
         Self::new_number(Number::from_i64(value))
     }
-}
 
-impl<A: Clone + PartialEq> Expr<A> {
-    pub fn from_ast(_ast: &AstNode<A>) -> Self {
-        todo!()
+    pub fn drop_annotation(self) -> Self {
+        match self {
+            Expr::Atom { entry, .. } => Expr::Atom {
+                entry,
+                ann: A::default(),
+            },
+            Expr::App { head, args, .. } => Expr::App {
+                head,
+                args,
+                ann: A::default(),
+            },
+        }
     }
 }
 
