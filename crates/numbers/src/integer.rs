@@ -216,6 +216,10 @@ impl BigInteger {
         self.digits.get(index).cloned().unwrap_or_default()
     }
 
+    pub fn digits(&self) -> &Vec<Digit> {
+        &self.digits
+    }
+
     fn cmp_digits(f: CompareFunction, lhs: &[Digit], rhs: &[Digit]) -> bool {
         if let CompareFunction::Equal = f {
             return !Self::cmp_digits(CompareFunction::NotEqual, lhs, rhs);

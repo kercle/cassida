@@ -1,4 +1,9 @@
-use std::{cmp::Ordering, fmt, str::FromStr};
+use std::{
+    cmp::Ordering,
+    fmt,
+    hash::{Hash, Hasher},
+    str::FromStr,
+};
 
 use crate::{integer::BigInteger, rational::BigRational};
 
@@ -109,6 +114,24 @@ impl fmt::Display for Number {
         match self {
             Number::Integer(i) => write!(f, "{}", i),
             Number::Rational(r) => write!(f, "{}/{}", r.numerator(), r.denominator()),
+        }
+    }
+}
+
+impl Hash for Number {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        use Number::*;
+
+        match self {
+            Integer(x) => {
+                0u8.hash(state);
+                x.digits().hash(state);
+            }
+            Rational(x) => {
+                1u8.hash(state);
+                x.numerator().digits().hash(state);
+                x.denominator().digits().hash(state);
+            }
         }
     }
 }
