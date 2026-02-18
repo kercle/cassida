@@ -1,7 +1,7 @@
 use crate::{Number, integer::BigInteger, rational::BigRational};
 use std::ops;
 
-impl ops::Add for Number {
+impl ops::Add for &Number {
     type Output = Number;
 
     fn add(self, other: Self) -> Self::Output {
@@ -16,17 +16,33 @@ impl ops::Add for Number {
                     Rational(ret)
                 }
             }
-            (Integer(a), Rational(b)) => Rational(BigRational::from_big_integer(a)) + Rational(b),
-            (Rational(a), Integer(b)) => Rational(a) + Rational(BigRational::from_big_integer(b)),
+            (Integer(a), Rational(b)) => Rational(BigRational::from_big_integer(a.clone()) + b),
+            (Rational(a), Integer(b)) => Rational(a + BigRational::from_big_integer(b.clone())),
         }
     }
 }
 
-impl ops::Add for &Number {
+impl ops::Add for Number {
     type Output = Number;
 
     fn add(self, other: Self) -> Self::Output {
-        self.clone() + other.clone()
+        &self + &other
+    }
+}
+
+impl ops::Add<&Number> for Number {
+    type Output = Number;
+
+    fn add(self, other: &Self) -> Self::Output {
+        &self + other
+    }
+}
+
+impl ops::Add<Number> for &Number {
+    type Output = Number;
+
+    fn add(self, other: Number) -> Self::Output {
+        self + &other
     }
 }
 
@@ -72,7 +88,7 @@ impl ops::Sub for Number {
     }
 }
 
-impl ops::Mul for Number {
+impl ops::Mul for &Number {
     type Output = Number;
 
     fn mul(self, other: Self) -> Self::Output {
@@ -88,17 +104,33 @@ impl ops::Mul for Number {
                     Rational(ret)
                 }
             }
-            (Integer(a), Rational(b)) => Rational(BigRational::from_big_integer(a)) * Rational(b),
-            (Rational(a), Integer(b)) => Rational(a) * Rational(BigRational::from_big_integer(b)),
+            (Integer(a), Rational(b)) => Rational(BigRational::from_big_integer(a.clone()) * b),
+            (Rational(a), Integer(b)) => Rational(a * BigRational::from_big_integer(b.clone())),
         }
     }
 }
 
-impl ops::Mul for &Number {
+impl ops::Mul for Number {
     type Output = Number;
 
     fn mul(self, other: Self) -> Self::Output {
-        self.clone() * other.clone()
+        &self * &other
+    }
+}
+
+impl ops::Mul<&Number> for Number {
+    type Output = Number;
+
+    fn mul(self, other: &Self) -> Self::Output {
+        &self * other
+    }
+}
+
+impl ops::Mul<Number> for &Number {
+    type Output = Number;
+
+    fn mul(self, other: Number) -> Self::Output {
+        self * &other
     }
 }
 

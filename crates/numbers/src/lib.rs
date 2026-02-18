@@ -1,8 +1,5 @@
 use std::{
-    cmp::Ordering,
-    fmt,
-    hash::{Hash, Hasher},
-    str::FromStr,
+    cmp::Ordering, fmt, hash::{Hash, Hasher}, iter::{Product, Sum}, str::FromStr
 };
 
 use crate::{integer::BigInteger, rational::BigRational};
@@ -133,5 +130,17 @@ impl Hash for Number {
                 x.denominator().digits().hash(state);
             }
         }
+    }
+}
+
+impl<'a> Sum<&'a Number> for Number {
+    fn sum<I: Iterator<Item = &'a Number>>(iter: I) -> Self {
+        iter.fold(Number::zero(), |a, b| a + b)
+    }
+}
+
+impl<'a> Product<&'a Number> for Number {
+    fn product<I: Iterator<Item = &'a Number>>(iter: I) -> Self {
+        iter.fold(Number::one(), |a, b| a * b)
     }
 }

@@ -1,8 +1,8 @@
 pub mod atom;
 pub mod fmt;
+pub mod hash;
 pub mod norm;
 pub mod ops;
-pub mod hash;
 
 use atom::Atom;
 use numbers::Number;
@@ -64,6 +64,16 @@ impl<A: Clone + PartialEq> Expr<A> {
 
     pub fn is_symbol<T: AsRef<str>>(&self, s: T) -> bool {
         matches!(self, Expr::Atom { entry: Atom::Symbol(t), .. } if t == s.as_ref())
+    }
+
+    pub fn is_number(&self) -> bool {
+        matches!(
+            self,
+            Expr::Atom {
+                entry: Atom::Number(_),
+                ..
+            }
+        )
     }
 }
 

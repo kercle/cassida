@@ -1,9 +1,20 @@
-use crate::expr::Expr;
+use numbers::Number;
+
+use crate::expr::{Expr, atom::Atom};
 
 impl<A: Clone + PartialEq + Default> Expr<A> {
     pub fn normalize(self) -> Self {
-        self.flatten(|e| e.is_symbol("Add") || e.is_symbol("Mul"))
-            .sort_args(|e| e.is_symbol("Add") || e.is_symbol("Mul"))
+        self.flatten(|e: &Expr<A>| e.is_symbol("Add") || e.is_symbol("Mul"))
+            .fold_constants(|h: &Expr<A>, c_iter: &mut dyn Iterator<Item = &Number>| {
+                if h.is_symbol("Add") {
+                    Some(c_iter.sum())
+                } else if h.is_symbol("Mul") {
+                    Some(c_iter.product())
+                } else {
+                    None
+                }
+            })
+            .sort_args(|e: &Expr<A>| e.is_symbol("Add") || e.is_symbol("Mul"))
     }
 
     /// Flattens nested compounds whenever `head_predicate`
@@ -77,6 +88,40 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
             }
         }
     }
+
+    pub fn fold_constants(
+        self,
+        fold_op: impl Fn(&Expr<A>, &mut dyn Iterator<Item = &Number>) -> Option<Number> + Copy,
+    ) -> Self {
+        match self {
+            Expr::Atom { .. } => self.drop_annotation(),
+            Expr::Compound { head, args, .. } => {
+                // Split constant and other arguments
+                let (mut c_args, mut args): (Vec<Expr<A>>, Vec<Expr<A>>) = args
+                    .into_iter()
+                    .map(|a| a.fold_constants(fold_op))
+                    .partition(|e| e.is_number());
+
+                // Extract a reference to the underlying numbers
+                let mut c_iter = c_args.iter().map(|c| match c {
+                    Expr::Atom {
+                        entry: Atom::Number(v),
+                        ..
+                    } => v,
+                    _ => unreachable!(),
+                });
+
+                // If constants in compound can be folded, do so. Otherwise reconstruct initial expression.
+                if let Some(value) = fold_op(&head, &mut c_iter) {
+                    args.push(Expr::new_number(value));
+                    Expr::new_compound(*head, args)
+                } else {
+                    args.append(&mut c_args);
+                    Expr::new_compound(*head, args)
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -128,6 +173,20 @@ mod tests {
                 x(),
                 mul(&[3.into(), add(&[1.into(), 1.into(), 5.into(), y()])]),
             ])
+        );
+    }
+
+    #[test]
+    fn test_expr_normalizing() {
+        let expr1 = add(&[
+            x(),
+            2.into(),
+            mul(&[3.into(), add(&[5.into(), y(), 1.into(), 1.into()])]),
+        ]);
+
+        assert_eq!(
+            expr1.normalize(),
+            add(&[2.into(), x(), mul(&[3.into(), add(&[7.into(), y()])]),])
         );
     }
 }

@@ -18,6 +18,22 @@ impl ops::Add for &BigRational {
     }
 }
 
+impl ops::Add<&BigRational> for BigRational {
+    type Output = BigRational;
+
+    fn add(self, other: &Self) -> Self::Output {
+        BigRational::add(&self, other)
+    }
+}
+
+impl ops::Add<BigRational> for &BigRational {
+    type Output = BigRational;
+
+    fn add(self, other: BigRational) -> Self::Output {
+        BigRational::add(self, &other)
+    }
+}
+
 impl ops::Sub for BigRational {
     type Output = Self;
 
@@ -47,6 +63,22 @@ impl ops::Mul for &BigRational {
 
     fn mul(self, other: Self) -> Self::Output {
         BigRational::mul(self, other)
+    }
+}
+
+impl ops::Mul<&BigRational> for BigRational {
+    type Output = BigRational;
+
+    fn mul(self, other: &Self) -> Self::Output {
+        BigRational::mul(&self, other)
+    }
+}
+
+impl ops::Mul<BigRational> for &BigRational {
+    type Output = BigRational;
+
+    fn mul(self, other: BigRational) -> Self::Output {
+        BigRational::mul(self, &other)
     }
 }
 
