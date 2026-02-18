@@ -6,6 +6,7 @@ use numbers::Number;
 pub enum Atom {
     Number(Number),
     Symbol(String),
+    StringLiteral(String),
 }
 
 impl Atom {
@@ -13,6 +14,7 @@ impl Atom {
         match self {
             Atom::Number(_) => 0,
             Atom::Symbol(_) => 1,
+            Atom::StringLiteral(_) => 2,
         }
     }
 

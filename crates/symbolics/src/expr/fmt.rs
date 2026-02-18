@@ -4,12 +4,11 @@ use crate::expr::{Atom, Expr};
 
 impl Debug for Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        let s = match self {
-            Atom::Number(value) => value.to_string(),
-            Atom::Symbol(name) => name.to_string(),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Atom::Number(value) => write!(f, "{value}"),
+            Atom::Symbol(name) => write!(f, "{name}"),
+            Atom::StringLiteral(value) => write!(f, "{value}"),
+        }
     }
 }
 

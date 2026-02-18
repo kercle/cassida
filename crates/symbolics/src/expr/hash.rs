@@ -15,6 +15,10 @@ impl Hash for Atom {
                 1u8.hash(state);
                 s.hash(state);
             }
+            StringLiteral(v) => {
+                2u8.hash(state);
+                v.hash(state);
+            }
         }
     }
 }
