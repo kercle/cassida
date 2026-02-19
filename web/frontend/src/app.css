@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+@plugin "daisyui" {
+    themes: all;
+}
+
+@import "@fortawesome/fontawesome-free/css/all.css";
