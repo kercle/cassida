@@ -40,11 +40,11 @@ impl<'a, A: Clone + PartialEq> Debug for Pattern<'a, A> {
             Blank {
                 bind_name,
                 match_head,
-            }
-            | BlankSeq {
+            } => write!(f, "Blank{{{bind_name:?}, {match_head:?}}}"),
+            BlankSeq {
                 bind_name,
                 match_head,
-            } => write!(f, "Blank{{{bind_name:?}, {match_head:?}}}"),
+            } => write!(f, "BlankSeq{{{bind_name:?}, {match_head:?}}}"),
             Compound { head, args } => write!(f, "Compound{{{head:?}, {args:?}}}"),
         }
     }
