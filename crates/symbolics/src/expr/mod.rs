@@ -11,6 +11,8 @@ pub mod pattern;
 use atom::Atom;
 use numbers::Number;
 
+use crate::parser::ast::ParserAst;
+
 #[derive(Clone, PartialEq)]
 pub enum Expr<A = ()> {
     Atom {
@@ -25,10 +27,7 @@ pub enum Expr<A = ()> {
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, PartialEq)]
-pub struct NormalizedExpr<A = ()>(Expr<A>)
-where
-    A: Clone + PartialEq;
+pub struct NormalizedExpr<A = ()>(Expr<A>);
 
 impl<A, T: Into<Atom>> From<T> for Expr<A>
 where
@@ -45,6 +44,12 @@ where
 impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
     pub fn new(expr: Expr<A>) -> Self {
         NormalizedExpr(expr.normalize())
+    }
+}
+
+impl<A> NormalizedExpr<A> {
+    pub fn take_expr(self) -> Expr<A> {
+        self.0
     }
 }
 
@@ -158,6 +163,16 @@ where
                 ann: A::default(),
             },
         }
+    }
+}
+
+pub struct ParserAstToExprError;
+
+impl<A: Clone + PartialEq> TryFrom<ParserAst<A>> for Expr {
+    type Error = ParserAstToExprError;
+
+    fn try_from(_: ParserAst<A>) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 

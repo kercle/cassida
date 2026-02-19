@@ -2,6 +2,12 @@ use std::fmt::Debug;
 
 use numbers::Number;
 
+use crate::expr::{Expr, NormalizedExpr, atom::Atom};
+
+pub const ADD_HEAD: &str = "Add";
+pub const MUL_HEAD: &str = "Mul";
+pub const POW_HEAD: &str = "Pow";
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParserAst<Annotation = ()>
 where
@@ -297,6 +303,54 @@ where
 
         f(mapped)
     }
+
+    fn try_from_inner(expr: Expr<A>) -> Result<Self, ExprToParserAstError> {
+        match expr {
+            Expr::Atom {
+                entry: Atom::Number(x),
+                ann,
+            } => Ok(ParserAst::new_constant(x).with_annotation(ann)),
+            Expr::Atom {
+                entry: Atom::Symbol(x),
+                ann,
+            } => Ok(ParserAst::new_named_value(x).with_annotation(ann)),
+            Expr::Atom {
+                entry: Atom::StringLiteral(_),
+                ..
+            } => todo!(),
+            Expr::Compound { head, args, ann } if head.matches_symbol(ADD_HEAD) => {
+                let args = args
+                    .into_iter()
+                    .map(|e| ParserAst::try_from_inner(e))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(ParserAst::new_add(args).with_annotation(ann))
+            }
+            Expr::Compound { head, args, ann } if head.matches_symbol(MUL_HEAD) => {
+                let args = args
+                    .into_iter()
+                    .map(|e| ParserAst::try_from_inner(e))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(ParserAst::new_mul(args).with_annotation(ann))
+            }
+            Expr::Compound {
+                head,
+                mut args,
+                ann,
+            } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
+                let rhs = ParserAst::<A>::try_from_inner(args.pop().unwrap())?;
+                let lhs = ParserAst::try_from_inner(args.pop().unwrap())?;
+                Ok(ParserAst::new_pow(lhs, rhs).with_annotation(ann))
+            }
+            Expr::Compound { head, args, ann } => {
+                let name = head.get_symbol().ok_or(ExprToParserAstError)?;
+                let args = args
+                    .into_iter()
+                    .map(|e| ParserAst::try_from_inner(e))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(ParserAst::new_function_call(name, args).with_annotation(ann))
+            }
+        }
+    }
 }
 
 impl<A> ParserAst<A>
@@ -391,5 +445,15 @@ where
                 annotation: f(annotation),
             },
         }
+    }
+}
+
+pub struct ExprToParserAstError;
+
+impl<A: Default + Clone + PartialEq> TryFrom<NormalizedExpr<A>> for ParserAst<A> {
+    type Error = ExprToParserAstError;
+
+    fn try_from(expr: NormalizedExpr<A>) -> Result<Self, ExprToParserAstError> {
+        Self::try_from_inner(expr.take_expr())
     }
 }
