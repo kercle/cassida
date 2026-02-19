@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_expr_flatten() {
-        let expr = 2 + x() + 3 * (5 + (1 + (1 + y())));
+        let expr: Expr<()> = 2 + x() + 3 * (5 + (1 + (1 + y())));
 
         assert_eq!(
             expr.flatten(|e| e.matches_symbol("Add")),

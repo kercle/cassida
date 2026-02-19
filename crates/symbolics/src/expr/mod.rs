@@ -1,6 +1,8 @@
 pub mod atom;
 pub mod fmt;
+pub mod generator;
 pub mod hash;
+pub mod macros;
 pub mod matcher;
 pub mod norm;
 pub mod ops;
@@ -196,7 +198,7 @@ mod tests {
     fn test_expr_ordering() {
         let x: Expr<()> = Expr::new_symbol("x");
 
-        let expr1 = 2 + x + 3 * (Expr::from_i64(5) + 2);
+        let expr1: Expr<()> = 2 + x + 3 * (Expr::from_i64(5) + 2);
         let expr2 = expr1.clone();
 
         assert_eq!(expr1, expr2);

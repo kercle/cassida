@@ -1,18 +1,8 @@
 use std::{cmp::Ordering, ops};
 
-use crate::expr::Expr;
+use numbers::Number;
 
-fn make_binary_expr<A: Clone + PartialEq + Default>(
-    symb: &str,
-    lhs: Expr<A>,
-    rhs: Expr<A>,
-) -> Expr<A> {
-    Expr::Compound {
-        head: Box::new(Expr::new_symbol(symb)),
-        args: vec![lhs, rhs],
-        ann: A::default(),
-    }
-}
+use crate::expr::Expr;
 
 fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
     use Expr::*;
@@ -47,66 +37,194 @@ fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
 }
 
 impl<A: Clone + PartialEq + Default> ops::Add for Expr<A> {
-    type Output = Self;
+    type Output = Expr<A>;
 
     fn add(self, other: Self) -> Self::Output {
-        make_binary_expr("Add", self, other)
+        Expr::new_compound(Expr::new_symbol("Add"), vec![self, other])
     }
 }
 
-impl<A: Clone + PartialEq + Default> ops::Add<i64> for Expr<A> {
-    type Output = Self;
+impl<A: Clone + PartialEq + Default> ops::Add for &Expr<A> {
+    type Output = Expr<A>;
 
-    fn add(self, other: i64) -> Self::Output {
-        make_binary_expr("Add", self, Expr::from_i64(other))
+    fn add(self, other: Self) -> Self::Output {
+        self.clone() + other.clone()
     }
 }
 
-impl<A: Clone + PartialEq + Default> ops::Add<Expr<A>> for i64 {
+impl<A: Clone + PartialEq + Default> ops::Add<Expr<A>> for &Expr<A> {
     type Output = Expr<A>;
 
     fn add(self, other: Expr<A>) -> Self::Output {
-        make_binary_expr("Add", Expr::from_i64(self), other)
+        self.clone() + other
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Add<&Expr<A>> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn add(self, other: &Expr<A>) -> Self::Output {
+        self + other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Add<i32> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn add(self, other: i32) -> Self::Output {
+        self + Expr::new_number(Number::from_i64(other as i64))
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Add<Expr<A>> for i32 {
+    type Output = Expr<A>;
+
+    fn add(self, other: Expr<A>) -> Self::Output {
+        Expr::new_number(Number::from_i64(self as i64)) + other
     }
 }
 
 impl<A: Clone + PartialEq + Default> ops::Sub for Expr<A> {
-    type Output = Self;
+    type Output = Expr<A>;
 
     fn sub(self, other: Self) -> Self::Output {
-        make_binary_expr("Sub", self, other)
+        Expr::new_compound(Expr::new_symbol("Sub"), vec![self, other])
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Sub for &Expr<A> {
+    type Output = Expr<A>;
+
+    fn sub(self, other: Self) -> Self::Output {
+        self.clone() - other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Sub<Expr<A>> for &Expr<A> {
+    type Output = Expr<A>;
+
+    fn sub(self, other: Expr<A>) -> Self::Output {
+        self.clone() - other
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Sub<&Expr<A>> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn sub(self, other: &Expr<A>) -> Self::Output {
+        self - other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Sub<i32> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn sub(self, other: i32) -> Self::Output {
+        self - Expr::new_number(Number::from_i64(other as i64))
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Sub<Expr<A>> for i32 {
+    type Output = Expr<A>;
+
+    fn sub(self, other: Expr<A>) -> Self::Output {
+        Expr::new_number(Number::from_i64(self as i64)) - other
     }
 }
 
 impl<A: Clone + PartialEq + Default> ops::Mul for Expr<A> {
-    type Output = Self;
+    type Output = Expr<A>;
 
     fn mul(self, other: Self) -> Self::Output {
-        make_binary_expr("Mul", self, other)
+        Expr::new_compound(Expr::new_symbol("Mul"), vec![self, other])
     }
 }
 
-impl<A: Clone + PartialEq + Default> ops::Mul<i64> for Expr<A> {
-    type Output = Self;
+impl<A: Clone + PartialEq + Default> ops::Mul for &Expr<A> {
+    type Output = Expr<A>;
 
-    fn mul(self, other: i64) -> Self::Output {
-        make_binary_expr("Mul", self, Expr::from_i64(other))
+    fn mul(self, other: Self) -> Self::Output {
+        self.clone() * other.clone()
     }
 }
 
-impl<A: Clone + PartialEq + Default> ops::Mul<Expr<A>> for i64 {
+impl<A: Clone + PartialEq + Default> ops::Mul<Expr<A>> for &Expr<A> {
     type Output = Expr<A>;
 
     fn mul(self, other: Expr<A>) -> Self::Output {
-        make_binary_expr("Mul", Expr::from_i64(self), other)
+        self.clone() * other
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Mul<&Expr<A>> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn mul(self, other: &Expr<A>) -> Self::Output {
+        self * other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Mul<i32> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn mul(self, other: i32) -> Self::Output {
+        self * Expr::new_number(Number::from_i64(other as i64))
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Mul<Expr<A>> for i32 {
+    type Output = Expr<A>;
+
+    fn mul(self, other: Expr<A>) -> Self::Output {
+        Expr::new_number(Number::from_i64(self as i64)) * other
     }
 }
 
 impl<A: Clone + PartialEq + Default> ops::Div for Expr<A> {
-    type Output = Self;
+    type Output = Expr<A>;
 
     fn div(self, other: Self) -> Self::Output {
-        make_binary_expr("Div", self, other)
+        Expr::new_compound(Expr::new_symbol("Div"), vec![self, other])
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Div for &Expr<A> {
+    type Output = Expr<A>;
+
+    fn div(self, other: Self) -> Self::Output {
+        self.clone() / other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Div<Expr<A>> for &Expr<A> {
+    type Output = Expr<A>;
+
+    fn div(self, other: Expr<A>) -> Self::Output {
+        self.clone() / other
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Div<&Expr<A>> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn div(self, other: &Expr<A>) -> Self::Output {
+        self / other.clone()
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Div<i32> for Expr<A> {
+    type Output = Expr<A>;
+
+    fn div(self, other: i32) -> Self::Output {
+        self / Expr::new_number(Number::from_i64(other as i64))
+    }
+}
+
+impl<A: Clone + PartialEq + Default> ops::Div<Expr<A>> for i32 {
+    type Output = Expr<A>;
+
+    fn div(self, other: Expr<A>) -> Self::Output {
+        Expr::new_number(Number::from_i64(self as i64)) / other
     }
 }
 
