@@ -121,3 +121,43 @@ impl ops::Add<i32> for SymbolGenerator {
         self.build() + other
     }
 }
+
+impl ops::Mul for SymbolGenerator {
+    type Output = Expr;
+
+    fn mul(self, other: Self) -> Self::Output {
+        self.build() * other.build()
+    }
+}
+
+impl ops::Mul<SymbolGenerator> for Expr {
+    type Output = Expr;
+
+    fn mul(self, other: SymbolGenerator) -> Self::Output {
+        self * other.build()
+    }
+}
+
+impl ops::Mul<Expr> for SymbolGenerator {
+    type Output = Expr;
+
+    fn mul(self, other: Expr) -> Self::Output {
+        self.build() * other
+    }
+}
+
+impl ops::Mul<SymbolGenerator> for i32 {
+    type Output = Expr;
+
+    fn mul(self, other: SymbolGenerator) -> Self::Output {
+        self * other.build()
+    }
+}
+
+impl ops::Mul<i32> for SymbolGenerator {
+    type Output = Expr;
+
+    fn mul(self, other: i32) -> Self::Output {
+        self.build() * other
+    }
+}
