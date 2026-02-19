@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use numbers::Number;
 
 use crate::{
@@ -46,6 +48,11 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
         ))
     } else if head.matches_symbol(MUL_HEAD) {
         let value: Number = c_iter.product();
+
+        if value.is_zero() {
+            return Some(Number::zero().into());
+        }
+
         let is_neutral_element = value.is_one();
         Some(cannonical_fold_ac_with_neutral_el(
             head,
@@ -60,9 +67,34 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
 
 impl<A: Clone + PartialEq + Default> Expr<A> {
     pub fn normalize(self) -> Self {
-        self.flatten(|e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD))
-            .fold_constants(|head, c_iter, args_rest| cannonical_fold_op(head, c_iter, args_rest))
-            .sort_args(|e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD))
+        let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
+
+        let mut last_hash = None;
+        let mut current = self;
+
+        loop {
+            current = current
+                .flatten(&head_predicate)
+                .fold_constants(|head, c_iter, args_rest| {
+                    cannonical_fold_op(head, c_iter, args_rest)
+                })
+                .sort_args(&head_predicate);
+
+            let mut state = DefaultHasher::new();
+            current.hash(&mut state);
+            let current_hash = state.finish();
+
+            if let Some(last_hash) = last_hash {
+                if current_hash == last_hash {
+                    // if hashes agree, assume fixed point
+                    break;
+                }
+            }
+
+            last_hash = Some(current_hash);
+        }
+
+        current
     }
 
     /// Flattens nested compounds whenever `head_predicate`
