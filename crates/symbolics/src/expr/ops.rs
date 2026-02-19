@@ -108,7 +108,7 @@ impl<A: Clone + PartialEq + Default> ops::Sub for Expr<A> {
     type Output = Expr<A>;
 
     fn sub(self, other: Self) -> Self::Output {
-        Expr::new_compound(Expr::new_symbol("Sub"), vec![self, other])
+        Expr::new_compound(Expr::new_symbol("Add"), vec![self, other * -1])
     }
 }
 

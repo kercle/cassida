@@ -67,6 +67,12 @@ impl<A: Clone + PartialEq> NormalizedExpr<A> {
     }
 }
 
+impl<A: Clone + PartialEq> AsRef<Expr<A>> for NormalizedExpr<A> {
+    fn as_ref(&self) -> &Expr<A> {
+        &self.0
+    }
+}
+
 impl<A> Expr<A> {
     pub fn new_compound_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
         Expr::Compound {

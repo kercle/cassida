@@ -1,4 +1,7 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::{
+    collections::HashMap,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use numbers::Number;
 
@@ -206,8 +209,69 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 }
 
 impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
-    pub fn collect_like_terms(self) -> Expr<A> {
-        todo!()
+    fn split_constant_of_commutative_op(self) -> (Number, Expr<A>) {
+        // We are normalized, so if there is a constant, it's the first arg
+        // in a commutative operation.
+
+        let expr = self.take_expr();
+        match expr {
+            Expr::Compound { head, mut args, .. } if head.matches_symbol(MUL_HEAD) => {
+                if let Some(coeff) = args.first().map(|e| e.get_number()).flatten() {
+                    let coeff = coeff.clone();
+                    let _ = args.swap_remove(0);
+                    (coeff.clone(), Expr::new_compound(*head, args).normalize())
+                } else {
+                    (Number::one(), Expr::new_compound(*head, args))
+                }
+            }
+            _ => (Number::one(), expr),
+        }
+    }
+
+    fn collect_like_terms_add_head(args: Vec<Expr<A>>) -> NormalizedExpr<A> {
+        // Collect like terms preserves normalization
+        let coeff_expr_pair_iter = args
+            .into_iter()
+            .map(|e| NormalizedExpr(e).split_constant_of_commutative_op());
+
+        let mut args_map: HashMap<Expr<A>, Number> = HashMap::new();
+        for (n, e) in coeff_expr_pair_iter {
+            println!("PAIR: ({n:?}, {e:?})");
+            if let Some(coeff_current) = args_map.get_mut(&e) {
+                *coeff_current += n;
+            } else {
+                args_map.insert(e, n);
+            }
+        }
+
+        let new_args = args_map
+            .drain()
+            .map(|(e, n)| e * Expr::new_number(n))
+            .collect();
+
+        NormalizedExpr::new(Expr::new_compound(ADD_HEAD, new_args))
+    }
+
+    pub fn collect_like_terms(self) -> NormalizedExpr<A> {
+        let expr = self.take_expr();
+
+        match expr {
+            Expr::Atom { .. } => NormalizedExpr(expr.drop_annotation()),
+            Expr::Compound { head, args, .. } => {
+                // We get a normalized tree, so we can initialize NormalizedExpr
+                // without normalization.
+                let args: Vec<Expr<A>> = args
+                    .into_iter()
+                    .map(|a| NormalizedExpr(a).collect_like_terms().take_expr())
+                    .collect();
+
+                if head.matches_symbol(ADD_HEAD) {
+                    Self::collect_like_terms_add_head(args)
+                } else {
+                    NormalizedExpr(Expr::new_compound(*head, args))
+                }
+            }
+        }
     }
 }
 
@@ -277,5 +341,14 @@ mod tests {
                 mul(&[3.into(), add(&[7.into(), y.build()])]),
             ])
         );
+    }
+
+    #[test]
+    fn test_gather_like_terms_in_add() {
+        let (x, y) = symbol!("x", "y");
+
+        let e = NormalizedExpr::new(exp(1 + x + 2 * x - 7 - 8 * x + y * x));
+
+        dbg!(e.collect_like_terms().take_expr());
     }
 }

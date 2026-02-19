@@ -47,7 +47,7 @@ impl ops::Add<Number> for &Number {
 }
 
 impl ops::AddAssign for Number {
-    fn add_assign(&mut self, other: Number) {
+    fn add_assign(&mut self, other: Self) {
         let new_value = self.clone() + other;
         *self = new_value;
     }
