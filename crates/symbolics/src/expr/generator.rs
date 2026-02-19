@@ -38,12 +38,12 @@ pub fn f() -> Expr<()> {
     Expr::new_compound(Expr::new_symbol("f"), Vec::new())
 }
 
-pub fn g(a: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("f"), vec![a])
+pub fn g<T: Into<Expr>>(a: T) -> Expr<()> {
+    Expr::new_compound(Expr::new_symbol("f"), vec![a.into()])
 }
 
-pub fn h(a: Expr, b: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("f"), vec![a, b])
+pub fn h<S: Into<Expr>, T: Into<Expr>>(a: S, b: T) -> Expr<()> {
+    Expr::new_compound(Expr::new_symbol("f"), vec![a.into(), b.into()])
 }
 
 pub fn cos(a: Expr) -> Expr<()> {
