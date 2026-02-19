@@ -1,5 +1,9 @@
 use std::{
-    cmp::Ordering, fmt, hash::{Hash, Hasher}, iter::{Product, Sum}, str::FromStr
+    cmp::Ordering,
+    fmt,
+    hash::{Hash, Hasher},
+    iter::{Product, Sum},
+    str::FromStr,
 };
 
 use crate::{integer::BigInteger, rational::BigRational};
@@ -51,11 +55,40 @@ impl Number {
         }
     }
 
+    pub fn is_minus_one(&self) -> bool {
+        match self {
+            Self::Integer(i) => i.is_minus_one(),
+            Self::Rational(r) => r.is_minus_one(),
+        }
+    }
+
+    pub fn is_positive(&self) -> bool {
+        match self {
+            Self::Integer(i) => i.is_positive(),
+            Self::Rational(r) => r.is_positive(),
+        }
+    }
+
+    pub fn is_negative(&self) -> bool {
+        match self {
+            Self::Integer(i) => i.is_negative(),
+            Self::Rational(r) => r.is_negative(),
+        }
+    }
+
     pub fn to_rational(self) -> Result<BigRational, String> {
         use Number::*;
         match self {
             Integer(v) => Ok(BigRational::from_big_integer(v)),
             Rational(v) => Ok(v),
+        }
+    }
+
+    pub fn abs(&self) -> Self {
+        use Number::*;
+        match self {
+            Integer(v) => Integer(v.abs()),
+            Rational(v) => Rational(v.abs()),
         }
     }
 

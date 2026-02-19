@@ -72,6 +72,10 @@ impl BigInteger {
         BigInteger::from_u64(1)
     }
 
+    pub fn minus_one() -> Self {
+        BigInteger::from_i64(-1)
+    }
+
     pub fn from_str_radix(s: &str, radix: u32) -> Result<Self, String> {
         if radix != 10 {
             return Err(format!("Unsupported radix: {}", radix));
@@ -134,6 +138,9 @@ impl BigInteger {
         }
 
         true
+    }
+    pub fn is_minus_one(&self) -> bool {
+        self.eq_inner(&BigInteger::minus_one())
     }
 
     pub fn is_one(&self) -> bool {

@@ -5,7 +5,10 @@ use numbers::Number;
 use crate::expr::{Expr, NormalizedExpr, atom::Atom};
 
 pub const ADD_HEAD: &str = "Add";
+pub const SUB_HEAD: &str = "Sub";
 pub const MUL_HEAD: &str = "Mul";
+pub const DIV_HEAD: &str = "Div";
+pub const NEG_HEAD: &str = "Neg";
 pub const POW_HEAD: &str = "Pow";
 
 #[derive(Debug, Clone, PartialEq)]
@@ -320,10 +323,51 @@ where
             } => todo!(),
             Expr::Compound {
                 head,
-                args,
+                mut args,
                 annotation,
-            } if head.matches_symbol(ADD_HEAD) => {
-                let args = args
+            } if head.matches_symbol(ADD_HEAD) && !args.is_empty() => {
+                args.reverse();
+
+                let mut new_args = Vec::with_capacity(args.len());
+
+                let (coeff, term) = NormalizedExpr::new(args.pop().unwrap()).split_coefficient();
+                if coeff.is_one() {
+                    new_args.push(term);
+                } else if coeff.is_minus_one() {
+                    new_args.push(Expr::new_compound(NEG_HEAD, vec![term]));
+                } else if coeff.is_zero() {
+                    // In normalized expression, this should not happen
+                    unreachable!()
+                } else {
+                    new_args.push(Expr::new_compound(MUL_HEAD, vec![coeff.into(), term]));
+                }
+
+                while let Some(arg) = args.pop() {
+                    let (coeff, term) = NormalizedExpr::new(arg).split_coefficient();
+
+                    if coeff.is_one() {
+                        new_args.push(term);
+                    } else if coeff.is_minus_one() {
+                        let lhs = new_args.pop().unwrap();
+                        new_args.push(Expr::new_compound(SUB_HEAD, vec![lhs, term]));
+                    } else if coeff.is_negative() {
+                        let lhs = new_args.pop().unwrap();
+                        new_args.push(Expr::new_compound(
+                            SUB_HEAD,
+                            vec![
+                                lhs,
+                                Expr::new_compound(MUL_HEAD, vec![coeff.abs().into(), term]),
+                            ],
+                        ));
+                    } else if coeff.is_zero() {
+                        // In normalized expression, this should not happen
+                        unreachable!()
+                    } else {
+                        new_args.push(Expr::new_compound(MUL_HEAD, vec![coeff.into(), term]));
+                    }
+                }
+
+                let args = new_args
                     .into_iter()
                     .map(|e| ParserAst::try_from_inner(e))
                     .collect::<Result<Vec<_>, _>>()?;

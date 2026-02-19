@@ -226,7 +226,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 }
 
 impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
-    fn split_constant_of_commutative_op(self) -> (Number, Expr<A>) {
+    pub fn split_coefficient(self) -> (Number, Expr<A>) {
         // We are normalized, so if there is a constant, it's the first arg
         // in a commutative operation.
 
@@ -249,7 +249,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         // Collect like terms preserves normalization
         let coeff_expr_pair_iter = args
             .into_iter()
-            .map(|e| NormalizedExpr(e).split_constant_of_commutative_op());
+            .map(|e| NormalizedExpr(e).split_coefficient());
 
         let mut args_map: HashMap<Expr<A>, Number> = HashMap::new();
         for (n, e) in coeff_expr_pair_iter {

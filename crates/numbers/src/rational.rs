@@ -98,11 +98,31 @@ impl BigRational {
         self.numerator == self.denominator
     }
 
+    pub fn is_minus_one(&self) -> bool {
+        self.numerator.abs() == self.denominator.abs()
+            && self.numerator.sign() != self.denominator.sign()
+    }
+
+    pub fn is_negative(&self) -> bool {
+        self.numerator.sign() != self.denominator.sign()
+    }
+
+    pub fn is_positive(&self) -> bool {
+        self.numerator.sign() == self.denominator.sign()
+    }
+
     pub fn reduce(&mut self) {
         let q = gcd(self.numerator.clone(), self.denominator.clone());
 
         self.numerator = (&self.numerator / &q).unwrap_or(self.numerator.clone());
         self.denominator = (&self.denominator / &q).unwrap_or(self.denominator.clone());
+    }
+
+    pub fn abs(&self) -> Self {
+        Self {
+            numerator: self.numerator.abs(),
+            denominator: self.denominator.abs(),
+        }
     }
 
     pub fn add(&self, other: &BigRational) -> BigRational {

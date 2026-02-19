@@ -45,16 +45,6 @@ where
     }
 }
 
-pub struct ParserAstToExprError;
-
-impl<A: Clone + PartialEq> TryFrom<ParserAst<A>> for Expr {
-    type Error = ParserAstToExprError;
-
-    fn try_from(_: ParserAst<A>) -> Result<Self, Self::Error> {
-        todo!()
-    }
-}
-
 impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
     pub fn new(expr: Expr<A>) -> Self {
         NormalizedExpr(expr.normalize())
