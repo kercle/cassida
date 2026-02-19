@@ -332,7 +332,6 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
     pub fn resugar(self) -> Expr<A> {
         let expr = self.take_expr();
-        dbg!(&expr);
         match expr {
             Expr::Compound {
                 head,
