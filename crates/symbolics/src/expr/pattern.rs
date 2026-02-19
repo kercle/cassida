@@ -39,7 +39,8 @@ where
                 let h = e.head()?;
 
                 if h.matches_symbol(BLANK_ONE_HEAD) || h.matches_symbol(BLANK_SEQ_HEAD) {
-                    Some(Self::from_pattern_compound(e)?.with_bind_name(args.get(0)?.get_symbol()?))
+                    let bind_name = args.get(0)?.get_symbol()?;
+                    Some(Self::from_pattern_compound(e)?.with_bind_name(bind_name))
                 } else {
                     unimplemented!()
                 }
@@ -76,6 +77,7 @@ where
                 {
                     // There are possibly still non-literal patterns in tree -> descend
                     descend = true;
+                    break;
                 }
             }
         }
