@@ -36,6 +36,26 @@ fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
     }
 }
 
+impl<A> PartialOrd for Expr<A>
+where
+    A: Clone + PartialEq,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<A> Ord for Expr<A>
+where
+    A: Clone + PartialEq,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        cmp_expr(self, other)
+    }
+}
+
+impl<A> Eq for Expr<A> where A: Clone + PartialEq {}
+
 impl<A: Clone + PartialEq + Default> ops::Add for Expr<A> {
     type Output = Expr<A>;
 
@@ -235,23 +255,3 @@ impl<A: Clone + PartialEq + Default> ops::Neg for Expr<A> {
         -1 * self
     }
 }
-
-impl<A> PartialOrd for Expr<A>
-where
-    A: Clone + PartialEq,
-{
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<A> Ord for Expr<A>
-where
-    A: Clone + PartialEq,
-{
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        cmp_expr(self, other)
-    }
-}
-
-impl<A> Eq for Expr<A> where A: Clone + PartialEq {}
