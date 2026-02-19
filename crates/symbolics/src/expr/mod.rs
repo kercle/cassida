@@ -96,6 +96,20 @@ impl<A> Expr<A> {
         }
     }
 
+    pub fn args_len(&self) -> usize {
+        match self {
+            Expr::Atom { .. } => 0,
+            Expr::Compound { args, .. } => args.len(),
+        }
+    }
+
+    pub fn pop_arg(&mut self) -> Option<Self> {
+        match self {
+            Expr::Atom { .. } => None,
+            Expr::Compound { args, .. } => args.pop(),
+        }
+    }
+
     pub fn matches_symbol<T: AsRef<str>>(&self, s: T) -> bool {
         matches!(self, Expr::Atom { entry: Atom::Symbol(t), .. } if t == s.as_ref())
     }
@@ -118,6 +132,14 @@ impl<A> Expr<A> {
             } => Some(s),
             _ => None,
         }
+    }
+
+    pub fn is_number_zero(&self) -> bool {
+        self.get_number().map(|n| n.is_zero()).unwrap_or(false)
+    }
+
+    pub fn is_number_one(&self) -> bool {
+        self.get_number().map(|n| n.is_one()).unwrap_or(false)
     }
 
     pub fn is_number(&self) -> bool {

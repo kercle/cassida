@@ -104,6 +104,12 @@ impl<A: Clone + PartialEq + Default> ops::Add<Expr<A>> for i32 {
     }
 }
 
+impl<A: Clone + PartialEq + Default> ops::AddAssign for Expr<A> {
+    fn add_assign(&mut self, other: Expr<A>) {
+        *self = &*self + other;
+    }
+}
+
 impl<A: Clone + PartialEq + Default> ops::Sub for Expr<A> {
     type Output = Expr<A>;
 

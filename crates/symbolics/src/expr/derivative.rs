@@ -138,7 +138,7 @@ mod tests {
         let (x, y) = symbol!("x", "y");
         let e = NormalizedExpr::new(1 + 5 * x + y * pow(x, 2));
 
-        let result = derivative(e, "x").normalize();
+        let result = NormalizedExpr::new(derivative(e, "x")).collect_like_terms();
 
         dbg!(&result);
     }

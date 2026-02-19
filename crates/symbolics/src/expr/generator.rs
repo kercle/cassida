@@ -62,7 +62,10 @@ pub fn log(a: Expr) -> Expr<()> {
     Expr::new_compound(Expr::new_symbol("Log"), vec![a])
 }
 
-pub fn pow<S: Into<Expr>, T: Into<Expr>>(b: S, e: T) -> Expr {
+pub fn pow<A, S: Into<Expr<A>>, T: Into<Expr<A>>>(b: S, e: T) -> Expr<A>
+where
+    A: Default + Clone + PartialEq,
+{
     Expr::new_compound(Expr::new_symbol("Pow"), vec![b.into(), e.into()])
 }
 

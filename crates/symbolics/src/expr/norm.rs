@@ -6,8 +6,8 @@ use std::{
 use numbers::Number;
 
 use crate::{
-    expr::{Expr, NormalizedExpr},
-    parser::ast::{ADD_HEAD, MUL_HEAD},
+    expr::{Expr, NormalizedExpr, generator::pow},
+    parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD},
 };
 
 fn cannonical_fold_ac_with_neutral_el<A: Default + Clone + PartialEq>(
@@ -81,6 +81,23 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
             is_neutral_element,
             &mut args,
         ))
+    } else if head.matches_symbol(POW_HEAD) && args.len() == 2 {
+        let lhs = &args[0];
+        let rhs = &args[1];
+
+        if lhs.is_number_zero() {
+            if rhs.is_number_zero() {
+                None
+            } else {
+                Some(Number::zero().into())
+            }
+        } else if lhs.is_number_one() || rhs.is_number_zero() {
+            Some(Number::one().into())
+        } else if rhs.is_number_one() {
+            Some(lhs.clone())
+        } else {
+            None
+        }
     } else {
         None
     }
@@ -236,7 +253,6 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
         let mut args_map: HashMap<Expr<A>, Number> = HashMap::new();
         for (n, e) in coeff_expr_pair_iter {
-            println!("PAIR: ({n:?}, {e:?})");
             if let Some(coeff_current) = args_map.get_mut(&e) {
                 *coeff_current += n;
             } else {
@@ -250,6 +266,36 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
             .collect();
 
         NormalizedExpr::new(Expr::new_compound(ADD_HEAD, new_args))
+    }
+
+    fn collect_like_exponentials_in_mul(args: Vec<Expr<A>>) -> NormalizedExpr<A> {
+        // Collect like terms preserves normalization
+        let coeff_expr_pair_iter = args.into_iter().map(|mut e| {
+            if e.matches_head(POW_HEAD) && e.args_len() == 2 {
+                let rhs = e.pop_arg().unwrap();
+                let lhs = e.pop_arg().unwrap();
+
+                (lhs, rhs)
+            } else {
+                (e, Number::one().into())
+            }
+        });
+
+        let mut args_map: HashMap<Expr<A>, Expr<A>> = HashMap::new();
+        for (base, exponent) in coeff_expr_pair_iter {
+            if let Some(current_exponent) = args_map.get_mut(&base) {
+                *current_exponent += exponent;
+            } else {
+                args_map.insert(base, exponent);
+            }
+        }
+
+        let new_args = args_map
+            .drain()
+            .map(|(base, exponent)| pow(base, exponent))
+            .collect();
+
+        NormalizedExpr::new(Expr::new_compound(MUL_HEAD, new_args))
     }
 
     pub fn collect_like_terms(self) -> NormalizedExpr<A> {
@@ -267,6 +313,8 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
                 if head.matches_symbol(ADD_HEAD) {
                     Self::collect_like_terms_add_head(args)
+                } else if head.matches_symbol(MUL_HEAD) {
+                    Self::collect_like_exponentials_in_mul(args)
                 } else {
                     NormalizedExpr(Expr::new_compound(*head, args))
                 }
