@@ -21,6 +21,13 @@ pub enum Number {
 }
 
 impl Number {
+    pub fn new_rational_from_i64(numerator: i64, denominator: u64) -> Result<Self, String> {
+        Ok(Self::Rational(BigRational::new(
+            BigInteger::from_i64(numerator),
+            BigInteger::from_u64(denominator),
+        )?))
+    }
+
     pub fn from_i64(value: i64) -> Self {
         Self::Integer(BigInteger::from_i64(value))
     }

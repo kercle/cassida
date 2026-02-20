@@ -98,6 +98,67 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
                     + Expr::new_compound(CANNONICAL_HEAD_LOG, vec![lhs.clone()])
                         * derivative_inner(rhs, var))
         }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_EXP) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+            Expr::new_compound(CANNONICAL_HEAD_EXP, vec![x.clone()]) * derivative_inner(x, var)
+        }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_LOG) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+            Expr::new_compound(POW_HEAD, vec![x.clone(), (-1).into()]) * derivative_inner(x, var)
+        }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_COS) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+            Expr::new_compound(
+                MUL_HEAD,
+                vec![
+                    (-1).into(),
+                    Expr::new_compound(CANNONICAL_HEAD_SIN, vec![x.clone()]),
+                ],
+            ) * derivative_inner(x, var)
+        }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_SIN) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+            Expr::new_compound(CANNONICAL_HEAD_COS, vec![x.clone()]) * derivative_inner(x, var)
+        }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_TAN) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+            Expr::new_compound(
+                ADD_HEAD,
+                vec![
+                    1.into(),
+                    Expr::new_compound(
+                        POW_HEAD,
+                        vec![
+                            Expr::new_compound(CANNONICAL_HEAD_TAN, vec![x.clone()]),
+                            2.into(),
+                        ],
+                    ),
+                ],
+            ) * derivative_inner(x, var)
+        }
+        Expr::Compound { head, mut args, .. }
+            if head.matches_symbol(CANNONICAL_HEAD_SQRT) && args.len() == 1 =>
+        {
+            let x = args.pop().unwrap();
+
+            Expr::new_compound(
+                POW_HEAD,
+                vec![
+                    x.clone(),
+                    Expr::new_number(Number::new_rational_from_i64(-1, 2).unwrap()),
+                ],
+            ) * derivative_inner(x, var)
+        }
         _ => Expr::new_compound(
             CANNONICAL_HEAD_DERIVATIVE,
             vec![expr.annotation_to_default(), var.into()],
