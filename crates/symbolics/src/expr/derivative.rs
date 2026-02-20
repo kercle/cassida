@@ -14,28 +14,16 @@ where
     A: Default + Clone + PartialEq + Debug,
 {
     let expr = expr.drop_annotation();
-    let pattern_expr = raw_expr! { D[Pattern[f, Blank[]], Pattern[x, Blank[]]] };
+    let pattern_expr =
+        raw_expr! { D[Pattern[f, Blank[]], PatternTest[Pattern[x, Blank[]], IsSymbolQ]] };
     let pattern = Pattern::from_expr(&pattern_expr);
 
     expr.map_bottom_up(&|e| {
         if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
-            let f = ctx.get("f");
-            let x = ctx.get("x");
+            let f = ctx.get("f").unwrap();
+            let x = ctx.get("x").unwrap().get_symbol().unwrap();
 
-            if let (
-                Some(f),
-                Some(Expr::Atom {
-                    entry: Atom::Symbol(x),
-                    ..
-                }),
-            ) = (f, x)
-            {
-                derivative(NormalizedExpr::new(f.clone()), x)
-            } else {
-                todo!(
-                    "Implement type checking for patterns, s.t. I can guaranteed that x is symbol."
-                );
-            }
+            derivative(NormalizedExpr::new(f.clone()), x)
         } else {
             e
         }
