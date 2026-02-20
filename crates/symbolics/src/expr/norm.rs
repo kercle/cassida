@@ -258,6 +258,13 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     vec![lhs, Expr::new_compound(POW_HEAD, vec![rhs, (-1).into()])],
                 )
             }
+            Expr::Compound { head, mut args, .. }
+                if head.matches_symbol(CANNONICAL_HEAD_SQRT) && args.len() == 1 =>
+            {
+                let arg = args.pop().unwrap().desugar();
+                let one_half = Number::new_rational_from_i64(1, 2).unwrap();
+                Expr::new_compound(POW_HEAD, vec![arg, one_half.into()])
+            }
             Expr::Compound { head, args, .. } => {
                 let args: Vec<Expr<A>> = args.into_iter().map(|a| a.desugar()).collect();
                 Expr::new_compound(*head, args)
