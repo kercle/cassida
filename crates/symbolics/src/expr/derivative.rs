@@ -253,7 +253,7 @@ mod tests {
         assert_eq!(
             expr,
             raw_expr! {
-                Exp[Add[1, D[Sin[x], x], D[f[x], x], Mul[2, x]]]
+                Exp[Add[1, Cos[x], D[f[x], x], Mul[2, x]]]
             }
         );
     }
