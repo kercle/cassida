@@ -9,18 +9,37 @@ use crate::{
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD},
 };
 
-pub fn resolve_derivatives<A>(expr: NormalizedExpr<A>) -> Expr
+pub fn resolve_derivatives<A>(expr: Expr<A>) -> Expr
 where
     A: Default + Clone + PartialEq + Debug,
 {
-    let expr = expr.take_expr().drop_annotation();
-    let pattern = raw_expr! { D[Pattern[f, Blank[]], Pattern[x, Blank[]]] };
+    let expr = expr.drop_annotation();
+    let pattern_expr = raw_expr! { D[Pattern[f, Blank[]], Pattern[x, Blank[]]] };
+    let pattern = Pattern::from_expr(&pattern_expr);
 
-    if let Some(ctx) = MatchIter::new(&expr, &Pattern::from_expr(&pattern)).next() {
-        dbg!(&ctx);
-    }
+    expr.map_bottom_up(&|e| {
+        if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
+            let f = ctx.get("f");
+            let x = ctx.get("x");
 
-    expr
+            if let (
+                Some(f),
+                Some(Expr::Atom {
+                    entry: Atom::Symbol(x),
+                    ..
+                }),
+            ) = (f, x)
+            {
+                derivative(NormalizedExpr::new(f.clone()), x)
+            } else {
+                todo!(
+                    "Implement type checking for patterns, s.t. I can guaranteed that x is symbol."
+                );
+            }
+        } else {
+            e
+        }
+    })
 }
 
 pub fn derivative<A: Default + Clone + PartialEq>(expr: NormalizedExpr<A>, var: &str) -> Expr<A> {
@@ -90,7 +109,7 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
 mod tests {
     use super::*;
     use crate::{
-        expr::{NormalizedExpr, generator::*},
+        expr::{NormalizedExpr, generator::*, simplify::simplify},
         symbol,
     };
 
@@ -160,5 +179,19 @@ mod tests {
             .take_expr();
 
         assert_eq!(result, raw_expr! { Add[5, Mul[2, x, y]] });
+    }
+
+    #[test]
+    fn test_resolve_nested_derivate() {
+        let expr = raw_expr! {
+            Exp[1 + D[f[x] + Sin[x] + Pow[x, 2] + 2, x]]
+        };
+
+        assert_eq!(
+            simplify(resolve_derivatives(expr)).take_expr(),
+            raw_expr! {
+                Exp[Add[1, D[Sin[x], x], D[f[x], x], Mul[2, x]]]
+            }
+        );
     }
 }
