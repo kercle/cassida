@@ -2,7 +2,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    Ident, LitInt, LitStr, Result, Token,
+    Ident, LitInt, LitStr, Result, Token, parenthesized,
     parse::{Parse, ParseStream},
     parse_macro_input, token,
 };
@@ -160,7 +160,7 @@ fn parse_power(input: ParseStream) -> Result<Ast> {
     }
 }
 
-// <atom> ::= <number> | <named_value_or_function_call> | <string>
+// <atom> ::= <number> | <named_value_or_function_call> | <string> | "(" <sum> ")"
 fn parse_atom(input: ParseStream) -> Result<Ast> {
     // number
     if input.peek(LitInt) {
@@ -179,7 +179,20 @@ fn parse_atom(input: ParseStream) -> Result<Ast> {
         return parse_named_value_or_call(input);
     }
 
-    Err(input.error("expected number, string literal, or identifier"))
+    // "(" <sum> ")"
+    if input.peek(syn::token::Paren) {
+        let content;
+        syn::parenthesized!(content in input);
+
+        let expr = parse_sum(&content)?;
+
+        if !content.is_empty() {
+            return Err(content.error("unexpected tokens inside parentheses"));
+        }
+
+        return Ok(expr);
+    }
+    Err(input.error("expected number, string literal, identifier, or parenthesized expression"))
 }
 
 // <named_value_or_function_call> ::= <identifier>
