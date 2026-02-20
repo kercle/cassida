@@ -7,7 +7,7 @@ use axum::{
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use symbolics::{
-    expr::{Expr, NormalizedExpr},
+    expr::{Expr, simplify::simplify},
     format::MathDisplay,
     parser::{ast::ParserAst, parse},
 };
@@ -83,9 +83,9 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, String> {
     let ClientMessage::Eval(input) = inbound_msg;
 
     let ast_in = parse(&input).map_err(|err| format!("Error parsing input: {}", err))?;
-    let expr = NormalizedExpr::new(Expr::from_parser_ast(&ast_in)).collect_like_terms();
+    let result_expr = simplify(Expr::from_parser_ast(&ast_in));
 
-    if let Ok(ast_out) = ParserAst::try_from(expr) {
+    if let Ok(ast_out) = ParserAst::try_from(result_expr) {
         Ok(ServerMessage::EvalResult {
             input: ast_in.to_latex(),
             output: ast_out.to_latex(),

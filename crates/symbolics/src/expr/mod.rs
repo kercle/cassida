@@ -8,6 +8,7 @@ pub mod matcher;
 pub mod norm;
 pub mod ops;
 pub mod pattern;
+pub mod simplify;
 
 use atom::Atom;
 use numbers::Number;
