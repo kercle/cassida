@@ -17,6 +17,14 @@ pub fn is_application_of_log<A>(expr: Expr<A>) -> bool {
     expr.is_application_of(CANNONICAL_HEAD_LOG, 1)
 }
 
+// Roots
+
+pub const CANNONICAL_HEAD_SQRT: &str = "Sqrt";
+
+pub fn is_application_of_sqrt<A>(expr: Expr<A>) -> bool {
+    expr.is_application_of(CANNONICAL_HEAD_SQRT, 1)
+}
+
 // Trigonometry
 
 pub const CANNONICAL_HEAD_COS: &str = "Cos";

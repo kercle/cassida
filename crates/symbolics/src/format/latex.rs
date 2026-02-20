@@ -1,4 +1,4 @@
-use crate::parser::ast::ParserAst;
+use crate::{builtin::{CANNONICAL_HEAD_COS, CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT, CANNONICAL_HEAD_TAN}, parser::ast::ParserAst};
 use numbers::Number;
 
 fn greek_letter(name: &str) -> String {
@@ -130,25 +130,25 @@ where
 
             wrap_with_parentheses(pow_str, weight, parent_weight)
         }
-        FunctionCall { name, args, .. } if name == "sin" && args.len() == 1 => {
+        FunctionCall { name, args, .. } if name == CANNONICAL_HEAD_SIN && args.len() == 1 => {
             format!(
                 "\\sin\\left({}\\right)",
                 ast_to_latex(args.first().unwrap(), weight)
             )
         }
-        FunctionCall { name, args, .. } if name == "cos" && args.len() == 1 => {
+        FunctionCall { name, args, .. } if name == CANNONICAL_HEAD_COS && args.len() == 1 => {
             format!(
                 "\\cos\\left({}\\right)",
                 ast_to_latex(args.first().unwrap(), weight)
             )
         }
-        FunctionCall { name, args, .. } if name == "tan" && args.len() == 1 => {
+        FunctionCall { name, args, .. } if name == CANNONICAL_HEAD_TAN && args.len() == 1 => {
             format!(
                 "\\tan\\left({}\\right)",
                 ast_to_latex(args.first().unwrap(), weight)
             )
         }
-        FunctionCall { name, args, .. } if name == "sqrt" && args.len() == 1 => {
+        FunctionCall { name, args, .. } if name == CANNONICAL_HEAD_SQRT && args.len() == 1 => {
             format!(
                 "\\sqrt{{{}}}",
                 ast_to_latex(args.first().unwrap(), weight)
@@ -161,7 +161,7 @@ where
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            format!("{name}\\left[{args_str}\\right]")
+            format!("\\text{{{name}}}\\left[{args_str}\\right]")
         }
         Block { nodes, .. } => {
             let mut block_str = String::new();
