@@ -10,6 +10,17 @@ pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 #[derive(Debug)]
 pub enum PatternPredicate {
     IsSymbolQ,
+    IsNumberQ,
+}
+
+impl PatternPredicate {
+    pub fn check<A>(self, expr: Expr<A>) -> bool {
+        use PatternPredicate::*;
+        match self {
+            IsSymbolQ => expr.is_symbol(),
+            IsNumberQ => expr.is_number(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -21,6 +32,7 @@ impl FromStr for PatternPredicate {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "IsSymbolQ" => Ok(PatternPredicate::IsSymbolQ),
+            "IsNumberQ" => Ok(PatternPredicate::IsNumberQ),
             _ => Err(ParsePredicateError),
         }
     }
