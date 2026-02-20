@@ -292,6 +292,7 @@ where
             Pattern::Blank {
                 bind_name,
                 match_head,
+                predicate: _,
             } => {
                 if match_head.is_some() {
                     // match head constraint

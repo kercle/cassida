@@ -4,11 +4,17 @@ pub const PATTERN_HEAD: &str = "Pattern";
 pub const BLANK_ONE_HEAD: &str = "Blank";
 pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 
+#[derive(Debug)]
+pub enum PatternPredicate {
+    IsSymbolQ,
+}
+
 pub enum Pattern<'a, A> {
     Literal(&'a Expr<A>),
     Blank {
         bind_name: Option<String>,
         match_head: Option<&'a Expr<A>>,
+        predicate: Option<PatternPredicate>,
     },
     BlankSeq {
         bind_name: Option<String>,
@@ -54,6 +60,7 @@ where
                     Some(Pattern::Blank {
                         bind_name: None,
                         match_head: args.get(0),
+                        predicate: None,
                     })
                 } else if head.matches_symbol(BLANK_SEQ_HEAD) {
                     Some(Pattern::BlankSeq {
@@ -104,6 +111,7 @@ where
             Blank { match_head, .. } => Blank {
                 bind_name: Some(name.to_string()),
                 match_head,
+                predicate: None,
             },
             BlankSeq { match_head, .. } => BlankSeq {
                 bind_name: Some(name.to_string()),

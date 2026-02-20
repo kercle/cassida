@@ -40,7 +40,8 @@ impl<'a, A: Clone + PartialEq> Debug for Pattern<'a, A> {
             Blank {
                 bind_name,
                 match_head,
-            } => write!(f, "Blank{{{bind_name:?}, {match_head:?}}}"),
+                predicate,
+            } => write!(f, "Blank{{{bind_name:?}, {match_head:?}, {predicate:?}}}"),
             BlankSeq {
                 bind_name,
                 match_head,
