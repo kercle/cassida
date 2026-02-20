@@ -109,7 +109,7 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
 mod tests {
     use super::*;
     use crate::{
-        expr::{NormalizedExpr, generator::*, simplify::simplify},
+        expr::{NormalizedExpr, generator::*, simplify::Simplifier},
         symbol,
     };
 
@@ -187,8 +187,10 @@ mod tests {
             Exp[1 + D[f[x] + Sin[x] + Pow[x, 2] + 2, x]]
         };
 
+        let expr = Simplifier::new(resolve_derivatives(expr)).finish();
+
         assert_eq!(
-            simplify(resolve_derivatives(expr)).take_expr(),
+            expr,
             raw_expr! {
                 Exp[Add[1, D[Sin[x], x], D[f[x], x], Mul[2, x]]]
             }
