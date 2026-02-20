@@ -390,7 +390,7 @@ where
             Expr::Compound { head, args, .. } => {
                 let head = f(head.map_bottom_up(f));
                 let args = args.into_iter().map(|a| f(a.map_bottom_up(f))).collect();
-                Expr::new_compound(head, args)
+                f(Expr::new_compound(head, args))
             }
         }
     }

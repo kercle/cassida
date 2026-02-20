@@ -160,14 +160,16 @@ where
         FunctionCall { name, args, .. }
             if name == CANNONICAL_HEAD_DERIVATIVE && args.len() == 2 =>
         {
-            let f = args.get(1).unwrap();
-            let x = args.get(0).unwrap();
+            let f = args.get(0).unwrap();
+            let x = args.get(1).unwrap();
 
             let f_latex = ast_to_latex(f, weight);
             let x_latex = ast_to_latex(x, weight);
 
             if x.is_symbol() {
-                format!("\\frac{{ \text{{d}} }}{{ \text{{d}} {x_latex} }}\\left({f_latex}\\right)")
+                format!(
+                    "\\frac{{ \\text{{d}} }}{{ \\text{{d}} {x_latex} }}\\left({f_latex}\\right)"
+                )
             } else {
                 format!("\\text{{D}}\\left[{f_latex}, {x_latex}\\right]")
             }
