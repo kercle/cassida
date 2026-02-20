@@ -129,18 +129,12 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
 }
 
 impl<A: Clone + PartialEq + Default> Expr<A> {
-    pub fn normalize(self) -> Self {
-        let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
-
+    fn apply_till_fixed_point(self, f: impl Fn(Expr<A>) -> Expr<A>) -> Expr<A> {
         let mut last_hash = None;
         let mut current = self;
 
         loop {
-            current = current
-                .desugar()
-                .flatten(&head_predicate)
-                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
-                .sort_args(&head_predicate);
+            current = f(current);
 
             let mut state = DefaultHasher::new();
             current.hash(&mut state);
@@ -157,6 +151,27 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         }
 
         current
+    }
+
+    pub fn normalize(self) -> Self {
+        let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
+
+        self.apply_till_fixed_point(|e| {
+            e.desugar()
+                .flatten(&head_predicate)
+                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
+                .sort_args(&head_predicate)
+        })
+    }
+
+    pub fn canonicalize(self) -> Self {
+        let head_predicate = |e: &Expr<A>| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD);
+
+        self.apply_till_fixed_point(|e| {
+            e.flatten(&head_predicate)
+                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
+                .sort_args(&head_predicate)
+        })
     }
 
     /// Flattens nested compounds whenever `head_predicate`
@@ -567,7 +582,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
 #[cfg(test)]
 mod tests {
-    use expr_macro::raw_expr;
+    use expr_macro::{norm_expr, raw_expr};
 
     use super::*;
     use crate::{expr::generator::*, symbol};
@@ -649,5 +664,12 @@ mod tests {
         let expr = raw_expr! { 0 / 0 };
 
         dbg!(expr.normalize());
+    }
+
+    #[test]
+    fn test_resugar() {
+        let expr = norm_expr! { x - y };
+
+        assert_eq!(expr.resugar(), raw_expr! { Sub[x, y] });
     }
 }

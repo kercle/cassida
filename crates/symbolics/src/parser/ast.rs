@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use numbers::Number;
 
-use crate::expr::{Expr, NormalizedExpr, atom::Atom};
+use crate::expr::{Expr, atom::Atom};
 
 pub const ADD_HEAD: &str = "Add";
 pub const SUB_HEAD: &str = "Sub";
@@ -497,10 +497,10 @@ where
 
 pub struct ExprToParserAstError;
 
-impl<A: Default + Clone + PartialEq> TryFrom<NormalizedExpr<A>> for ParserAst<A> {
+impl<A: Default + Clone + PartialEq> TryFrom<Expr<A>> for ParserAst<A> {
     type Error = ExprToParserAstError;
 
-    fn try_from(expr: NormalizedExpr<A>) -> Result<Self, ExprToParserAstError> {
-        Self::try_from_inner(expr.resugar().normalize())
+    fn try_from(expr: Expr<A>) -> Result<Self, ExprToParserAstError> {
+        Self::try_from_inner(expr)
     }
 }

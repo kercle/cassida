@@ -21,7 +21,7 @@ fn print_markdown(input: &str) {
 
     let expr = NormalizedExpr::new(Expr::from_parser_ast(&ast));
 
-    if let Ok(ast) = ParserAst::try_from(expr) {
+    if let Ok(ast) = ParserAst::try_from(expr.take_expr()) {
         let latex = ast.to_latex();
         println!("$$\n{}\n$$", latex);
     } else {
