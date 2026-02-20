@@ -6,6 +6,7 @@ use std::{
 use numbers::Number;
 
 use crate::{
+    builtin::CANNONICAL_SYM_INDETERMINATE,
     expr::{Expr, NormalizedExpr, atom::Atom, generator::pow},
     parser::ast::{ADD_HEAD, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD},
 };
@@ -51,11 +52,21 @@ fn partition_constants<A: Default + Clone + PartialEq>(
     (c_args, v_args)
 }
 
+fn contains_indeterminate<A: Default + Clone + PartialEq>(exprs: &[Expr<A>]) -> bool {
+    exprs
+        .iter()
+        .any(|e| e.matches_symbol(CANNONICAL_SYM_INDETERMINATE))
+}
+
 fn cannonical_fold_op<A: Default + Clone + PartialEq>(
     head: &Expr<A>,
     args: &[Expr<A>],
 ) -> Option<Expr<A>> {
     if head.matches_symbol(ADD_HEAD) {
+        if contains_indeterminate(args) {
+            return Some(Expr::new_symbol(CANNONICAL_SYM_INDETERMINATE));
+        }
+
         let (c_args, mut args) = partition_constants(args);
         let constant: Number = c_args.iter().sum();
 
@@ -67,6 +78,10 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
             &mut args,
         ))
     } else if head.matches_symbol(MUL_HEAD) {
+        if contains_indeterminate(args) {
+            return Some(Expr::new_symbol(CANNONICAL_SYM_INDETERMINATE));
+        }
+
         let (c_args, mut args) = partition_constants(args);
         let constant: Number = c_args.iter().product();
 
@@ -82,12 +97,16 @@ fn cannonical_fold_op<A: Default + Clone + PartialEq>(
             &mut args,
         ))
     } else if head.matches_symbol(POW_HEAD) && args.len() == 2 {
+        if contains_indeterminate(args) {
+            return Some(Expr::new_symbol(CANNONICAL_SYM_INDETERMINATE));
+        }
+
         let lhs = &args[0];
         let rhs = &args[1];
 
         if lhs.is_number_zero() {
             if rhs.is_number_zero() || rhs.is_number_negative() {
-                None
+                Some(Expr::new_symbol(CANNONICAL_SYM_INDETERMINATE))
             } else {
                 Some(Number::zero().into())
             }
@@ -227,6 +246,17 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
             {
                 let arg = args.pop().unwrap().desugar();
                 Expr::new_compound(MUL_HEAD, vec![(-1).into(), arg])
+            }
+            Expr::Compound { head, mut args, .. }
+                if head.matches_symbol(DIV_HEAD) && args.len() == 2 =>
+            {
+                let rhs = args.pop().unwrap().desugar();
+                let lhs = args.pop().unwrap().desugar();
+
+                Expr::new_compound(
+                    MUL_HEAD,
+                    vec![lhs, Expr::new_compound(POW_HEAD, vec![rhs, (-1).into()])],
+                )
             }
             Expr::Compound { head, args, .. } => {
                 let args: Vec<Expr<A>> = args.into_iter().map(|a| a.desugar()).collect();
@@ -512,6 +542,8 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
 #[cfg(test)]
 mod tests {
+    use expr_macro::raw_expr;
+
     use super::*;
     use crate::{expr::generator::*, symbol};
 
@@ -585,5 +617,12 @@ mod tests {
         let e = NormalizedExpr::new(exp(1 + x + 2 * x - 7 - 8 * x + y * x));
 
         dbg!(e.collect_like_terms().take_expr());
+    }
+
+    #[test]
+    fn test_divide_by_zero() {
+        let expr = raw_expr! { 0 / 0 };
+
+        dbg!(expr.normalize());
     }
 }

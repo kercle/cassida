@@ -176,7 +176,7 @@ impl<A> Expr<A> {
         }
     }
 
-    pub fn is_application_of<T: AsRef<str>>(self, head_sym: T, arity: usize) -> bool {
+    pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {
         match self {
             Expr::Atom { .. } => false,
             Expr::Compound { head, args, .. } => {

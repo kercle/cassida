@@ -1,7 +1,7 @@
 use crate::{
     builtin::{
         CANNONICAL_HEAD_COS, CANNONICAL_HEAD_DERIVATIVE, CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT,
-        CANNONICAL_HEAD_TAN,
+        CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE,
     },
     parser::ast::ParserAst,
 };
@@ -89,6 +89,7 @@ where
                 greek_letter(&value.to_string())
             }
         }
+        Symbol { name, .. } if name == CANNONICAL_SYM_INDETERMINATE => format!(r#"\text{{{name}}}"#),
         Symbol { name, .. } => greek_letter(name),
         Negation { arg, .. } => {
             format!("-{}", ast_to_latex(arg, weight))
