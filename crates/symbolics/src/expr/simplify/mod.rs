@@ -1,4 +1,5 @@
-mod trigon;
+mod functions_known_values;
+mod trigonometric_functions;
 
 use crate::expr::{Expr, NormalizedExpr, derivative::resolve_derivatives};
 
@@ -18,7 +19,15 @@ impl Simplifier {
     }
 
     pub fn with_trigonometric_identities(self) -> Simplifier {
-        Simplifier::new(trigon::simplify_trigon(self.expr.take_expr()))
+        Simplifier::new(trigonometric_functions::simplify_trigon(
+            self.expr.take_expr(),
+        ))
+    }
+
+    pub fn with_known_function_values(self) -> Simplifier {
+        Simplifier::new(functions_known_values::simplify_evaluation_at_zero(
+            self.expr.take_expr(),
+        ))
     }
 
     pub fn finish(self) -> Expr {

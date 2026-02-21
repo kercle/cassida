@@ -205,6 +205,25 @@ where
         }
     }
 
+    pub fn new_number_zero() -> Self {
+        Self::new_number(Number::zero())
+    }
+
+    pub fn new_number_one() -> Self {
+        Self::new_number(Number::one())
+    }
+
+    pub fn new_number_minus_one() -> Self {
+        Self::new_number(Number::minus_one())
+    }
+
+    pub fn new_number_rational(numerator: i64, denominator: u64) -> Result<Self, String> {
+        Ok(Self::new_number(Number::new_rational_from_i64(
+            numerator,
+            denominator,
+        )?))
+    }
+
     pub fn new_symbol<T: AsRef<str>>(symb: T) -> Self {
         Expr::Atom {
             entry: Atom::Symbol(symb.as_ref().to_string()),

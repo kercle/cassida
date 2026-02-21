@@ -1,7 +1,7 @@
 use crate::{
     builtin::{
         CANNONICAL_HEAD_COS, CANNONICAL_HEAD_DERIVATIVE, CANNONICAL_HEAD_SIN, CANNONICAL_HEAD_SQRT,
-        CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE,
+        CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY,
     },
     parser::ast::ParserAst,
 };
@@ -91,6 +91,9 @@ where
         }
         Symbol { name, .. } if name == CANNONICAL_SYM_INDETERMINATE => {
             format!(r#"\text{{{name}}}"#)
+        }
+        Symbol { name, .. } if name == CANNONICAL_SYM_PLUS_INFINITY => {
+            format!(r#"\infty"#)
         }
         Symbol { name, .. } => greek_letter(name),
         Negation { arg, .. } => {

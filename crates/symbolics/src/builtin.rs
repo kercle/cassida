@@ -48,3 +48,4 @@ pub const CANNONICAL_HEAD_DERIVATIVE: &str = "D";
 // Other
 
 pub const CANNONICAL_SYM_INDETERMINATE: &str = "Indeterminate";
+pub const CANNONICAL_SYM_PLUS_INFINITY: &str = "Infinity";

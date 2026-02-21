@@ -41,7 +41,6 @@ impl Expr {
 
 pub fn simplify_trigon(expr: Expr) -> Expr {
     chain_replace_quick_and_dirty!(expr,
-        { Sin[0] }       => { 0 },
         { Sin[pi / 12] } => { Sqrt[2] * (Sqrt[3] - 1) / 4 },
         { Sin[pi / 10] } => { (Sqrt[5] - 1) / 4 },
         { Sin[pi / 8] }  => { (Sqrt[2 - Sqrt[2]]) / 2 },
@@ -49,7 +48,6 @@ pub fn simplify_trigon(expr: Expr) -> Expr {
         { Sin[pi / 5] }  => { (Sqrt[2] * (Sqrt[5 - Sqrt[5]])) / 4 },
         { Sin[pi / 4] }  => { 1/Sqrt[2] },
 
-        { Cos[0] }       => { 1 },
         { Cos[pi / 12] } => { Sqrt[2] * (Sqrt[3] + 1) / 4 },
         { Cos[pi / 10] } => { (Sqrt[2] * (Sqrt[5 + Sqrt[5]])) / 4 },
         { Cos[pi / 8] }  => { (Sqrt[2 + Sqrt[2]]) / 2 },
