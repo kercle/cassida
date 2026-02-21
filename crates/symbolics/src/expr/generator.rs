@@ -2,8 +2,8 @@
 
 use std::ops;
 
-use crate::expr::{
-    Expr,
+use crate::{
+    expr::Expr,
     pattern::{BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD},
 };
 

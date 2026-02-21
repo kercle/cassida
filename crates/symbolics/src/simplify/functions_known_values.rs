@@ -6,9 +6,10 @@ use crate::{
         CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN,
         CANNONICAL_HEAD_TAN, CANNONICAL_SYM_PLUS_INFINITY,
     },
-    expr::{Expr, pattern::Pattern},
+    expr::Expr,
     matcher::MatchIter,
     parser::ast::NEG_HEAD,
+    pattern::Pattern,
 };
 
 pub fn simplify_evaluation_at_zero(expr: Expr) -> Expr {

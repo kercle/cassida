@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Formatter},
 };
 
-use crate::expr::{Expr, pattern::Pattern};
+use crate::{expr::Expr, pattern::Pattern};
 
 pub enum Bound<'a, A> {
     One(&'a Expr<A>),

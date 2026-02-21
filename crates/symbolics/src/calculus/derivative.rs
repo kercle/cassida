@@ -6,9 +6,10 @@ use numbers::Number;
 use crate::{
     atom::Atom,
     builtin::*,
-    expr::{Expr, NormalizedExpr, pattern::Pattern},
+    expr::{Expr, NormalizedExpr},
     matcher::MatchIter,
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD},
+    pattern::Pattern,
 };
 
 pub fn resolve_derivatives<A>(expr: Expr<A>) -> Expr

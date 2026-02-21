@@ -3,7 +3,6 @@ pub mod generator;
 pub mod hash;
 pub mod norm;
 pub mod ops;
-pub mod pattern;
 
 use numbers::Number;
 

@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Error, Formatter};
 
-use crate::expr::{Atom, Expr, pattern::Pattern};
+use crate::{atom::Atom, expr::Expr, pattern::Pattern};
 
 impl Debug for Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {

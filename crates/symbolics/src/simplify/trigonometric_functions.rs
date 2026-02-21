@@ -3,8 +3,9 @@ use expr_macro::{norm_expr, raw_expr};
 use crate::{
     atom::Atom,
     chain_replace_quick_and_dirty,
-    expr::{Expr, NormalizedExpr, pattern::Pattern},
+    expr::{Expr, NormalizedExpr},
     matcher::MatchIter,
+    pattern::Pattern,
 };
 
 impl Expr {

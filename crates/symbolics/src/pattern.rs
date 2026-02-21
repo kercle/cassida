@@ -173,9 +173,10 @@ where
 mod tests {
     use expr_macro::raw_expr;
 
+    use super::*;
     use crate::{
         atom::Atom,
-        expr::{Expr, generator::*, pattern::Pattern},
+        expr::{Expr, generator::*},
     };
 
     #[test]
