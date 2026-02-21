@@ -1,8 +1,9 @@
+pub mod atom;
 pub mod builtin;
 pub mod calculus;
 pub mod expr;
 pub mod format;
+pub mod macros;
 pub mod matcher;
 pub mod parser;
 pub mod simplify;
-pub mod atom;
