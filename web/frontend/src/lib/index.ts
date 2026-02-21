@@ -29,7 +29,6 @@ function createGlobalState() {
                 const msg = JSON.parse(event.data);
 
                 update(s => {
-                    console.log(msg);
                     s.data.history.push(msg);
 
                     return {
