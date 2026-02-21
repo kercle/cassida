@@ -4,7 +4,6 @@ pub mod fmt;
 pub mod generator;
 pub mod hash;
 pub mod macros;
-pub mod matcher;
 pub mod norm;
 pub mod ops;
 pub mod pattern;

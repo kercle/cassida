@@ -5,7 +5,8 @@ use crate::{
         CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN,
         CANNONICAL_HEAD_TAN, CANNONICAL_SYM_PLUS_INFINITY,
     },
-    expr::{Expr, atom::Atom, matcher::MatchIter, pattern::Pattern},
+    expr::{Expr, atom::Atom, pattern::Pattern},
+    matcher::MatchIter,
     parser::ast::NEG_HEAD,
 };
 
