@@ -20,7 +20,7 @@ fn print_markdown(input: &str) {
         std::process::exit(1);
     });
 
-    let result = Simplifier::new(Expr::from_parser_ast(&ast))
+    let result = Simplifier::new(Expr::from_parser_ast(ast))
         .with_known_function_values()
         .with_resolved_derivatives()
         .with_trigonometric_identities()

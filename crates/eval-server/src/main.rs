@@ -90,7 +90,9 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, ServerMessage> 
         input: input.clone(),
         msg: format!("Error parsing input: {}", err),
     })?;
-    let input_expr = Expr::from_parser_ast(&ast_in);
+
+    let input_latex = ast_in.to_latex();
+    let input_expr = Expr::from_parser_ast(ast_in);
 
     let result_expr = Simplifier::new(input_expr)
         .with_known_function_values()
@@ -102,12 +104,12 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, ServerMessage> 
 
     if let Ok(ast_out) = ParserAst::try_from(result_expr) {
         Ok(ServerMessage::EvalResult {
-            input: ast_in.to_latex(),
+            input: input_latex,
             output: ast_out.to_latex(),
         })
     } else {
         Err(ServerMessage::ParseError {
-            input: ast_in.to_latex(),
+            input: input_latex,
             msg: "Cannot recover AST from transformed expression.".to_string(),
         })
     }
