@@ -527,12 +527,12 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
     fn collect_like_exponentials_in_mul(args: Vec<Expr<A>>) -> NormalizedExpr<A> {
         // Collect like terms preserves normalization
-        let coeff_expr_pair_iter = args.into_iter().map(|mut e| {
+        let coeff_expr_pair_iter = args.into_iter().map(|e| {
             if e.matches_head(POW_HEAD) && e.args_len() == 2 {
-                let rhs = e.pop_arg().unwrap();
-                let lhs = e.pop_arg().unwrap();
+                let rhs = e.get_arg(0).unwrap();
+                let lhs = e.get_arg(1).unwrap();
 
-                (lhs, rhs)
+                (lhs.clone(), rhs.clone())
             } else {
                 (e, Number::one().into())
             }

@@ -39,13 +39,6 @@ impl<A> Expr<A> {
         }
     }
 
-    pub fn pop_arg(&mut self) -> Option<Self> {
-        match self {
-            Expr::Atom { .. } => None,
-            Expr::Compound { args, .. } => args.pop(),
-        }
-    }
-
     pub fn get_arg(&self, index: usize) -> Option<&Self> {
         match self {
             Expr::Atom { .. } => None,
