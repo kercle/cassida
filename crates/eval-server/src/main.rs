@@ -7,9 +7,10 @@ use axum::{
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use symbolics::{
-    expr::{Expr, simplify::Simplifier},
+    expr::Expr,
     format::MathDisplay,
     parser::{ast::ParserAst, parse},
+    simplify::Simplifier,
 };
 use tracing::Level;
 use tracing::{error, info};

@@ -1,6 +1,6 @@
 use clap::Parser;
 use symbolics::expr::Expr;
-use symbolics::expr::simplify::Simplifier;
+use symbolics::simplify::Simplifier;
 use symbolics::format::MathDisplay;
 use symbolics::parser::ast::ParserAst;
 use symbolics::parser::parse;
