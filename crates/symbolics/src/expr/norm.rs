@@ -367,7 +367,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
         for a in args.into_iter() {
             if let Some((lhs, rhs)) = a.unpack_binary_node(POW_HEAD) {
-                let (mut coeff, rhs_rest) = NormalizedExpr(rhs.clone()).split_coefficient();
+                let (mut coeff, rhs_rest) = NormalizedExpr::new(rhs.clone()).split_coefficient();
                 if coeff.is_negative() {
                     coeff.flip_sign();
                     denominator.push(Expr::new_compound(
@@ -506,7 +506,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         // Collect like terms preserves normalization
         let coeff_expr_pair_iter = args
             .into_iter()
-            .map(|e| NormalizedExpr(e).split_coefficient());
+            .map(|e| NormalizedExpr::new(e).split_coefficient());
 
         let mut args_map: HashMap<Expr<A>, Number> = HashMap::new();
         for (n, e) in coeff_expr_pair_iter {
@@ -559,13 +559,13 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         let expr = self.take_expr();
 
         match expr {
-            Expr::Atom { .. } => NormalizedExpr(expr.annotation_to_default()),
+            Expr::Atom { .. } => NormalizedExpr::new(expr.annotation_to_default()),
             Expr::Compound { head, args, .. } => {
                 // We get a normalized tree, so we can initialize NormalizedExpr
                 // without normalization.
                 let args: Vec<Expr<A>> = args
                     .into_iter()
-                    .map(|a| NormalizedExpr(a).collect_like_terms().take_expr())
+                    .map(|a| NormalizedExpr::new(a).collect_like_terms().take_expr())
                     .collect();
 
                 if head.matches_symbol(ADD_HEAD) {
@@ -573,7 +573,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 } else if head.matches_symbol(MUL_HEAD) {
                     Self::collect_like_exponentials_in_mul(args)
                 } else {
-                    NormalizedExpr(Expr::new_compound(*head, args))
+                    NormalizedExpr::new(Expr::new_compound(*head, args))
                 }
             }
         }

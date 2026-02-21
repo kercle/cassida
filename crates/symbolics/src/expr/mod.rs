@@ -3,33 +3,17 @@ pub mod generator;
 pub mod hash;
 pub mod norm;
 pub mod ops;
+pub mod types;
 pub mod walk;
 
 use numbers::Number;
+
+pub use types::{Expr, NormalizedExpr};
 
 use crate::{
     atom::Atom,
     parser::ast::{ADD_HEAD, MUL_HEAD, POW_HEAD, ParserAst},
 };
-
-#[derive(Clone, PartialEq)]
-pub enum Expr<A = ()> {
-    Atom {
-        entry: Atom,
-        annotation: A,
-    },
-    Compound {
-        head: Box<Expr<A>>,
-        args: Vec<Expr<A>>,
-        annotation: A,
-    },
-}
-
-#[repr(transparent)]
-#[derive(Debug)]
-pub struct NormalizedExpr<A = ()>(Expr<A>)
-where
-    A: Clone + PartialEq;
 
 impl<A, T: Into<Atom>> From<T> for Expr<A>
 where
@@ -40,24 +24,6 @@ where
             entry: x.into(),
             annotation: A::default(),
         }
-    }
-}
-
-impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
-    pub fn new(expr: Expr<A>) -> Self {
-        NormalizedExpr(expr.normalize())
-    }
-}
-
-impl<A: Clone + PartialEq> NormalizedExpr<A> {
-    pub fn take_expr(self) -> Expr<A> {
-        self.0
-    }
-}
-
-impl<A: Clone + PartialEq> AsRef<Expr<A>> for NormalizedExpr<A> {
-    fn as_ref(&self) -> &Expr<A> {
-        &self.0
     }
 }
 
@@ -423,7 +389,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
-        expr::{generator::{ExprBuilder, SymbolGenerator, cos, exp, pow}, walk::ExprBottomUpWalker},
+        expr::{
+            generator::{ExprBuilder, SymbolGenerator, cos, exp, pow},
+            walk::ExprBottomUpWalker,
+        },
         symbol,
     };
 
