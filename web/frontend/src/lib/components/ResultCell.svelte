@@ -2,16 +2,15 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import Math from './Math.svelte';
-	import { tick } from 'svelte';
 
 	export let entry: ServerMessage | undefined = undefined;
 
 	const highlightColor = () => {
-		if (entry) {
-			if ('parseError' in entry) {
-				return 'red-200';
-			}
-		}
+		// if (entry) {
+		// 	if ('parseError' in entry) {
+		// 		return 'red-200';
+		// 	}
+		// }
 
 		return 'base-200';
 	};
@@ -46,25 +45,23 @@
 	<div class="bg-{highlightColor()} relative rounded-t-sm">
 		{@render menu()}
 
-		<div class="pt-2 pl-8">
-			{#if entry && 'evalResult' in entry}
-				<div class="border-{highlightColor()} rounded-b-sm border">
-					<Math expr={entry.evalResult.input} />
-				</div>
-			{:else if entry && 'parseError' in entry}
-				<div class="border-{highlightColor()} rounded-b-sm border py-1">
-					<p>{entry.parseError.input}</p>
-				</div>
-			{/if}
-		</div>
+		{#if entry && 'evalResult' in entry}
+			<div class="bg-base-200 rounded-t-sm pt-2 pl-8">
+				<Math expr={entry.evalResult.input} />
+			</div>
+		{:else if entry && 'parseError' in entry}
+			<div class="rounded-t-sm bg-red-200 py-4 pl-8">
+				<p>{entry.parseError.input}</p>
+			</div>
+		{/if}
 	</div>
 
 	{#if entry && 'evalResult' in entry}
-		<div class="border-{highlightColor()} rounded-b-sm border pl-8">
+		<div class="border-base-200 rounded-b-sm border pl-8">
 			<Math expr={'=' + entry.evalResult.output} />
 		</div>
 	{:else if entry && 'parseError' in entry}
-		<div class="border-{highlightColor()} rounded-b-sm border p-2 pl-8">
+		<div class=" rounded-b-sm border border-red-200 p-2 pl-8">
 			<b class="mr-2">Error:</b>{entry.parseError.msg}
 		</div>
 	{/if}
