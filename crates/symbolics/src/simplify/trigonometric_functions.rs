@@ -26,10 +26,11 @@ impl Expr {
         replacement: Expr,
     ) -> Expr {
         let pattern_expr = norm_pattern_expr.take_expr();
-        let pattern = Pattern::from_expr(&pattern_expr);
 
         self.map_bottom_up(&|e| {
-            if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
+            let pattern = Pattern::from_expr(&pattern_expr);
+
+            if let Some(ctx) = MatchIter::new(&e, pattern).next() {
                 let mut new_term = replacement.clone();
                 for (k, v) in ctx.iter() {
                     new_term = new_term.replace_symbols(k, v.get_one().unwrap());

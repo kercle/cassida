@@ -19,10 +19,11 @@ where
     let expr = expr.drop_annotation();
     let pattern_expr =
         raw_expr! { D[Pattern[f, Blank[]], PatternTest[Pattern[x, Blank[]], IsSymbolQ]] };
-    let pattern = Pattern::from_expr(&pattern_expr);
 
     expr.map_bottom_up(&|e| {
-        if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
+        let pattern = Pattern::from_expr(&pattern_expr);
+
+        if let Some(ctx) = MatchIter::new(&e, pattern).next() {
             let f = ctx.get_one("f").unwrap();
             let x = ctx.get_one("x").unwrap().get_symbol().unwrap();
 

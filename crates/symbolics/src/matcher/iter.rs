@@ -12,15 +12,15 @@ enum BindAction {
 
 enum Task<'a, A> {
     Node {
-        pattern: &'a Pattern<'a, A>,
+        pattern: Pattern<'a, A>,
         expr: &'a Expr<A>,
     },
     OrderedList {
-        patterns: &'a [Pattern<'a, A>],
+        patterns: Vec<Pattern<'a, A>>,
         exprs: &'a [Expr<A>],
     },
     UnorderedList {
-        patterns: &'a [Pattern<'a, A>],
+        patterns: Vec<Pattern<'a, A>>,
         exprs: &'a [Expr<A>],
     },
 }
@@ -30,10 +30,10 @@ struct ChoicePoint<'a, A> {
     undo_len: usize,
 
     // data needed to enumerate alternatives:
-    seq_name: Option<&'a str>,
+    seq_name: Option<String>,
     k_next: usize, // next length to try
     // and what remains after the seq pattern:
-    rest_pats: &'a [Pattern<'a, A>],
+    rest_pats: Vec<Pattern<'a, A>>,
     rest_exprs: &'a [Expr<A>],
 }
 
@@ -55,7 +55,7 @@ impl<'a, A> MatchIter<'a, A>
 where
     A: Default + PartialEq + Clone + Debug,
 {
-    pub fn new(expr: &'a Expr<A>, pattern: &'a Pattern<'a, A>) -> Self {
+    pub fn new(expr: &'a Expr<A>, pattern: Pattern<'a, A>) -> Self {
         MatchIter {
             tasks: vec![Task::Node { pattern, expr }],
             ctx: MatchContext::default(),
@@ -94,12 +94,8 @@ where
             self.tasks.truncate(cp.todo_len);
             self.rollback_binds(cp.undo_len);
 
-            // recompute bounds for remaining choices
-            let patterns = cp.rest_pats;
-            let exprs = cp.rest_exprs;
-
-            let min_left = patterns.len();
-            let k_max = exprs.len().saturating_sub(min_left);
+            let min_left = cp.rest_pats.len();
+            let k_max = cp.rest_exprs.len().saturating_sub(min_left);
             let k = cp.k_next;
 
             if k < 1 || k > k_max {
@@ -110,14 +106,16 @@ where
             if k < k_max {
                 self.back_track.push(ChoicePoint {
                     k_next: k + 1,
+                    rest_pats: cp.rest_pats.clone(),
+                    seq_name: cp.seq_name.clone(),
                     ..cp
                 });
             }
 
             // apply this k
-            if let Some(name) = cp.seq_name
+            if let Some(name) = cp.seq_name.as_ref()
                 && self
-                    .bind_seq(name, &exprs[..k])
+                    .bind_seq(&name, &cp.rest_exprs[..k])
                     .map_err(|_| MatchFail)
                     .is_err()
             {
@@ -125,22 +123,18 @@ where
             }
 
             self.tasks.push(Task::OrderedList {
-                patterns,
-                exprs: &exprs[k..],
+                patterns: cp.rest_pats,
+                exprs: &cp.rest_exprs[k..],
             });
             return true;
         }
         false
     }
 
-    fn queue_node(
-        &mut self,
-        pattern: &'a Pattern<'a, A>,
-        expr: &'a Expr<A>,
-    ) -> Result<(), MatchFail> {
+    fn queue_node(&mut self, pattern: Pattern<'a, A>, expr: &'a Expr<A>) -> Result<(), MatchFail> {
         match pattern {
             Pattern::Literal(p_expr) => {
-                if p_expr == &expr {
+                if p_expr == expr {
                     Ok(())
                 } else {
                     Err(MatchFail)
@@ -151,9 +145,17 @@ where
                 match_head,
                 predicate,
             } => {
-                if match_head.is_some() {
-                    // match head constraint
-                    todo!();
+                if let Some(expected_head) = match_head {
+                    match expr {
+                        Expr::Compound { head, .. } => {
+                            if head.as_ref() != expected_head {
+                                return Err(MatchFail);
+                            }
+                        }
+                        _ => {
+                            return Err(MatchFail);
+                        }
+                    }
                 }
 
                 let bind_success = bind_name
@@ -180,7 +182,7 @@ where
                         exprs: eargs,
                     });
                     self.tasks.push(Task::Node {
-                        pattern: head,
+                        pattern: *head,
                         expr: ehead,
                     });
                     Ok(())
@@ -194,7 +196,7 @@ where
 
     fn queue_ordered_list(
         &mut self,
-        patterns: &'a [Pattern<'a, A>],
+        patterns: Vec<Pattern<'a, A>>,
         exprs: &'a [Expr<A>],
     ) -> Result<(), MatchFail> {
         // both empty => ok
@@ -228,9 +230,9 @@ where
                     self.back_track.push(ChoicePoint {
                         todo_len: self.tasks.len(),
                         undo_len: self.undo_log.len(),
-                        seq_name: bind_name.as_deref(),
+                        seq_name: bind_name.clone(),
                         k_next: k_min + 1,
-                        rest_pats: prest,
+                        rest_pats: prest.to_vec(),
                         rest_exprs: exprs,
                     });
                 }
@@ -241,7 +243,7 @@ where
                 }
 
                 self.tasks.push(Task::OrderedList {
-                    patterns: prest,
+                    patterns: prest.to_vec(),
                     exprs: &exprs[k_min..],
                 });
                 Ok(())
@@ -250,11 +252,11 @@ where
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
                 self.tasks.push(Task::OrderedList {
-                    patterns: prest,
+                    patterns: prest.to_vec(),
                     exprs: erest,
                 });
                 self.tasks.push(Task::Node {
-                    pattern: p0,
+                    pattern: p0.clone(),
                     expr: e0,
                 });
                 Ok(())
@@ -264,7 +266,7 @@ where
 
     fn queue_unordered_list(
         &mut self,
-        _patterns: &'a [Pattern<'a, A>],
+        _patterns: Vec<Pattern<'a, A>>,
         _exprs: &'a [Expr<A>],
     ) -> Result<(), MatchFail> {
         todo!()
@@ -318,7 +320,7 @@ mod tests {
         e.flatten(|e: &Expr| e.matches_symbol(ADD_HEAD) || e.matches_symbol(MUL_HEAD))
     }
 
-    fn collect<'a>(expr: &'a Expr<()>, pat: &'a Pattern<'a, ()>) -> Vec<MatchContext<'a, ()>> {
+    fn collect<'a>(expr: &'a Expr<()>, pat: Pattern<'a, ()>) -> Vec<MatchContext<'a, ()>> {
         MatchIter::new(expr, pat).collect()
     }
 
@@ -327,7 +329,7 @@ mod tests {
     }
 
     fn one<'a>(expr: &'a Expr<()>, pat: &'a Pattern<'a, ()>) -> MatchContext<'a, ()> {
-        let m = collect(expr, pat);
+        let m = collect(expr, pat.clone());
         assert_eq!(m.len(), 1, "expected exactly 1 match, got {}", m.len());
         m.into_iter().next().unwrap()
     }
@@ -339,7 +341,7 @@ mod tests {
         let expr1 = x + 1;
         let expr2 = blank(None) + pattern("a", blank(None));
         let pat = Pattern::from_expr(&expr2);
-        let matches: Vec<MatchContext<'_, ()>> = MatchIter::new(&expr1, &pat).into_iter().collect();
+        let matches: Vec<MatchContext<'_, ()>> = MatchIter::new(&expr1, pat).into_iter().collect();
 
         assert!(matches.len() == 1);
         assert_eq!(
@@ -356,22 +358,22 @@ mod tests {
         // equals
         let p1e = x + 1;
         let p1 = Pattern::from_expr(&p1e);
-        assert_eq!(collect(&e, &p1).len(), 1);
+        assert_eq!(collect(&e, p1).len(), 1);
 
         // literal mismatch
         let p2e = x + 2;
         let p2 = pat(&p2e);
-        assert_eq!(collect(&e, &p2).len(), 0);
+        assert_eq!(collect(&e, p2).len(), 0);
 
         // head mismatch
         let p3e = x * 1;
         let p3 = pat(&p3e);
-        assert_eq!(collect(&e, &p3).len(), 0);
+        assert_eq!(collect(&e, p3).len(), 0);
 
         // arity mismatch
         let p4e = x + 1 + 2;
         let p4 = pat(&p4e);
-        assert_eq!(collect(&e, &p4).len(), 0);
+        assert_eq!(collect(&e, p4).len(), 0);
     }
 
     #[test]
@@ -396,15 +398,15 @@ mod tests {
         assert_eq!(m31.get_one("a"), Some(1.into()).as_ref());
 
         let e32 = Expr::from_i64(1) + 2;
-        assert_eq!(collect(&e32, &p3).len(), 0);
+        assert_eq!(collect(&e32, p3).len(), 0);
 
         let y = symbol!("y");
         let e41 = h(x, x);
         let e42 = h(x, y);
         let pe4 = h(pattern("a", blank(None)), pattern("a", blank(None)));
         let p4 = pat(&pe4);
-        assert_eq!(collect(&e41, &p4).len(), 1);
-        assert_eq!(collect(&e42, &p4).len(), 0);
+        assert_eq!(collect(&e41, p4.clone()).len(), 1);
+        assert_eq!(collect(&e42, p4).len(), 0);
     }
 
     #[test]
@@ -413,16 +415,16 @@ mod tests {
         let e1 = flatten(Expr::from_i64(1) + 2 + 3);
         let pe = flatten(1 + blank_sequence(None) + 3);
         let p = pat(&pe);
-        assert_eq!(collect(&e1, &p).len(), 1);
+        assert_eq!(collect(&e1, p.clone()).len(), 1);
 
         // Add[1, __, 4, __] against 1+2+4+3+4+5 -> 2 matches
         let e2 = flatten(Expr::from_i64(1) + 2 + 4 + 3 + 4 + 5);
         let pe2 = flatten(1 + blank_sequence(None) + 4 + blank_sequence(None));
         let p2 = pat(&pe2);
-        assert_eq!(collect(&e2, &p2).len(), 2);
+        assert_eq!(collect(&e2, p2).len(), 2);
 
         // should not match 1+3
         let e3 = Expr::from_i64(1) + 3;
-        assert_eq!(collect(&e3, &p).len(), 0);
+        assert_eq!(collect(&e3, p).len(), 0);
     }
 }

@@ -1,6 +1,6 @@
 use numbers::Number;
 
-use crate::{atom::Atom, expr::Expr};
+use crate::{atom::Atom, expr::Expr, pattern::BLANK_ONE_HEAD};
 
 impl<A> Expr<A> {
     pub fn new_compound_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
@@ -43,5 +43,9 @@ where
             entry: Atom::Symbol(symb.as_ref().to_string()),
             annotation: A::default(),
         }
+    }
+
+    pub fn new_blank() -> Self {
+        Expr::new_compound(BLANK_ONE_HEAD, vec![])
     }
 }

@@ -17,10 +17,11 @@ pub fn simplify_evaluation_at_zero(expr: Expr) -> Expr {
         PatternTest[Pattern[h, Blank[]], IsSymbolQ]
     };
     let pattern_expr = Expr::new_compound(head_pattern, vec![0.into()]).normalize();
-    let pattern = Pattern::from_expr(&pattern_expr);
 
     expr.map_bottom_up(&|e| {
-        if let Some(ctx) = MatchIter::new(&e, &pattern).next() {
+        let pattern = Pattern::from_expr(&pattern_expr);
+
+        if let Some(ctx) = MatchIter::new(&e, pattern).next() {
             let head_symbol = ctx.get_one("h").unwrap().get_symbol().unwrap();
             match head_symbol {
                 CANNONICAL_HEAD_EXP => Expr::new_number(1),

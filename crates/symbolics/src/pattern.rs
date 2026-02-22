@@ -7,7 +7,7 @@ pub const PATTERN_TEST_HEAD: &str = "PatternTest";
 pub const BLANK_ONE_HEAD: &str = "Blank";
 pub const BLANK_SEQ_HEAD: &str = "BlankSeq";
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PatternPredicate {
     IsSymbolQ,
     IsNumberQ,
@@ -38,10 +38,7 @@ impl FromStr for PatternPredicate {
     }
 }
 
-pub struct OwnedPattern<A> {
-    expr: Expr<A>,
-}
-
+#[derive(Clone)]
 pub enum Pattern<'a, A> {
     Literal(&'a Expr<A>),
     Blank {
