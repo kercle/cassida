@@ -101,9 +101,9 @@ where
     fn bind_seq(
         &mut self,
         name: &'a str,
-        expr_arr: &'a [Expr<A>],
+        expr_arr: Vec<&'a Expr<A>>,
     ) -> Result<(), MatchContextBindError> {
-        self.ctx.bind_seq(name, expr_arr.iter().collect())?;
+        self.ctx.bind_seq(name, expr_arr)?;
         self.bind_action_log.push(name);
         Ok(())
     }
@@ -196,7 +196,7 @@ where
         }
 
         if let Some(name) = bind_name {
-            self.bind_seq(name, &exprs[..k_min])
+            self.bind_seq(name, exprs[..k_min].iter().collect())
                 .map_err(|_| MatchFail)?;
         }
 
@@ -397,7 +397,7 @@ where
 
         // Apply this k
         if let Some(name) = seq_name {
-            self.bind_seq(name, &rest_exprs[..k])
+            self.bind_seq(name, rest_exprs[..k].iter().collect())
                 .map_err(|_| MatchFail)?;
         }
 
