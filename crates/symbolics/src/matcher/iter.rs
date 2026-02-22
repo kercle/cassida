@@ -55,7 +55,10 @@ struct ChoicePoint<'a, A> {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct MatchFail;
+enum MatchError {
+    MatchFail,
+    BindFail,
+}
 
 pub struct MatchIter<'a, A>
 where
@@ -83,7 +86,7 @@ where
         while let Some(task) = self.tasks.pop() {
             let r = match task {
                 Task::MatchOne { pattern, expr } => self.task_match_one(pattern, expr),
-                Task::MatchSeq { patterns, exprs } => self.task_match_seq(patterns, exprs),
+                Task::MatchSeq { patterns, exprs } => self.task_match_ordered_seq(patterns, exprs),
                 Task::ResumeOrderedSplit {
                     seq_name,
                     k_min,
@@ -148,11 +151,12 @@ where
         }
     }
 
-    pub fn commutative_if(self, f: CommutativePredicate<A>) -> Self {
-        MatchIter {
-            is_commutative: Some(f),
-            ..self
-        }
+    pub fn commutative_if<F>(mut self, f: F) -> Self
+    where
+        F: Fn(&Expr<A>) -> bool + 'static,
+    {
+        self.is_commutative = Some(Box::new(f));
+        self
     }
 
     fn is_commutative_head(&self, head: &Expr<A>) -> bool {
@@ -225,30 +229,28 @@ where
         bind_name: Option<&'a str>,
         match_head: Option<&Expr<A>>,
         predicate: Option<PatternPredicate>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         if let Some(expected_head) = match_head {
             match expr {
                 Expr::Compound { head, .. } => {
                     if head.as_ref() != expected_head {
-                        return Err(MatchFail);
+                        return Err(MatchError::MatchFail);
                     }
                 }
                 _ => {
-                    return Err(MatchFail);
+                    return Err(MatchError::MatchFail);
                 }
             }
         }
 
-        let bind_success = bind_name
-            .as_ref()
-            .map(|n| self.bind_one(n, expr).is_ok())
-            .unwrap_or(true);
-        let pred_check_success = predicate.as_ref().map(|p| p.check(expr)).unwrap_or(true);
+        if let Some(n) = bind_name {
+            self.bind_one(n, expr).map_err(|_| MatchError::BindFail)?
+        }
 
-        if bind_success && pred_check_success {
+        if predicate.as_ref().map(|p| p.check(expr)).unwrap_or(true) {
             Ok(())
         } else {
-            Err(MatchFail)
+            Err(MatchError::MatchFail)
         }
     }
 
@@ -259,14 +261,14 @@ where
         min_left: usize,
         rest_pats: PatSpan<'a, A>,
         bind_name: Option<&'a str>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         if exprs.len() < k_min {
-            return Err(MatchFail);
+            return Err(MatchError::MatchFail);
         }
 
         // A few exprs for remaining patterns
         if exprs.len() < k_min + min_left {
-            return Err(MatchFail);
+            return Err(MatchError::MatchFail);
         }
 
         // At most k_max lements in BlankSeq pattern
@@ -284,7 +286,7 @@ where
 
         if let Some(name) = bind_name {
             self.bind_seq(name, exprs[..k_min].iter().collect())
-                .map_err(|_| MatchFail)?;
+                .map_err(|_| MatchError::BindFail)?;
         }
 
         self.tasks.push(Task::MatchSeq {
@@ -299,7 +301,7 @@ where
         exprs: &'a [Expr<A>],
         rest_pats: PatSpan<'a, A>,
         bind_name: Option<&'a str>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         self.match_blank_seq_or_blank_null_seq(
             exprs,
             1,
@@ -314,7 +316,7 @@ where
         exprs: &'a [Expr<A>],
         rest_pats: PatSpan<'a, A>,
         bind_name: Option<&'a str>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         self.match_blank_seq_or_blank_null_seq(
             exprs,
             0,
@@ -328,13 +330,13 @@ where
         &mut self,
         pattern: Pattern<'a, A>,
         expr: &'a Expr<A>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         match pattern {
             Pattern::Literal(p_expr) => {
                 if p_expr == expr {
                     Ok(())
                 } else {
-                    Err(MatchFail)
+                    Err(MatchError::MatchFail)
                 }
             }
             Pattern::Blank {
@@ -376,23 +378,23 @@ where
                     }
                     Ok(())
                 } else {
-                    Err(MatchFail)
+                    Err(MatchError::MatchFail)
                 }
             }
-            Pattern::BlankSeq { .. } | Pattern::BlankNullSeq { .. } => Err(MatchFail),
+            Pattern::BlankSeq { .. } | Pattern::BlankNullSeq { .. } => Err(MatchError::MatchFail),
         }
     }
 
-    fn task_match_seq(
+    fn task_match_ordered_seq(
         &mut self,
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         if patterns.is_empty() {
             return if exprs.is_empty() {
                 Ok(())
             } else {
-                Err(MatchFail)
+                Err(MatchError::MatchFail)
             };
         }
 
@@ -421,7 +423,7 @@ where
             }
             Pattern::Literal(_) | Pattern::Compound { .. } | Pattern::Blank { .. } => {
                 // non-seq: need at least one expr
-                let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
+                let (e0, erest) = exprs.split_first().ok_or(MatchError::MatchFail)?;
                 self.tasks.push(Task::MatchSeq {
                     patterns: patterns.clone().rest(),
                     exprs: erest,
@@ -445,12 +447,12 @@ where
         k: usize,
         rest_pats: PatSpan<'a, A>,
         rest_exprs: &'a [Expr<A>],
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         let min_left = Self::min_required(&rest_pats);
         let k_max = rest_exprs.len().saturating_sub(min_left);
 
         if k < k_min || k > k_max {
-            return Err(MatchFail); // exhausted / invalid
+            return Err(MatchError::MatchFail); // exhausted / invalid
         }
 
         // If there are further ks, save a choicepoint that will resume with k+1
@@ -467,7 +469,7 @@ where
         // Apply this k
         if let Some(name) = seq_name {
             self.bind_seq(name, rest_exprs[..k].iter().collect())
-                .map_err(|_| MatchFail)?;
+                .map_err(|_| MatchError::BindFail)?;
         }
 
         self.tasks.push(Task::MatchSeq {
@@ -478,61 +480,12 @@ where
         Ok(())
     }
 
-    fn finish_unordered_tail(
-        &mut self,
-        seq_pat: Option<Pattern<'a, A>>,
-        exprs: &'a [Expr<A>],
-        remaining: Vec<usize>,
-    ) -> Result<(), MatchFail> {
-        match seq_pat {
-            None => {
-                if remaining.is_empty() {
-                    Ok(())
-                } else {
-                    Err(MatchFail)
-                }
-            }
-            Some(Pattern::BlankSeq {
-                bind_name,
-                match_head,
-                predicate,
-            }) => {
-                if match_head.is_some() || predicate.is_some() {
-                    todo!("unordered BlankSeq with head/predicate not supported yet");
-                }
-                if remaining.is_empty() {
-                    return Err(MatchFail); // BlankSeq requires >= 1
-                }
-                if let Some(name) = bind_name {
-                    self.bind_seq(name, remaining.iter().map(|&i| &exprs[i]).collect())
-                        .map_err(|_| MatchFail)?;
-                }
-                Ok(())
-            }
-            Some(Pattern::BlankNullSeq {
-                bind_name,
-                match_head,
-                predicate,
-            }) => {
-                if match_head.is_some() || predicate.is_some() {
-                    todo!("unordered BlankNullSeq with head/predicate not supported yet");
-                }
-                if let Some(name) = bind_name {
-                    self.bind_seq(name, remaining.iter().map(|&i| &exprs[i]).collect())
-                        .map_err(|_| MatchFail)?;
-                }
-                Ok(())
-            }
-            Some(_) => unreachable!("seq_pat can only be BlankSeq / BlankNullSeq here"),
-        }
-    }
-
     fn task_match_unordered_seq(
         &mut self,
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
         mut remaining: Vec<usize>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         // For now, we only support at most one sequence pattern in unordered seq.
         let mut literal_exprs: Vec<&'a Expr<A>> = Vec::new();
         let mut blanks: Vec<Pattern<'a, A>> = Vec::new();
@@ -558,7 +511,7 @@ where
             let pos = remaining
                 .iter()
                 .position(|&i| &exprs[i] == lit)
-                .ok_or(MatchFail)?;
+                .ok_or(MatchError::MatchFail)?;
             remaining.remove(pos);
         }
 
@@ -581,19 +534,68 @@ where
         Ok(())
     }
 
+    fn finish_unordered_tail(
+        &mut self,
+        seq_pat: Option<Pattern<'a, A>>,
+        exprs: &'a [Expr<A>],
+        remaining: Vec<usize>,
+    ) -> Result<(), MatchError> {
+        match seq_pat {
+            None => {
+                if remaining.is_empty() {
+                    Ok(())
+                } else {
+                    Err(MatchError::MatchFail)
+                }
+            }
+            Some(Pattern::BlankSeq {
+                bind_name,
+                match_head,
+                predicate,
+            }) => {
+                if match_head.is_some() || predicate.is_some() {
+                    todo!("unordered BlankSeq with head/predicate not supported yet");
+                }
+                if remaining.is_empty() {
+                    return Err(MatchError::MatchFail); // BlankSeq requires >= 1
+                }
+                if let Some(name) = bind_name {
+                    self.bind_seq(name, remaining.iter().map(|&i| &exprs[i]).collect())
+                        .map_err(|_| MatchError::BindFail)?;
+                }
+                Ok(())
+            }
+            Some(Pattern::BlankNullSeq {
+                bind_name,
+                match_head,
+                predicate,
+            }) => {
+                if match_head.is_some() || predicate.is_some() {
+                    todo!("unordered BlankNullSeq with head/predicate not supported yet");
+                }
+                if let Some(name) = bind_name {
+                    self.bind_seq(name, remaining.iter().map(|&i| &exprs[i]).collect())
+                        .map_err(|_| MatchError::BindFail)?;
+                }
+                Ok(())
+            }
+            Some(_) => unreachable!("seq_pat can only be BlankSeq / BlankNullSeq here"),
+        }
+    }
+
     fn task_match_unordered_rest(
         &mut self,
         mut patterns_rest: Vec<Pattern<'a, A>>,
         exprs: &'a [Expr<A>],
         mut remaining: Vec<usize>,
         seq_pat: Option<Pattern<'a, A>>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         if patterns_rest.is_empty() {
             return self.finish_unordered_tail(seq_pat, exprs, remaining);
         }
 
         if remaining.is_empty() {
-            return Err(MatchFail);
+            return Err(MatchError::MatchFail);
         }
 
         let pat0 = patterns_rest.remove(0);
@@ -637,9 +639,9 @@ where
         mut remaining: Vec<usize>,
         next_choice_pos: usize,
         seq_pat: Option<Pattern<'a, A>>,
-    ) -> Result<(), MatchFail> {
+    ) -> Result<(), MatchError> {
         if next_choice_pos >= remaining.len() {
-            return Err(MatchFail);
+            return Err(MatchError::MatchFail);
         }
 
         // Save another choicepoint for the next candidate

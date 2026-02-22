@@ -1,7 +1,7 @@
 use expr_macro::raw_expr;
 
 use super::*;
-use crate::atom::Atom;
+use crate::{atom::Atom, parser::ast::ADD_HEAD};
 
 #[test]
 fn match_literal_success() {
@@ -377,4 +377,234 @@ fn match_three_blanknullseq_count_len2() {
 
     let count = matcher.iter_matches(&expr).count();
     assert_eq!(count, 6);
+}
+
+#[test]
+fn unordered_two_blanks_count_len3() {
+    // Add[a_, b_] against 3 args in unordered mode:
+    // no seq to soak up the extra arg => impossible
+    let expr = raw_expr! { Add[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, Blank[]],
+            Pattern[b, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 0);
+}
+
+#[test]
+fn unordered_two_blanks_count_len2() {
+    // Add[a_, b_] against 2 args unordered:
+    // a can pick either expr, b gets the other => 2 solutions
+    let expr = raw_expr! { Add[1, 2] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, Blank[]],
+            Pattern[b, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 2);
+}
+
+#[test]
+fn unordered_three_blanks_count_len3() {
+    // Add[a_, b_, c_] against 3 args unordered:
+    // number of bijections = 3! = 6 solutions
+    let expr = raw_expr! { Add[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, Blank[]],
+            Pattern[b, Blank[]],
+            Pattern[c, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 6);
+}
+
+#[test]
+fn unordered_literal_plus_blank_count_len3() {
+    // Add[1, a_] against Add[1,2,3] unordered:
+    // literal 1 consumed; a_ can bind to either 2 or 3 BUT leftover expr must be empty (no seq)
+    // so no solutions.
+    let expr = raw_expr! { Add[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            1,
+            Pattern[a, Blank[]]
+        ]
+    });
+
+    let count = matcher.iter_matches(&expr).count();
+    assert_eq!(count, 0);
+}
+
+#[test]
+fn unordered_literal_plus_blank_count_len2() {
+    // Add[1, a_] against Add[1,2] unordered:
+    // literal 1 consumed; a_ must match 2 => 1 solution
+    let expr = raw_expr! { Add[1, 2] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            1,
+            Pattern[a, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn unordered_two_equal_literals_multiset_consumption() {
+    // Add[1,1,a_] against Add[1,1,2] unordered:
+    // literals consume two 1s, a binds to 2 => 1 solution
+    let expr = raw_expr! { Add[1, 1, 2] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            1,
+            1,
+            Pattern[a, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn unordered_literal_fails_if_not_enough_occurrences() {
+    // Add[1,1,a_] against Add[1,2,3] unordered:
+    // only one '1' exists => 0 solutions
+    let expr = raw_expr! { Add[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            1,
+            1,
+            Pattern[a, Blank[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 0);
+}
+
+#[test]
+fn unordered_blankseq_soaks_up_remainder_len3() {
+    // Add[a_, b__] against 3 args unordered.
+    // Match a_ to one expr (3 choices),
+    // then b__ binds to all remaining (2 exprs) => 3 solutions.
+    let expr = raw_expr! { Add[1, 2, 3] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, Blank[]],
+            Pattern[b, BlankSeq[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 3);
+}
+
+#[test]
+fn unordered_blanknullseq_can_be_empty_len1() {
+    // Add[a___] against Add[1] unordered:
+    // a___ binds to [1] => 1 solution
+    let expr = raw_expr! { Add[1] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, BlankNullSeq[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn unordered_blankseq_requires_nonempty_len0() {
+    // Add[a__] against Add[] unordered:
+    // BlankSeq requires >=1 => 0 solutions
+    let expr = raw_expr! { Add[] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, BlankSeq[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 0);
+}
+
+#[test]
+fn unordered_literal_plus_blankseq_len4() {
+    // Add[1, xs__] against Add[1,2,3,4] unordered:
+    // literal 1 consumed; xs__ binds to [2,3,4] => 1 solution
+    let expr = raw_expr! { Add[1, 2, 3, 4] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            1,
+            Pattern[xs, BlankSeq[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 1);
+}
+
+#[test]
+fn unordered_two_blanks_plus_blankseq_len4() {
+    // Add[a_, b_, xs__] against 4 args unordered:
+    // pick a: 4 choices, pick b: 3 choices => 12,
+    // xs__ binds to remaining 2 => 12 solutions
+    let expr = raw_expr! { Add[1, 2, 3, 4] };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Pattern[a, Blank[]],
+            Pattern[b, Blank[]],
+            Pattern[xs, BlankSeq[]]
+        ]
+    });
+
+    let count = matcher
+        .iter_matches(&expr)
+        .commutative_if(|head| head.matches_symbol(ADD_HEAD))
+        .count();
+    assert_eq!(count, 12);
 }
