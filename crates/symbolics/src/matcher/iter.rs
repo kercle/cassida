@@ -279,7 +279,10 @@ where
                     exprs: erest,
                 });
                 self.tasks.push(Task::MatchNode {
-                    pattern: patterns.first().unwrap().clone(), // can we get rid of this clone?
+                    // can we get rid of this clone?
+                    // patterns are mostly pointers and relatively shallow
+                    // -> shouldn't be a problem in general.
+                    pattern: patterns.first().unwrap().clone(),
                     expr: e0,
                 });
                 Ok(())
