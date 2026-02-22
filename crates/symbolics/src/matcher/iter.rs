@@ -40,15 +40,15 @@ impl<'a, A> PatSpan<'a, A> {
 }
 
 enum Task<'a, A> {
-    Node {
+    MatchNode {
         pattern: Pattern<'a, A>,
         expr: &'a Expr<A>,
     },
-    OrderedList {
+    MatchOrderedList {
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
-    UnorderedList {
+    MatchUnorderedList {
         patterns: PatSpan<'a, A>,
         exprs: &'a [Expr<A>],
     },
@@ -85,7 +85,7 @@ where
 {
     pub fn new(expr: &'a Expr<A>, pattern: Pattern<'a, A>) -> Self {
         MatchIter {
-            tasks: vec![Task::Node { pattern, expr }],
+            tasks: vec![Task::MatchNode { pattern, expr }],
             ctx: MatchContext::default(),
             back_track: Vec::new(),
             bind_action_log: Vec::new(),
@@ -148,7 +148,7 @@ where
                 continue;
             }
 
-            self.tasks.push(Task::OrderedList {
+            self.tasks.push(Task::MatchOrderedList {
                 patterns: cp.rest_pats,
                 exprs: &cp.rest_exprs[k..],
             });
@@ -203,11 +203,11 @@ where
                     ..
                 } = expr
                 {
-                    self.tasks.push(Task::OrderedList {
+                    self.tasks.push(Task::MatchOrderedList {
                         patterns: PatSpan::from(args),
                         exprs: eargs,
                     });
-                    self.tasks.push(Task::Node {
+                    self.tasks.push(Task::MatchNode {
                         pattern: *head,
                         expr: ehead,
                     });
@@ -265,7 +265,7 @@ where
                         .map_err(|_| MatchFail)?;
                 }
 
-                self.tasks.push(Task::OrderedList {
+                self.tasks.push(Task::MatchOrderedList {
                     patterns: patterns.clone().rest(),
                     exprs: &exprs[k_min..],
                 });
@@ -274,11 +274,11 @@ where
             _ => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchFail)?;
-                self.tasks.push(Task::OrderedList {
+                self.tasks.push(Task::MatchOrderedList {
                     patterns: patterns.clone().rest(),
                     exprs: erest,
                 });
-                self.tasks.push(Task::Node {
+                self.tasks.push(Task::MatchNode {
                     pattern: patterns.first().unwrap().clone(), // can we get rid of this clone?
                     expr: e0,
                 });
@@ -309,9 +309,11 @@ where
 
         while let Some(task) = self.tasks.pop() {
             let r = match task {
-                Task::Node { pattern, expr } => self.queue_node(pattern, expr),
-                Task::OrderedList { patterns, exprs } => self.queue_ordered_list(patterns, exprs),
-                Task::UnorderedList { patterns, exprs } => {
+                Task::MatchNode { pattern, expr } => self.queue_node(pattern, expr),
+                Task::MatchOrderedList { patterns, exprs } => {
+                    self.queue_ordered_list(patterns, exprs)
+                }
+                Task::MatchUnorderedList { patterns, exprs } => {
                     self.queue_unordered_list(patterns, exprs)
                 }
             };
