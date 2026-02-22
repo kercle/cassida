@@ -8,7 +8,7 @@ use crate::expr::Expr;
 #[derive(Clone)]
 pub enum Bound<'a, A> {
     One(&'a Expr<A>),
-    Seq(&'a [Expr<A>]),
+    Seq(Vec<&'a Expr<A>>),
 }
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ pub struct BindingDecError;
 impl<'a, A: Clone + Debug + PartialEq> Debug for Binding<'a, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use Bound::*;
-        match self.content {
+        match &self.content {
             One(expr) => write!(f, "{:?}", expr),
             Seq(seq) => write!(f, "{:?}", seq),
         }
@@ -38,7 +38,7 @@ impl<'a, A> Binding<'a, A> {
         }
     }
 
-    pub fn new_seq(expr_arr: &'a [Expr<A>]) -> Self {
+    pub fn new_seq(expr_arr: Vec<&'a Expr<A>>) -> Self {
         Self {
             content: Bound::Seq(expr_arr),
             rc: 1,
@@ -70,11 +70,11 @@ impl<'a, A> Binding<'a, A> {
         }
     }
 
-    pub fn get_seq(&self) -> Option<&'a [Expr<A>]> {
+    pub fn get_seq(&self) -> Option<Vec<&'a Expr<A>>> {
         use Bound::*;
-        match self.content {
+        match &self.content {
             One(_) => None,
-            Seq(seq) => Some(seq),
+            Seq(seq) => Some(seq.clone()),
         }
     }
 }
@@ -131,20 +131,22 @@ where
         if let Some(b) = self.bindings.get_mut(name.as_ref()) {
             let ea = b.get_seq().ok_or(MatchContextBindError)?;
 
-            if ea.iter().zip(expr_arr).all(|(e1, e2)| e1 == e2) {
+            if ea.iter().zip(expr_arr).all(|(&e1, e2)| e1 == e2) {
                 b.inc_bindings();
                 Ok(())
             } else {
                 Err(MatchContextBindError)
             }
         } else {
-            self.bindings
-                .insert(name.as_ref().to_string(), Binding::new_seq(expr_arr));
+            self.bindings.insert(
+                name.as_ref().to_string(),
+                Binding::new_seq(expr_arr.iter().collect()),
+            );
             Ok(())
         }
     }
 
-    pub fn get_seq<T: AsRef<str>>(&self, name: T) -> Option<&'a [Expr<A>]> {
+    pub fn get_seq<T: AsRef<str>>(&self, name: T) -> Option<Vec<&'a Expr<A>>> {
         if let Some(e) = self.bindings.get(name.as_ref()) {
             e.get_seq()
         } else {
