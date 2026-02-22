@@ -38,6 +38,10 @@ impl FromStr for PatternPredicate {
     }
 }
 
+pub struct OwnedPattern<A> {
+    expr: Expr<A>,
+}
+
 pub enum Pattern<'a, A> {
     Literal(&'a Expr<A>),
     Blank {
