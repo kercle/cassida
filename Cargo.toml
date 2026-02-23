@@ -4,5 +4,5 @@ members = [
     "crates/eval-server", "crates/expr-macro",
     "crates/numbers",
     "crates/symbolics",
-    "crates/cli",
+    "crates/cli", "crates/wasm", "crates/common",
 ]

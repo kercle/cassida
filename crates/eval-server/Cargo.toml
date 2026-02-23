@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 symbolics = { path = "../symbolics" }
+common = { path = "../common" }
 axum = { version = "0.8.8", features = ["ws"] }
 futures-util = "0.3.31"
 serde = { version = "1.0.228", features = ["derive"] }

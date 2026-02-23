@@ -4,8 +4,8 @@ use axum::{
     response::Response,
     routing::get,
 };
+use common::{ClientMessage, KernelMessage};
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use serde::{Deserialize, Serialize};
 use symbolics::{
     expr::Expr,
     format::MathDisplay,
@@ -14,19 +14,6 @@ use symbolics::{
 };
 use tracing::Level;
 use tracing::{error, info};
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-enum ClientMessage {
-    Eval(String),
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-enum ServerMessage {
-    EvalResult { input: String, output: String },
-    ParseError { input: String, msg: String },
-}
 
 #[tokio::main]
 async fn main() {
@@ -77,16 +64,16 @@ async fn handle_socket(socket: WebSocket) {
     info!("Client disconnected.");
 }
 
-fn process_message(inbound_msg: String) -> Result<ServerMessage, ServerMessage> {
+fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessage> {
     let inbound_msg: ClientMessage =
-        serde_json::from_str(&inbound_msg).map_err(|err| ServerMessage::ParseError {
+        serde_json::from_str(&inbound_msg).map_err(|err| KernelMessage::ParseError {
             input: "n/a".to_string(),
             msg: format!("Cannot unpack inbound message: {err}"),
         })?;
 
     let ClientMessage::Eval(input) = inbound_msg;
 
-    let ast_in = parse(&input).map_err(|err| ServerMessage::ParseError {
+    let ast_in = parse(&input).map_err(|err| KernelMessage::ParseError {
         input: input.clone(),
         msg: format!("Error parsing input: {}", err),
     })?;
@@ -100,12 +87,12 @@ fn process_message(inbound_msg: String) -> Result<ServerMessage, ServerMessage> 
         .canonicalize();
 
     if let Ok(ast_out) = ParserAst::try_from(result_expr) {
-        Ok(ServerMessage::EvalResult {
+        Ok(KernelMessage::EvalResult {
             input: input_latex,
             output: ast_out.to_latex(),
         })
     } else {
-        Err(ServerMessage::ParseError {
+        Err(KernelMessage::ParseError {
             input: input_latex,
             msg: "Cannot recover AST from transformed expression.".to_string(),
         })
