@@ -7,4 +7,5 @@ pub mod macros;
 pub mod matcher;
 pub mod parser;
 pub mod pattern;
+pub mod rewrite;
 pub mod simplify;
