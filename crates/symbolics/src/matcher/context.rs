@@ -194,10 +194,10 @@ where
 {
     pub fn fill(&self, expr: Expr<A>) -> Expr<A> {
         expr.map_bottom_up(&|expr| {
-            if let Some(x) = expr.get_symbol() {
-                if let Some(repl) = self.get_one(x) {
-                    return repl.clone();
-                }
+            if let Some(x) = expr.get_symbol()
+                && let Some(repl) = self.get_one(x)
+            {
+                return repl.clone();
             }
 
             let Some(head) = expr.head().cloned() else {

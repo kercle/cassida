@@ -15,6 +15,7 @@ where
     pub transform: RuleTransformer<A>,
 }
 
+#[derive(Default)]
 pub struct Rewriter<A>
 where
     A: Clone + PartialEq,
@@ -25,15 +26,17 @@ where
 
 impl<A> Rewriter<A>
 where
-    A: Clone + PartialEq,
+    A: Clone + PartialEq + Default,
 {
     pub fn new() -> Self {
-        Self {
-            rules: Vec::new(),
-            is_commutative: None,
-        }
+        Self::default()
     }
+}
 
+impl<A> Rewriter<A>
+where
+    A: Clone + PartialEq,
+{
     pub fn with_rule<F>(mut self, pattern: NormalizedExpr<A>, transform: F) -> Self
     where
         F: Fn(&mut MatchContext<'_, A>) -> Expr<A> + 'static,

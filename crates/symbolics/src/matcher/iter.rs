@@ -6,8 +6,10 @@ use crate::{
     pattern::{Pattern, PatternPredicate},
 };
 
+type PredicateFunction<A> = Box<dyn Fn(&Expr<A>) -> bool>;
+
 #[derive(Clone)]
-pub struct CommutativePredicate<A>(Rc<Box<dyn Fn(&Expr<A>) -> bool>>);
+pub struct CommutativePredicate<A>(Rc<PredicateFunction<A>>);
 
 impl<A> CommutativePredicate<A> {
     pub fn new<F>(f: F) -> Self
