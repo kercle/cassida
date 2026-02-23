@@ -1,4 +1,4 @@
-use expr_macro::raw_expr;
+use expr_macro::expr;
 
 use crate::{
     atom::Atom,
@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn simplify_evaluation_at_zero(expr: Expr) -> Expr {
-    let head_pattern = raw_expr! {
+    let head_pattern = expr! {
         PatternTest[Pattern[h, Blank[]], IsSymbolQ]
     };
     let pattern_expr = Expr::new_compound(head_pattern, vec![0.into()]).normalize();

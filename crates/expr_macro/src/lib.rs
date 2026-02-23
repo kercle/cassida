@@ -10,7 +10,7 @@ use syn::{
 /// Example:
 /// raw_expr!{ 1 + f[1 + Cos[x]] }
 #[proc_macro]
-pub fn raw_expr(input: TokenStream) -> TokenStream {
+pub fn expr(input: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(input as ExprRoot);
     TokenStream::from(parsed.expand())
 }

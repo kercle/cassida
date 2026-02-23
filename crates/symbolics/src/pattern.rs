@@ -194,7 +194,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use expr_macro::raw_expr;
+    use expr_macro::expr;
 
     use super::*;
     use crate::{
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_built_pattern_from_expr() {
-        let expr = raw_expr! {
+        let expr = expr! {
             PatternTest[Blank[], IsSymbolQ]
         };
         let pattern = Pattern::from_expr(&expr);
@@ -221,7 +221,7 @@ mod tests {
             r#"Blank{None, None, Some(IsSymbolQ)}"#
         );
 
-        let expr = raw_expr! {
+        let expr = expr! {
             PatternTest[Pattern[x, Blank[]], IsSymbolQ]
         };
         let pattern = Pattern::from_expr(&expr);

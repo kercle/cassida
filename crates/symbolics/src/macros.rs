@@ -13,7 +13,7 @@ macro_rules! chain_replace_quick_and_dirty {
         $(
             __e = __e.replace_all_quick_and_dirty(
                 norm_expr! { $($pat)* },
-                raw_expr!  { $($rep)* },
+                expr! { $($rep)* },
             );
         )+
         __e

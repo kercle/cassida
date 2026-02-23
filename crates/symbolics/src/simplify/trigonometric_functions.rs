@@ -1,4 +1,4 @@
-use expr_macro::{norm_expr, raw_expr};
+use expr_macro::{norm_expr, expr};
 
 use crate::{
     atom::Atom,

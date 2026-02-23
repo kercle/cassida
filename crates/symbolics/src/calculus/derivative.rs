@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use expr_macro::raw_expr;
+use expr_macro::expr;
 use numbers::Number;
 
 use crate::{
@@ -18,7 +18,7 @@ where
 {
     let expr = expr.drop_annotation();
     let pattern_expr =
-        raw_expr! { D[Pattern[f, Blank[]], PatternTest[Pattern[x, Blank[]], IsSymbolQ]] };
+        expr! { D[Pattern[f, Blank[]], PatternTest[Pattern[x, Blank[]], IsSymbolQ]] };
 
     expr.map_bottom_up(&|e| {
         let pattern = Pattern::from_expr(&pattern_expr);
@@ -232,12 +232,12 @@ mod tests {
             .collect_like_terms()
             .take_expr();
 
-        assert_eq!(result, raw_expr! { Add[5, Mul[2, x, y]] });
+        assert_eq!(result, expr! { Add[5, Mul[2, x, y]] });
     }
 
     #[test]
     fn test_resolve_nested_derivate() {
-        let expr = raw_expr! {
+        let expr = expr! {
             Exp[1 + D[f[x] + Sin[x] + Pow[x, 2] + 2, x]]
         };
 
@@ -245,7 +245,7 @@ mod tests {
 
         assert_eq!(
             expr,
-            raw_expr! {
+            expr! {
                 Exp[Add[1, Cos[x], D[f[x], x], Mul[2, x]]]
             }
         );

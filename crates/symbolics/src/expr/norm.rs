@@ -415,7 +415,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
 #[cfg(test)]
 mod tests {
-    use expr_macro::{norm_expr, raw_expr};
+    use expr_macro::{norm_expr, expr};
 
     use super::*;
     use crate::{expr::generator::*, symbol};
@@ -494,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_divide_by_zero() {
-        let expr = raw_expr! { 0 / 0 };
+        let expr = expr! { 0 / 0 };
 
         dbg!(expr.normalize());
     }
@@ -503,6 +503,6 @@ mod tests {
     fn test_resugar() {
         let expr = norm_expr! { x - y };
 
-        assert_eq!(expr.resugar(), raw_expr! { Sub[x, y] });
+        assert_eq!(expr.resugar(), expr! { Sub[x, y] });
     }
 }
