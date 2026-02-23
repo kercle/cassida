@@ -57,11 +57,11 @@
 	</div>
 
 	{#if entry && 'evalResult' in entry}
-		<div class="border-base-200 rounded-b-sm border pl-8 overflow-x-auto">
+		<div class="border-base-200 bg-white rounded-b-sm border pl-8 overflow-x-auto">
 			<Math expr={'=' + entry.evalResult.output} />
 		</div>
 	{:else if entry && 'parseError' in entry}
-		<div class=" rounded-b-sm border border-red-200 p-2 pl-8 overflow-x-auto">
+		<div class=" rounded-b-sm border bg-white border-red-200 p-2 pl-8 overflow-x-auto">
 			<b class="mr-2">Error:</b>{entry.parseError.msg}
 		</div>
 	{/if}
