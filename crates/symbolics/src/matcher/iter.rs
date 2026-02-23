@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use crate::{
     expr::Expr,
@@ -9,7 +9,21 @@ use crate::{
     pattern::{Pattern, PatternPredicate},
 };
 
-type CommutativePredicate<A> = Box<dyn Fn(&Expr<A>) -> bool>;
+#[derive(Clone)]
+pub struct CommutativePredicate<A>(Rc<Box<dyn Fn(&Expr<A>) -> bool>>);
+
+impl<A> CommutativePredicate<A> {
+    pub fn new<F>(f: F) -> Self
+    where
+        F: Fn(&Expr<A>) -> bool + 'static,
+    {
+        Self(Rc::new(Box::new(f)))
+    }
+
+    pub fn eval(&self, arg: &Expr<A>) -> bool {
+        self.0(arg)
+    }
+}
 
 enum Task<'a, A> {
     MatchOne {
@@ -151,18 +165,23 @@ where
         }
     }
 
+    pub fn with_commutative_predicate(mut self, f: Option<CommutativePredicate<A>>) -> Self {
+        self.is_commutative = f;
+        self
+    }
+
     pub fn commutative_if<F>(mut self, f: F) -> Self
     where
         F: Fn(&Expr<A>) -> bool + 'static,
     {
-        self.is_commutative = Some(Box::new(f));
+        self.is_commutative = Some(CommutativePredicate::new(f));
         self
     }
 
     fn is_commutative_head(&self, head: &Expr<A>) -> bool {
         self.is_commutative
             .as_ref()
-            .map(|f| f(head))
+            .map(|f| f.eval(head))
             .unwrap_or(false)
     }
 

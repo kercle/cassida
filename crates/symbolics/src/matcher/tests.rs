@@ -608,3 +608,26 @@ fn unordered_two_blanks_plus_blankseq_len4() {
         .count();
     assert_eq!(count, 12);
 }
+
+#[test]
+fn unordered_two_blanks_plus_blankseq_len7() {
+    // Add[a_, b_, xs__] against 4 args unordered:
+    // pick a: 4 choices, pick b: 3 choices => 12,
+    // xs__ binds to remaining 2 => 12 solutions
+    let expr = raw_expr! {
+        Add[x, Cos[phi / 8]^2, y, Sin[phi / 8]^2, 1, 2, Exp[Log[x+1]]]
+    };
+    let matcher = Matcher::new(raw_expr! {
+        Add[
+            Cos[Pattern[a, Blank[]]]^2,
+            Sin[Pattern[b, Blank[]]]^2,
+            Pattern[xs, BlankSeq[]]
+        ]
+    })
+    .commutative_if(|head| head.matches_symbol(ADD_HEAD));
+
+    let ctx = matcher.first_match(&expr);
+    assert!(ctx.is_some());
+
+    dbg!(ctx);
+}
