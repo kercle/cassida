@@ -1,8 +1,0 @@
-[workspace]
-resolver = "2"
-members = [
-    "crates/eval-server", "crates/expr-macro",
-    "crates/numbers",
-    "crates/symbolics",
-    "crates/cli",
-]
