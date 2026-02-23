@@ -380,11 +380,6 @@ where
                     ..
                 } = expr
                 {
-                    self.tasks.push(Task::MatchOne {
-                        pattern: *pat_head,
-                        expr: expr_head,
-                    });
-
                     if self.is_commutative_head(expr_head.as_ref()) {
                         self.tasks.push(Task::MatchUnorderedSeq {
                             patterns: PatSpan::from(args),
@@ -397,6 +392,12 @@ where
                             exprs: expr_args,
                         });
                     }
+
+                    self.tasks.push(Task::MatchOne {
+                        pattern: *pat_head,
+                        expr: expr_head,
+                    });
+
                     Ok(())
                 } else {
                     Err(MatchError::MatchFail)

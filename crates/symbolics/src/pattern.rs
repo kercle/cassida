@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Debug, str::FromStr};
 
 use crate::expr::{Expr, walk::ExprTopDownWalker};
 
@@ -15,7 +15,7 @@ pub enum PatternPredicate {
 }
 
 impl PatternPredicate {
-    pub fn check<A>(&self, expr: &Expr<A>) -> bool {
+    pub fn check<A: Clone + Debug + PartialEq>(&self, expr: &Expr<A>) -> bool {
         use PatternPredicate::*;
         match self {
             IsSymbolQ => expr.is_symbol(),
