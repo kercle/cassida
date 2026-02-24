@@ -142,7 +142,9 @@ where
         if let Some(b) = self.bindings.get_mut(name.as_ref()) {
             let ea = b.get_seq().ok_or(MatchContextError::Bind)?;
 
-            if ea.iter().zip(expr_arr).all(|(&e1, e2)| e1 == e2) {
+            if ea.len() == expr_arr.len()
+                && ea.iter().zip(expr_arr.iter()).all(|(&e1, &e2)| e1 == e2)
+            {
                 b.inc_bindings();
                 Ok(())
             } else {
