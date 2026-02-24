@@ -86,6 +86,12 @@ impl<'a> CharIterator<'a> {
         next_opt
     }
 
+    fn skip(&mut self, n: usize) {
+        for _ in 0..n {
+            self.next();
+        }
+    }
+
     fn lookahead(&mut self, n: usize) -> Option<&char> {
         if n == 0 {
             None
@@ -457,7 +463,7 @@ impl FromStr for TokenStream {
         let mut tokens = vec![];
 
         let mut iter = CharIterator::new(s);
-        while let Some(c) = iter.peek().cloned() {
+        while let Some(&c) = iter.peek() {
             if c == '"' {
                 iter.next();
                 let (string, pos) = Self::consume_string_literal("\"", &mut iter)?;
