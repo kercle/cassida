@@ -82,7 +82,6 @@ where
             for rule in &self.rules {
                 if let Some(mut ctx) = rule.matcher.first_match(&res) {
                     let f = &rule.transform;
-                    dbg!(&ctx);
                     res = f(&mut ctx).normalize();
                     break;
                 }
