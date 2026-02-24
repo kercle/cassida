@@ -86,32 +86,19 @@ impl<'a> CharIterator<'a> {
         next_opt
     }
 
-    fn skip(&mut self, n: usize) {
-        for _ in 0..n {
-            self.next();
-        }
-    }
-
     fn lookahead(&mut self, n: usize) -> Option<&char> {
-        if n == 0 {
-            None
-        } else if n <= self.lookahead_buffer.len() {
-            self.lookahead_buffer.get(n - 1)
-        } else {
-            let missing_count = n - self.lookahead_buffer.len();
-            for _ in 0..missing_count {
-                if let Some(c) = self.iter.next() {
-                    self.lookahead_buffer.push_back(c);
-                } else {
-                    return None;
-                }
+        while self.lookahead_buffer.len() <= n {
+            if let Some(c) = self.iter.next() {
+                self.lookahead_buffer.push_back(c);
+            } else {
+                return None;
             }
-            self.lookahead_buffer.get(n - 1)
         }
+        self.lookahead_buffer.get(n)
     }
 
     fn peek(&mut self) -> Option<&char> {
-        self.lookahead(1)
+        self.lookahead(0)
     }
 
     fn pos(&self) -> TokenPos {
