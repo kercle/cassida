@@ -94,6 +94,12 @@ impl<'a> CharIterator<'a> {
         next_opt
     }
 
+    fn skip(&mut self, n: usize) {
+        for _ in 0..n {
+            self.next();
+        }
+    }
+
     fn lookahead(&mut self, n: usize) -> Option<&char> {
         while self.lookahead_buffer.len() <= n {
             if let Some(c) = self.iter.next() {
@@ -477,30 +483,37 @@ impl FromStr for TokenStream {
                 let (code, _) = Self::consume_string_literal("```", &mut iter)?;
 
                 tokens.push((Token::CodeBlock { language, code }, pos));
-            } else if Self::consume_operator_chars(&mut iter, &mut tokens) {
-                continue;
             } else if c.is_whitespace() {
                 iter.next(); // Consume whitespace
             } else if c == '-' || c == '+' {
-                iter.next(); // Consume the sign
-
                 if c == '-' && iter.peek() == Some(&'>') {
                     tokens.push((Token::Minus, iter.pos()));
-                    iter.next(); // Consume '>'
+                    iter.skip(2); // Consume '-' and '>'
                 } else if c == '+' && iter.peek() == Some(&'>') {
                     tokens.push((Token::Plus, iter.pos()));
-                    iter.next(); // Consume '>'
+                    iter.skip(2); // Consume '-' and '>'
                 }
 
-                if let Some(next_char) = iter.peek() {
-                    if next_char.is_ascii_digit() {
+                if let Some(char_after_minus) = iter.lookahead(1) {
+                    let prev_token_is_operator_or_start =
+                        tokens.last().map(|(t, _)| t.is_operator()).unwrap_or(true);
+
+                    if char_after_minus.is_ascii_digit() && prev_token_is_operator_or_start {
                         Self::comsume_number_chars(&mut iter, &mut tokens)?;
                     } else if c == '-' {
+                        iter.next(); // Consume '-'
                         tokens.push((Token::Minus, iter.pos()));
                     } else if c == '+' {
+                        iter.next(); // Consume '+'
                         tokens.push((Token::Plus, iter.pos()));
+                    } else {
+                        unreachable!(
+                            "Sign should have been consumed at least by previous two branches."
+                        )
                     }
                 }
+            } else if Self::consume_operator_chars(&mut iter, &mut tokens) {
+                continue;
             } else if c.is_ascii_digit() {
                 Self::comsume_number_chars(&mut iter, &mut tokens)?;
             } else if c.is_alphabetic() || c == '_' {
@@ -522,6 +535,20 @@ impl FromStr for TokenStream {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn token_streams_eq(actual: &[(Token, TokenPos)], expected: &[Token]) -> bool {
+        if actual.len() != expected.len() {
+            return false;
+        }
+
+        for ((actual_token, _), expected_token) in actual.iter().zip(expected.iter()) {
+            if actual_token != expected_token {
+                return false;
+            }
+        }
+
+        true
+    }
 
     #[test]
     fn test_simple_token_stream_from_str() {
@@ -620,24 +647,43 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn test_pow_minus_one() {
-    //     let input = r#"a^-1"#;
-    //     let token_stream = TokenStream::from_str(input).unwrap();
-    //     dbg!(&token_stream);
-    //     assert_eq!(token_stream.tokens.len(), 3);
+    #[test]
+    fn test_pow_minus_one() {
+        let input = r#"a^-1"#;
+        let token_stream = TokenStream::from_str(input).unwrap();
+        assert_eq!(token_stream.tokens.len(), 3);
 
-    //     let expected = vec![
-    //         Token::Identifier("a".to_string()),
-    //         Token::Caret,
-    //         Token::Number("-1".to_string()),
-    //     ];
-    //     for ((token, _), expected_token) in token_stream.tokens.iter().zip(expected.iter()) {
-    //         assert_eq!(
-    //             token, expected_token,
-    //             "Token mismatch at position {:?}",
-    //             token
-    //         );
-    //     }
-    // }
+        let expected = vec![
+            Token::Identifier("a".to_string()),
+            Token::Caret,
+            Token::Number("-1".to_string()),
+        ];
+        for ((token, _), expected_token) in token_stream.tokens.iter().zip(expected.iter()) {
+            assert_eq!(
+                token, expected_token,
+                "Token mismatch at position {:?}",
+                token
+            );
+        }
+    }
+
+    #[test]
+    fn test_negative_number_at_beginning() {
+        let input = r#"-2"#;
+
+        let token_stream = TokenStream::from_str(input).unwrap();
+        let expected = vec![Token::Number("-2".to_string())];
+
+        assert!(token_streams_eq(&token_stream.tokens, &expected));
+    }
+
+    #[test]
+    fn test_minus_sign_at_beginning() {
+        let input = r#"-a"#;
+
+        let token_stream = TokenStream::from_str(input).unwrap();
+        let expected = vec![Token::Minus, Token::Identifier("a".to_string())];
+
+        assert!(token_streams_eq(&token_stream.tokens, &expected));
+    }
 }
