@@ -25,21 +25,21 @@ fn factorization_rules() -> Vec<(NormalizedExpr, Expr)> {
         (
             norm_expr!(
                 Pattern[r, BlankNullSeq[]]
-                    + Pattern[a, Blank[]] * Pattern[b, Blank[]]
-                    + Pattern[a, Blank[]] * Pattern[c, Blank[]]
+                    + Pattern[a, Blank[]] * Pattern[b, BlankSeq[]]
+                    + Pattern[a, Blank[]] * Pattern[c, BlankSeq[]]
             ),
             expr!(
-                a*(b + c) + Apply[Add, r]
+                a*(Apply[Mul,b] + Apply[Mul,c]) + Apply[Add, r]
             ),
         ),
         (
             norm_expr!(
                 Pattern[r, BlankNullSeq[]]
                     + Pattern[a, Blank[]]
-                    + Pattern[a, Blank[]] * Pattern[c, Blank[]]
+                    + Pattern[a, Blank[]] * Pattern[b, BlankSeq[]]
             ),
             expr!(
-                a*(1 + c) + Apply[Add, r]
+                a*(1 + Apply[Mul,b]) + Apply[Add, r]
             ),
         ),
     ]
