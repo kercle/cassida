@@ -6,7 +6,7 @@ pub enum Expr<A = ()> {
         entry: Atom,
         annotation: A,
     },
-    Compound {
+    Node {
         head: Box<Expr<A>>,
         args: Vec<Expr<A>>,
         annotation: A,

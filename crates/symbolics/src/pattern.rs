@@ -57,7 +57,7 @@ pub enum Pattern<'a, A> {
         match_head: Option<&'a Expr<A>>,
         predicate: Option<PatternPredicate>,
     },
-    Compound {
+    Node {
         head: Box<Pattern<'a, A>>,
         args: Vec<Pattern<'a, A>>,
         predicate: Option<PatternPredicate>,
@@ -72,9 +72,9 @@ where
         Self::from_expr_inner(expr)
     }
 
-    fn from_pattern_compound(expr: &'a Expr<A>) -> Option<Pattern<'a, A>> {
+    fn from_pattern_node(expr: &'a Expr<A>) -> Option<Pattern<'a, A>> {
         match expr {
-            Expr::Compound { head, args, .. }
+            Expr::Node { head, args, .. }
                 if head.matches_symbol(PATTERN_TEST_HEAD) && args.len() == 2 =>
             {
                 let pat = args.first()?;
@@ -84,7 +84,7 @@ where
                     .parse::<PatternPredicate>()
                     .ok()?;
 
-                match Self::from_pattern_compound(pat) {
+                match Self::from_pattern_node(pat) {
                     Some(Pattern::Blank {
                         bind_name,
                         match_head,
@@ -99,7 +99,7 @@ where
                     }
                 }
             }
-            Expr::Compound { head, args, .. }
+            Expr::Node { head, args, .. }
                 if head.matches_symbol(PATTERN_HEAD) && args.len() == 2 =>
             {
                 let e = args.last()?;
@@ -110,12 +110,12 @@ where
                     || h.matches_symbol(BLANK_NULL_SEQ_HEAD)
                 {
                     let bind_name = args.first()?.get_symbol()?;
-                    Some(Self::from_pattern_compound(e)?.with_bind_name(bind_name))
+                    Some(Self::from_pattern_node(e)?.with_bind_name(bind_name))
                 } else {
                     unimplemented!()
                 }
             }
-            Expr::Compound { head, args, .. } if args.len() <= 1 => {
+            Expr::Node { head, args, .. } if args.len() <= 1 => {
                 if head.matches_symbol(BLANK_ONE_HEAD) {
                     Some(Pattern::Blank {
                         bind_name: None,
@@ -145,7 +145,7 @@ where
     fn from_expr_inner(expr: &'a Expr<A>) -> Self {
         let mut descend = false;
         for e in ExprTopDownWalker::new(expr) {
-            if let Expr::Compound { head, .. } = e
+            if let Expr::Node { head, .. } = e
                 && (head.matches_symbol(PATTERN_HEAD)
                     || head.matches_symbol(BLANK_ONE_HEAD)
                     || head.matches_symbol(BLANK_SEQ_HEAD)
@@ -159,11 +159,11 @@ where
 
         match expr {
             Expr::Atom { .. } => Pattern::Literal(expr),
-            Expr::Compound { head, args, .. } if descend => {
-                if let Some(p) = Self::from_pattern_compound(expr) {
+            Expr::Node { head, args, .. } if descend => {
+                if let Some(p) = Self::from_pattern_node(expr) {
                     p
                 } else {
-                    Pattern::Compound {
+                    Pattern::Node {
                         head: Box::new(Self::from_expr_inner(head.as_ref())),
                         args: args.iter().map(|e| Self::from_expr_inner(e)).collect(),
                         predicate: None,
@@ -178,7 +178,7 @@ where
         use Pattern::*;
         match self {
             Literal(_) => self,
-            Compound { .. } => self,
+            Node { .. } => self,
             Blank {
                 match_head,
                 predicate,

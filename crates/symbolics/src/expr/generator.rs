@@ -35,42 +35,42 @@ impl From<SymbolGenerator> for Expr {
 }
 
 pub fn f() -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("f"), Vec::new())
+    Expr::new_node(Expr::new_symbol("f"), Vec::new())
 }
 
 pub fn g<T: Into<Expr>>(a: T) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("f"), vec![a.into()])
+    Expr::new_node(Expr::new_symbol("f"), vec![a.into()])
 }
 
 pub fn h<S: Into<Expr>, T: Into<Expr>>(a: S, b: T) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("f"), vec![a.into(), b.into()])
+    Expr::new_node(Expr::new_symbol("f"), vec![a.into(), b.into()])
 }
 
 pub fn cos(a: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("Cos"), vec![a])
+    Expr::new_node(Expr::new_symbol("Cos"), vec![a])
 }
 
 pub fn sin(a: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("Sin"), vec![a])
+    Expr::new_node(Expr::new_symbol("Sin"), vec![a])
 }
 
 pub fn exp(a: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("Exp"), vec![a])
+    Expr::new_node(Expr::new_symbol("Exp"), vec![a])
 }
 
 pub fn log(a: Expr) -> Expr<()> {
-    Expr::new_compound(Expr::new_symbol("Log"), vec![a])
+    Expr::new_node(Expr::new_symbol("Log"), vec![a])
 }
 
 pub fn pow<A, S: Into<Expr<A>>, T: Into<Expr<A>>>(b: S, e: T) -> Expr<A>
 where
     A: Default + Clone + PartialEq,
 {
-    Expr::new_compound(Expr::new_symbol("Pow"), vec![b.into(), e.into()])
+    Expr::new_node(Expr::new_symbol("Pow"), vec![b.into(), e.into()])
 }
 
 pub fn blank<A: Default + Clone + PartialEq>(head: Option<Expr<A>>) -> Expr<A> {
-    Expr::new_compound(
+    Expr::new_node(
         Expr::new_symbol(BLANK_ONE_HEAD),
         if let Some(h) = head {
             vec![h]
@@ -81,7 +81,7 @@ pub fn blank<A: Default + Clone + PartialEq>(head: Option<Expr<A>>) -> Expr<A> {
 }
 
 pub fn blank_sequence(head: Option<Expr>) -> Expr<()> {
-    Expr::new_compound(
+    Expr::new_node(
         Expr::new_symbol(BLANK_SEQ_HEAD),
         if let Some(h) = head {
             vec![h]
@@ -92,7 +92,7 @@ pub fn blank_sequence(head: Option<Expr>) -> Expr<()> {
 }
 
 pub fn pattern(bind_name: &str, arg: Expr) -> Expr<()> {
-    Expr::new_compound(
+    Expr::new_node(
         Expr::new_symbol(PATTERN_HEAD),
         vec![Expr::new_symbol(bind_name), arg],
     )

@@ -178,7 +178,7 @@ fn match_blankseq_binding_slice_lengths() {
 }
 
 #[test]
-fn match_nested_compound_and_sequence() {
+fn match_nested_node_and_sequence() {
     assert!(
         Matcher::new(expr! { f[g[Pattern[x, BlankSeq[]]], 9] })
             .first_match(&expr! { f[g[1, 2, 3], 9] })
@@ -206,10 +206,10 @@ fn match_head_restricted_blank_failure() {
 }
 
 #[test]
-fn match_compound_head_as_pattern() {
-    // Compound { head: Box<Pattern>, args: Vec<Pattern> }
+fn match_node_head_as_pattern() {
+    // Node { head: Box<Pattern>, args: Vec<Pattern> }
     // If your pattern allows matching the head itself:
-    let p = Expr::new_compound(
+    let p = Expr::new_node(
         Expr::new_blank(),
         vec![Expr::new_number(1), Expr::new_number(2)],
     );

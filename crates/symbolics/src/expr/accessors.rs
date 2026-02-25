@@ -6,35 +6,35 @@ impl<A> Expr<A> {
     pub fn as_atom(&self) -> Option<&Atom> {
         match self {
             Expr::Atom { entry, .. } => Some(entry),
-            Expr::Compound { .. } => None,
+            Expr::Node { .. } => None,
         }
     }
 
     pub fn head(&self) -> Option<&Expr<A>> {
         match self {
             Expr::Atom { .. } => None,
-            Expr::Compound { head, .. } => Some(head),
+            Expr::Node { head, .. } => Some(head),
         }
     }
 
     pub fn args_len(&self) -> usize {
         match self {
             Expr::Atom { .. } => 0,
-            Expr::Compound { args, .. } => args.len(),
+            Expr::Node { args, .. } => args.len(),
         }
     }
 
     pub fn get_arg(&self, index: usize) -> Option<&Self> {
         match self {
             Expr::Atom { .. } => None,
-            Expr::Compound { args, .. } => args.get(index),
+            Expr::Node { args, .. } => args.get(index),
         }
     }
 
     pub fn iter_args(&self) -> Option<std::slice::Iter<'_, Expr<A>>> {
         match self {
             Expr::Atom { .. } => None,
-            Expr::Compound { args, .. } => Some(args.iter()),
+            Expr::Node { args, .. } => Some(args.iter()),
         }
     }
 
@@ -109,7 +109,7 @@ impl<A> Expr<A> {
     pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {
         match self {
             Expr::Atom { .. } => false,
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 head.matches_symbol(head_sym) && args.len() == arity
             }
         }

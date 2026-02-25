@@ -321,7 +321,7 @@ where
                 entry: Atom::StringLiteral(_),
                 ..
             } => todo!(),
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -332,7 +332,7 @@ where
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ParserAst::new_add(args).with_annotation(annotation))
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 mut args,
                 annotation,
@@ -342,7 +342,7 @@ where
 
                 Ok(ParserAst::new_sub(lhs, rhs).with_annotation(annotation))
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -353,7 +353,7 @@ where
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ParserAst::new_mul(args).with_annotation(annotation))
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 mut args,
                 annotation,
@@ -363,7 +363,7 @@ where
 
                 Ok(ParserAst::new_div(lhs, rhs).with_annotation(annotation))
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 mut args,
                 annotation,
@@ -372,7 +372,7 @@ where
                 let lhs = ParserAst::try_from_inner(args.pop().unwrap())?;
                 Ok(ParserAst::new_pow(lhs, rhs).with_annotation(annotation))
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,

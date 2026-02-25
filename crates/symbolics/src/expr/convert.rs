@@ -40,7 +40,7 @@ where
                     .into_iter()
                     .map(|node| Self::from_parser_ast(node))
                     .collect();
-                Self::new_compound(head, args).with_annotation(annotation.clone())
+                Self::new_node(head, args).with_annotation(annotation.clone())
             }
             ParserAst::Sub {
                 lhs,
@@ -51,11 +51,11 @@ where
                 let lhs = Self::from_parser_ast(*lhs);
                 let rhs = Self::from_parser_ast(*rhs);
 
-                Self::new_compound(
+                Self::new_node(
                     head,
                     vec![
                         lhs,
-                        Self::new_compound(
+                        Self::new_node(
                             Self::new_symbol(MUL_HEAD),
                             vec![Self::new_number(Number::from_i64(-1)), rhs],
                         ),
@@ -65,7 +65,7 @@ where
             }
             ParserAst::Negation { arg, annotation } => {
                 let arg = Self::from_parser_ast(*arg);
-                Self::new_compound(
+                Self::new_node(
                     Self::new_symbol(MUL_HEAD),
                     vec![Self::new_number(Number::from_i64(-1)), arg],
                 )
@@ -77,7 +77,7 @@ where
                     .into_iter()
                     .map(|node| Self::from_parser_ast(node))
                     .collect();
-                Self::new_compound(head, args).with_annotation(annotation.clone())
+                Self::new_node(head, args).with_annotation(annotation.clone())
             }
             ParserAst::Div {
                 lhs,
@@ -88,11 +88,11 @@ where
                 let lhs = Self::from_parser_ast(*lhs);
                 let rhs = Self::from_parser_ast(*rhs);
 
-                Self::new_compound(
+                Self::new_node(
                     head,
                     vec![
                         lhs,
-                        Self::new_compound(
+                        Self::new_node(
                             Self::new_symbol(POW_HEAD),
                             vec![rhs, Self::new_number(Number::from_i64(-1))],
                         ),
@@ -109,7 +109,7 @@ where
                 let lhs = Self::from_parser_ast(*lhs);
                 let rhs = Self::from_parser_ast(*rhs);
 
-                Self::new_compound(head, vec![lhs, rhs]).with_annotation(annotation.clone())
+                Self::new_node(head, vec![lhs, rhs]).with_annotation(annotation.clone())
             }
             ParserAst::FunctionCall {
                 name,
@@ -122,7 +122,7 @@ where
                     .map(|node| Self::from_parser_ast(node))
                     .collect();
 
-                Self::new_compound(head, args).with_annotation(annotation.clone())
+                Self::new_node(head, args).with_annotation(annotation.clone())
             }
             ParserAst::Block { .. } => todo!(),
         }

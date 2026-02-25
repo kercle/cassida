@@ -3,8 +3,8 @@ use numbers::Number;
 use crate::{atom::Atom, builtin::CANNONICAL_HEAD_LIST, expr::Expr, pattern::BLANK_ONE_HEAD};
 
 impl<A> Expr<A> {
-    pub fn new_compound_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
-        Expr::Compound {
+    pub fn new_node_with_annotation(head: Expr<A>, args: Vec<Expr<A>>, ann: A) -> Self {
+        Expr::Node {
             head: Box::new(head),
             args,
             annotation: ann,
@@ -16,8 +16,8 @@ impl<A> Expr<A>
 where
     A: Default,
 {
-    pub fn new_compound<T: Into<Expr<A>>>(head: T, args: Vec<Expr<A>>) -> Self {
-        Expr::Compound {
+    pub fn new_node<T: Into<Expr<A>>>(head: T, args: Vec<Expr<A>>) -> Self {
+        Expr::Node {
             head: Box::new(head.into()),
             args,
             annotation: A::default(),
@@ -46,10 +46,10 @@ where
     }
 
     pub fn new_blank() -> Self {
-        Expr::new_compound(BLANK_ONE_HEAD, vec![])
+        Expr::new_node(BLANK_ONE_HEAD, vec![])
     }
 
     pub fn new_list(args: Vec<Expr<A>>) -> Self {
-        Expr::new_compound(CANNONICAL_HEAD_LIST, args)
+        Expr::new_node(CANNONICAL_HEAD_LIST, args)
     }
 }

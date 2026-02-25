@@ -198,7 +198,7 @@ where
                 let name = target_expr.get_symbol().unwrap();
                 self.get_one(name).cloned().unwrap_or(target_expr)
             }
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let new_head = self.fill(*head);
                 let mut new_args = vec![];
 
@@ -216,7 +216,7 @@ where
                     }
                 }
 
-                Expr::new_compound(new_head, new_args)
+                Expr::new_node(new_head, new_args)
             }
             _ => target_expr,
         }

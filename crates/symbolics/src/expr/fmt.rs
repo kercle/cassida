@@ -16,8 +16,8 @@ impl<A: Clone + PartialEq> Debug for Expr<A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         let s = match self {
             Expr::Atom { entry, .. } => format!("{entry:?}"),
-            Expr::Compound { head, args, .. } => {
-                let head_str = if matches!(**head, Expr::Compound { .. }) {
+            Expr::Node { head, args, .. } => {
+                let head_str = if matches!(**head, Expr::Node { .. }) {
                     format!("({head:?})")
                 } else {
                     format!("{head:?}")
@@ -58,11 +58,11 @@ impl<'a, A: Clone + PartialEq> Debug for Pattern<'a, A> {
                 f,
                 "BlankNullSeq{{{bind_name:?}, {match_head:?}, {predicate:?}}}"
             ),
-            Compound {
+            Node {
                 head,
                 args,
                 predicate,
-            } => write!(f, "Compound{{{head:?}, {args:?}, {predicate:?}}}"),
+            } => write!(f, "Node{{{head:?}, {args:?}, {predicate:?}}}"),
         }
     }
 }

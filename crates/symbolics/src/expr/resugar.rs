@@ -16,12 +16,12 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         if coeff.is_one() {
             new_args.push(term);
         } else if coeff.is_minus_one() {
-            new_args.push(Expr::new_compound(NEG_HEAD, vec![term]));
+            new_args.push(Expr::new_node(NEG_HEAD, vec![term]));
         } else if coeff.is_zero() {
             // In normalized expression, this should not happen
             unreachable!()
         } else {
-            new_args.push(Expr::new_compound(MUL_HEAD, vec![coeff.into(), term]));
+            new_args.push(Expr::new_node(MUL_HEAD, vec![coeff.into(), term]));
         }
 
         while let Some(arg) = args.pop() {
@@ -31,28 +31,28 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 new_args.push(term);
             } else if coeff.is_minus_one() {
                 let lhs = new_args.pop().unwrap();
-                new_args.push(Expr::new_compound(SUB_HEAD, vec![lhs, term]));
+                new_args.push(Expr::new_node(SUB_HEAD, vec![lhs, term]));
             } else if coeff.is_negative() {
                 let lhs = new_args.pop().unwrap();
-                new_args.push(Expr::new_compound(
+                new_args.push(Expr::new_node(
                     SUB_HEAD,
                     vec![
                         lhs,
-                        Expr::new_compound(MUL_HEAD, vec![coeff.abs().into(), term]),
+                        Expr::new_node(MUL_HEAD, vec![coeff.abs().into(), term]),
                     ],
                 ));
             } else if coeff.is_zero() {
                 // In normalized expression, this should not happen
                 unreachable!()
             } else {
-                new_args.push(Expr::new_compound(MUL_HEAD, vec![coeff.into(), term]));
+                new_args.push(Expr::new_node(MUL_HEAD, vec![coeff.into(), term]));
             }
         }
 
         if new_args.len() == 1 {
             new_args.pop().unwrap().with_annotation(annotation)
         } else {
-            Expr::new_compound(ADD_HEAD, new_args).with_annotation(annotation)
+            Expr::new_node(ADD_HEAD, new_args).with_annotation(annotation)
         }
     }
 
@@ -65,11 +65,11 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 let (mut coeff, rhs_rest) = NormalizedExpr::new(rhs.clone()).split_coefficient();
                 if coeff.is_negative() {
                     coeff.flip_sign();
-                    denominator.push(Expr::new_compound(
+                    denominator.push(Expr::new_node(
                         POW_HEAD,
                         vec![
                             lhs.clone(),
-                            Expr::new_compound(MUL_HEAD, vec![coeff.into(), rhs_rest]),
+                            Expr::new_node(MUL_HEAD, vec![coeff.into(), rhs_rest]),
                         ],
                     ));
                 } else {
@@ -84,37 +84,37 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
         }
 
         if denominator.is_empty() {
-            Expr::new_compound(MUL_HEAD, numerator).with_annotation(annotation)
+            Expr::new_node(MUL_HEAD, numerator).with_annotation(annotation)
         } else if numerator.is_empty() {
-            Expr::new_compound(
+            Expr::new_node(
                 DIV_HEAD,
                 vec![
                     Expr::new_number(Number::one()),
-                    Expr::new_compound(MUL_HEAD, denominator),
+                    Expr::new_node(MUL_HEAD, denominator),
                 ],
             )
             .with_annotation(annotation)
         } else {
             let lhs = if numerator.len() >= 2 {
-                Expr::new_compound(MUL_HEAD, numerator)
+                Expr::new_node(MUL_HEAD, numerator)
             } else {
                 numerator.pop().unwrap()
             };
 
             let rhs = if denominator.len() >= 2 {
-                Expr::new_compound(MUL_HEAD, denominator)
+                Expr::new_node(MUL_HEAD, denominator)
             } else {
                 denominator.pop().unwrap()
             };
 
-            Expr::new_compound(DIV_HEAD, vec![lhs, rhs]).with_annotation(annotation)
+            Expr::new_node(DIV_HEAD, vec![lhs, rhs]).with_annotation(annotation)
         }
     }
 
     pub fn resugar(self) -> Expr<A> {
         let expr = self.take_expr();
         match expr {
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -125,7 +125,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                     .collect();
                 Self::resugar_add(args, annotation)
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -137,7 +137,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
                 Self::resugar_mul(args, annotation)
             }
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -150,7 +150,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                     .map(|e| e == &one_half)
                     .unwrap_or(false)
                 {
-                    return Expr::new_compound(
+                    return Expr::new_node(
                         CANNONICAL_HEAD_SQRT,
                         vec![args.first().unwrap().clone()],
                     );
@@ -162,7 +162,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                     .collect();
 
                 Self::resugar_mul(
-                    vec![Expr::Compound {
+                    vec![Expr::Node {
                         head,
                         args,
                         annotation: A::default(),

@@ -11,7 +11,7 @@ impl<A: Clone + PartialEq> Hash for Expr<A> {
                 0u8.hash(state);
                 entry.hash(state);
             }
-            Compound { head, args, .. } => {
+            Node { head, args, .. } => {
                 1u8.hash(state);
                 head.hash(state);
                 args.len().hash(state);

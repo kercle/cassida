@@ -9,13 +9,13 @@ fn cmp_expr<A: Clone + PartialEq>(lhs: &Expr<A>, rhs: &Expr<A>) -> Ordering {
 
     match (lhs, rhs) {
         (Atom { entry: ea, .. }, Atom { entry: eb, .. }) => ea.cmp(eb),
-        (Atom { .. }, Compound { .. }) => Ordering::Less,
-        (Compound { .. }, Atom { .. }) => Ordering::Greater,
+        (Atom { .. }, Node { .. }) => Ordering::Less,
+        (Node { .. }, Atom { .. }) => Ordering::Greater,
         (
-            Compound {
+            Node {
                 head: ha, args: aa, ..
             },
-            Compound {
+            Node {
                 head: hb, args: ab, ..
             },
         ) => {
@@ -60,7 +60,7 @@ impl<A: Clone + PartialEq + Default> ops::Add for Expr<A> {
     type Output = Expr<A>;
 
     fn add(self, other: Self) -> Self::Output {
-        Expr::new_compound(Expr::new_symbol(ADD_HEAD), vec![self, other])
+        Expr::new_node(Expr::new_symbol(ADD_HEAD), vec![self, other])
     }
 }
 
@@ -114,7 +114,7 @@ impl<A: Clone + PartialEq + Default> ops::Sub for Expr<A> {
     type Output = Expr<A>;
 
     fn sub(self, other: Self) -> Self::Output {
-        Expr::new_compound(Expr::new_symbol("Add"), vec![self, other * -1])
+        Expr::new_node(Expr::new_symbol("Add"), vec![self, other * -1])
     }
 }
 
@@ -162,7 +162,7 @@ impl<A: Clone + PartialEq + Default> ops::Mul for Expr<A> {
     type Output = Expr<A>;
 
     fn mul(self, other: Self) -> Self::Output {
-        Expr::new_compound(Expr::new_symbol("Mul"), vec![self, other])
+        Expr::new_node(Expr::new_symbol("Mul"), vec![self, other])
     }
 }
 
@@ -210,7 +210,7 @@ impl<A: Clone + PartialEq + Default> ops::Div for Expr<A> {
     type Output = Expr<A>;
 
     fn div(self, other: Self) -> Self::Output {
-        Expr::new_compound(Expr::new_symbol("Div"), vec![self, other])
+        Expr::new_node(Expr::new_symbol("Div"), vec![self, other])
     }
 }
 

@@ -54,11 +54,11 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
             entry: Atom::Symbol(_),
             ..
         } => Number::zero().into(),
-        Expr::Compound { head, args, .. } if head.matches_symbol(ADD_HEAD) => {
+        Expr::Node { head, args, .. } if head.matches_symbol(ADD_HEAD) => {
             let args = args.into_iter().map(|a| derivative_inner(a, var)).collect();
-            Expr::new_compound(*head, args)
+            Expr::new_node(*head, args)
         }
-        Expr::Compound { head, args, .. } if head.matches_symbol(MUL_HEAD) => {
+        Expr::Node { head, args, .. } if head.matches_symbol(MUL_HEAD) => {
             let mut new_args = Vec::with_capacity(args.len());
 
             for i in 0..args.len() {
@@ -74,78 +74,78 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
                     })
                     .collect();
 
-                new_args.push(Expr::new_compound(MUL_HEAD, prod_args));
+                new_args.push(Expr::new_node(MUL_HEAD, prod_args));
             }
 
-            Expr::new_compound(ADD_HEAD, new_args)
+            Expr::new_node(ADD_HEAD, new_args)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(POW_HEAD) && args.len() == 2 =>
         {
             let rhs = args.pop().unwrap();
             let lhs = args.pop().unwrap();
 
-            Expr::new_compound(POW_HEAD, vec![lhs.clone(), rhs.clone()])
+            Expr::new_node(POW_HEAD, vec![lhs.clone(), rhs.clone()])
                 * (rhs.clone()
                     * derivative_inner(lhs.clone(), var)
-                    * Expr::new_compound(POW_HEAD, vec![lhs.clone(), (-1).into()])
-                    + Expr::new_compound(CANNONICAL_HEAD_LOG, vec![lhs.clone()])
+                    * Expr::new_node(POW_HEAD, vec![lhs.clone(), (-1).into()])
+                    + Expr::new_node(CANNONICAL_HEAD_LOG, vec![lhs.clone()])
                         * derivative_inner(rhs, var))
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_EXP) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
-            Expr::new_compound(CANNONICAL_HEAD_EXP, vec![x.clone()]) * derivative_inner(x, var)
+            Expr::new_node(CANNONICAL_HEAD_EXP, vec![x.clone()]) * derivative_inner(x, var)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_LOG) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
-            Expr::new_compound(POW_HEAD, vec![x.clone(), (-1).into()]) * derivative_inner(x, var)
+            Expr::new_node(POW_HEAD, vec![x.clone(), (-1).into()]) * derivative_inner(x, var)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_COS) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
-            Expr::new_compound(
+            Expr::new_node(
                 MUL_HEAD,
                 vec![
                     (-1).into(),
-                    Expr::new_compound(CANNONICAL_HEAD_SIN, vec![x.clone()]),
+                    Expr::new_node(CANNONICAL_HEAD_SIN, vec![x.clone()]),
                 ],
             ) * derivative_inner(x, var)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_SIN) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
-            Expr::new_compound(CANNONICAL_HEAD_COS, vec![x.clone()]) * derivative_inner(x, var)
+            Expr::new_node(CANNONICAL_HEAD_COS, vec![x.clone()]) * derivative_inner(x, var)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_TAN) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
-            Expr::new_compound(
+            Expr::new_node(
                 ADD_HEAD,
                 vec![
                     1.into(),
-                    Expr::new_compound(
+                    Expr::new_node(
                         POW_HEAD,
                         vec![
-                            Expr::new_compound(CANNONICAL_HEAD_TAN, vec![x.clone()]),
+                            Expr::new_node(CANNONICAL_HEAD_TAN, vec![x.clone()]),
                             2.into(),
                         ],
                     ),
                 ],
             ) * derivative_inner(x, var)
         }
-        Expr::Compound { head, mut args, .. }
+        Expr::Node { head, mut args, .. }
             if head.matches_symbol(CANNONICAL_HEAD_SQRT) && args.len() == 1 =>
         {
             let x = args.pop().unwrap();
 
-            Expr::new_compound(
+            Expr::new_node(
                 POW_HEAD,
                 vec![
                     x.clone(),
@@ -153,7 +153,7 @@ fn derivative_inner<A: Default + Clone + PartialEq>(expr: Expr<A>, var: &str) ->
                 ],
             ) * derivative_inner(x, var)
         }
-        _ => Expr::new_compound(
+        _ => Expr::new_node(
             CANNONICAL_HEAD_DERIVATIVE,
             vec![expr.annotation_to_default(), var.into()],
         ),
@@ -170,19 +170,19 @@ mod tests {
     };
 
     fn f<T: Into<Expr>>(x: T) -> Expr {
-        Expr::new_compound("f", vec![x.into()])
+        Expr::new_node("f", vec![x.into()])
     }
 
     fn g<T: Into<Expr>>(x: T) -> Expr {
-        Expr::new_compound("g", vec![x.into()])
+        Expr::new_node("g", vec![x.into()])
     }
 
     fn h<T: Into<Expr>>(x: T) -> Expr {
-        Expr::new_compound("h", vec![x.into()])
+        Expr::new_node("h", vec![x.into()])
     }
 
     fn dd<T: Into<Expr>>(f: T, x: &str) -> Expr {
-        Expr::new_compound(CANNONICAL_HEAD_DERIVATIVE, vec![f.into(), x.into()])
+        Expr::new_node(CANNONICAL_HEAD_DERIVATIVE, vec![f.into(), x.into()])
     }
 
     #[test]
@@ -202,12 +202,12 @@ mod tests {
         let result = derivative(e, "x");
         assert_eq!(
             result,
-            Expr::new_compound(
+            Expr::new_node(
                 ADD_HEAD,
                 vec![
-                    Expr::new_compound(MUL_HEAD, vec![dd(f(x), "x"), g(x), h(x)]),
-                    Expr::new_compound(MUL_HEAD, vec![f(x), dd(g(x), "x"), h(x)]),
-                    Expr::new_compound(MUL_HEAD, vec![f(x), g(x), dd(h(x), "x")])
+                    Expr::new_node(MUL_HEAD, vec![dd(f(x), "x"), g(x), h(x)]),
+                    Expr::new_node(MUL_HEAD, vec![f(x), dd(g(x), "x"), h(x)]),
+                    Expr::new_node(MUL_HEAD, vec![f(x), g(x), dd(h(x), "x")])
                 ]
             )
         );

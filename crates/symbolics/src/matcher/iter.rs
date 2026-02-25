@@ -210,7 +210,7 @@ where
                 Pattern::BlankNullSeq { .. } => 0,
                 Pattern::BlankSeq { .. }
                 | Pattern::Blank { .. }
-                | Pattern::Compound { .. }
+                | Pattern::Node { .. }
                 | Pattern::Literal(_) => 1,
             })
             .sum()
@@ -279,7 +279,7 @@ where
     ) -> Result<(), MatchError> {
         if let Some(expected_head) = match_head {
             match expr {
-                Expr::Compound { head, .. } => {
+                Expr::Node { head, .. } => {
                     if head.as_ref() != expected_head {
                         return Err(MatchError::MatchFail);
                     }
@@ -390,16 +390,16 @@ where
                 match_head,
                 predicate,
             } => self.match_blank(expr, bind_name, match_head, predicate),
-            Pattern::Compound {
+            Pattern::Node {
                 head: pat_head,
                 args,
                 predicate,
             } => {
                 if predicate.is_some() {
-                    todo!("match_one: predicates not yet supported for Compound.")
+                    todo!("match_one: predicates not yet supported for Node.")
                 }
 
-                if let Expr::Compound {
+                if let Expr::Node {
                     head: expr_head,
                     args: expr_args,
                     ..
@@ -476,7 +476,7 @@ where
 
                 self.match_blank_null_seq(exprs, patterns.clone().rest(), *bind_name)
             }
-            Pattern::Literal(_) | Pattern::Compound { .. } | Pattern::Blank { .. } => {
+            Pattern::Literal(_) | Pattern::Node { .. } | Pattern::Blank { .. } => {
                 // non-seq: need at least one expr
                 let (e0, erest) = exprs.split_first().ok_or(MatchError::MatchFail)?;
                 self.push_task(Task::MatchSeq {
@@ -550,7 +550,7 @@ where
             match p {
                 Pattern::Literal(e) => literal_exprs.push(e),
                 Pattern::Blank { .. } => blanks.push(p),
-                Pattern::Compound { .. } => other_nonseq.push(p),
+                Pattern::Node { .. } => other_nonseq.push(p),
                 Pattern::BlankSeq { .. } | Pattern::BlankNullSeq { .. } => {
                     if seq_pat.is_some() {
                         todo!("unordered: more than one BlankSeq/BlankNullSeq not supported yet");

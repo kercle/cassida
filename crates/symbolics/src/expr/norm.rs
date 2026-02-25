@@ -28,12 +28,12 @@ fn cannonical_fold_ac_with_neutral_el<A: Default + Clone + PartialEq>(
             args_rest.pop().unwrap()
         } else {
             // New node contains only remaining args
-            Expr::new_compound(head.clone(), args_rest.clone())
+            Expr::new_node(head.clone(), args_rest.clone())
         }
     } else {
         // Multiple remaining args and number is not neutral element
         args_rest.push(Expr::new_number(value));
-        Expr::new_compound(head.clone(), args_rest.clone())
+        Expr::new_node(head.clone(), args_rest.clone())
     }
 }
 
@@ -160,7 +160,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
             e.desugar()
                 .reduce_structure()
                 .flatten(head_predicate)
-                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
+                .apply_to_nodes(|head, args| cannonical_fold_op(head, args))
                 .sort_args(head_predicate)
         })
     }
@@ -171,7 +171,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         self.apply_till_fixed_point(|e| {
             e.reduce_structure()
                 .flatten(head_predicate)
-                .apply_to_compounds(|head, args| cannonical_fold_op(head, args))
+                .apply_to_nodes(|head, args| cannonical_fold_op(head, args))
                 .sort_args(head_predicate)
         })
     }
@@ -180,7 +180,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         self.map_bottom_up(&|expr| {
             use Expr::*;
             match expr {
-                Compound { head, mut args, .. }
+                Node { head, mut args, .. }
                     if head.matches_symbol(CANNONICAL_HEAD_APPLY) && args.len() == 2 =>
                 {
                     let rhs = args.pop().unwrap();
@@ -188,7 +188,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
 
                     match rhs {
                         Atom { .. } => rhs,
-                        Compound { args: args_rhs, .. } => Expr::new_compound(lhs, args_rhs),
+                        Node { args: args_rhs, .. } => Expr::new_node(lhs, args_rhs),
                     }
                 }
                 _ => expr,
@@ -200,15 +200,15 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         self.reduce_structure_apply()
     }
 
-    /// Flattens nested compounds whenever `head_predicate`
+    /// Flattens nested nodes whenever `head_predicate`
     /// returns true.
     ///
     /// # Behavior
     ///
     /// - Atoms are returned unchanged.
-    /// - Compounds with a head not flagged by `head_predicate` are
+    /// - Nodes with a head not flagged by `head_predicate` are
     ///   reconstructed with their arguments recursively flattened.
-    /// - Compounds whose head is flagged by `head_predicate` have
+    /// - Nodes whose head is flagged by `head_predicate` have
     ///   their nested arguments merged into the parent argument list,
     ///   for all nested arguments that have the same head as their
     ///   parent.
@@ -216,14 +216,14 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
     pub fn flatten(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
             Expr::Atom { .. } => self.annotation_to_default(),
-            Expr::Compound { head, args, .. } if head_predicate(&*head) => {
+            Expr::Node { head, args, .. } if head_predicate(&*head) => {
                 let mut new_args = Vec::with_capacity(args.len());
 
                 for arg in args.into_iter() {
                     let arg = arg.flatten(head_predicate);
 
                     match arg {
-                        Expr::Compound { head: ch, args, .. } if *ch == *head => {
+                        Expr::Node { head: ch, args, .. } if *ch == *head => {
                             new_args.extend(args);
                         }
                         _ => {
@@ -232,9 +232,9 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     }
                 }
 
-                Expr::new_compound(*head, new_args)
+                Expr::new_node(*head, new_args)
             }
-            Expr::Compound { head, args, .. } => Expr::new_compound(
+            Expr::Node { head, args, .. } => Expr::new_node(
                 *head,
                 args.into_iter()
                     .map(|a| a.flatten(head_predicate))
@@ -243,21 +243,21 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         }
     }
 
-    /// Sort nested Compounds whenever `head_predicate` returns
+    /// Sort nested Nodes whenever `head_predicate` returns
     /// true.
     ///
     /// # Behavior
     ///
     /// - Atoms are returned unchanged.
-    /// - Compounds with a head not flagged by `head_predicate` are
+    /// - Nodes with a head not flagged by `head_predicate` are
     ///   reconstructed and sort_args is propagated to args.
-    /// - Compounds whose head is flagged by `head_predicate` have
+    /// - Nodes whose head is flagged by `head_predicate` have
     ///   their nested arguments sorted.
     /// - Annotations in new expression are reset to Default::default().
     pub fn sort_args(self, head_predicate: impl Fn(&Expr<A>) -> bool + Copy) -> Self {
         match self {
             Expr::Atom { .. } => self.annotation_to_default(),
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let mut args: Vec<Expr<A>> = args
                     .into_iter()
                     .map(|a| a.sort_args(head_predicate))
@@ -267,7 +267,7 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
                     args.sort();
                 }
 
-                Expr::new_compound(*head, args)
+                Expr::new_node(*head, args)
             }
         }
     }
@@ -275,62 +275,62 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
     pub fn desugar(self) -> Self {
         match self {
             Expr::Atom { .. } => self,
-            Expr::Compound { head, mut args, .. }
+            Expr::Node { head, mut args, .. }
                 if head.matches_symbol(SUB_HEAD) && args.len() == 2 =>
             {
                 let rhs = args.pop().unwrap().desugar();
                 let lhs = args.pop().unwrap().desugar();
 
-                Expr::new_compound(
+                Expr::new_node(
                     ADD_HEAD,
-                    vec![lhs, Expr::new_compound(MUL_HEAD, vec![(-1).into(), rhs])],
+                    vec![lhs, Expr::new_node(MUL_HEAD, vec![(-1).into(), rhs])],
                 )
             }
-            Expr::Compound { head, mut args, .. }
+            Expr::Node { head, mut args, .. }
                 if head.matches_symbol(NEG_HEAD) && args.len() == 1 =>
             {
                 let arg = args.pop().unwrap().desugar();
-                Expr::new_compound(MUL_HEAD, vec![(-1).into(), arg])
+                Expr::new_node(MUL_HEAD, vec![(-1).into(), arg])
             }
-            Expr::Compound { head, mut args, .. }
+            Expr::Node { head, mut args, .. }
                 if head.matches_symbol(DIV_HEAD) && args.len() == 2 =>
             {
                 let rhs = args.pop().unwrap().desugar();
                 let lhs = args.pop().unwrap().desugar();
 
-                Expr::new_compound(
+                Expr::new_node(
                     MUL_HEAD,
-                    vec![lhs, Expr::new_compound(POW_HEAD, vec![rhs, (-1).into()])],
+                    vec![lhs, Expr::new_node(POW_HEAD, vec![rhs, (-1).into()])],
                 )
             }
-            Expr::Compound { head, mut args, .. }
+            Expr::Node { head, mut args, .. }
                 if head.matches_symbol(CANNONICAL_HEAD_SQRT) && args.len() == 1 =>
             {
                 let arg = args.pop().unwrap().desugar();
                 let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-                Expr::new_compound(POW_HEAD, vec![arg, one_half.into()])
+                Expr::new_node(POW_HEAD, vec![arg, one_half.into()])
             }
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let args: Vec<Expr<A>> = args.into_iter().map(|a| a.desugar()).collect();
-                Expr::new_compound(*head, args)
+                Expr::new_node(*head, args)
             }
         }
     }
 
-    fn apply_to_compounds(
+    fn apply_to_nodes(
         self,
         f: impl Fn(&Expr<A>, &[Expr<A>]) -> Option<Expr<A>> + Copy,
     ) -> Self {
         match self {
             Expr::Atom { .. } => self.annotation_to_default(),
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let args: Vec<Expr<A>> =
-                    args.into_iter().map(|a| a.apply_to_compounds(f)).collect();
+                    args.into_iter().map(|a| a.apply_to_nodes(f)).collect();
 
                 if let Some(e) = f(&head, &args) {
                     e
                 } else {
-                    Expr::new_compound(*head, args)
+                    Expr::new_node(*head, args)
                 }
             }
         }
@@ -348,13 +348,13 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 entry: Atom::Number(val),
                 ..
             } => (val, Number::one().into()),
-            Expr::Compound { head, mut args, .. } if head.matches_symbol(MUL_HEAD) => {
+            Expr::Node { head, mut args, .. } if head.matches_symbol(MUL_HEAD) => {
                 if let Some(coeff) = args.first().and_then(|e| e.get_number()) {
                     let coeff = coeff.clone();
                     let _ = args.swap_remove(0);
-                    (coeff.clone(), Expr::new_compound(*head, args).normalize())
+                    (coeff.clone(), Expr::new_node(*head, args).normalize())
                 } else {
-                    (Number::one(), Expr::new_compound(*head, args))
+                    (Number::one(), Expr::new_node(*head, args))
                 }
             }
             _ => (Number::one(), expr),
@@ -381,7 +381,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
             .map(|(e, n)| e * Expr::new_number(n))
             .collect();
 
-        NormalizedExpr::new(Expr::new_compound(ADD_HEAD, new_args))
+        NormalizedExpr::new(Expr::new_node(ADD_HEAD, new_args))
     }
 
     fn collect_like_exponentials_in_mul(args: Vec<Expr<A>>) -> NormalizedExpr<A> {
@@ -411,7 +411,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
             .map(|(base, exponent)| pow(base, exponent))
             .collect();
 
-        NormalizedExpr::new(Expr::new_compound(MUL_HEAD, new_args))
+        NormalizedExpr::new(Expr::new_node(MUL_HEAD, new_args))
     }
 
     pub fn collect_like_terms(self) -> NormalizedExpr<A> {
@@ -419,7 +419,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
 
         match expr {
             Expr::Atom { .. } => NormalizedExpr::new(expr.annotation_to_default()),
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 // We get a normalized tree, so we can initialize NormalizedExpr
                 // without normalization.
                 let args: Vec<Expr<A>> = args
@@ -432,7 +432,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 } else if head.matches_symbol(MUL_HEAD) {
                     Self::collect_like_exponentials_in_mul(args)
                 } else {
-                    NormalizedExpr::new(Expr::new_compound(*head, args))
+                    NormalizedExpr::new(Expr::new_node(*head, args))
                 }
             }
         }
@@ -447,11 +447,11 @@ mod tests {
     use crate::{expr::generator::*, symbol};
 
     fn mul(s: &[Expr<()>]) -> Expr<()> {
-        Expr::new_compound(Expr::new_symbol(MUL_HEAD), s.to_vec())
+        Expr::new_node(Expr::new_symbol(MUL_HEAD), s.to_vec())
     }
 
     fn add(s: &[Expr<()>]) -> Expr<()> {
-        Expr::new_compound(Expr::new_symbol(ADD_HEAD), s.to_vec())
+        Expr::new_node(Expr::new_symbol(ADD_HEAD), s.to_vec())
     }
 
     #[test]

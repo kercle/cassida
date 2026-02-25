@@ -10,7 +10,7 @@ where
                 entry,
                 annotation: A::default(),
             },
-            Expr::Compound { head, args, .. } => Expr::Compound {
+            Expr::Node { head, args, .. } => Expr::Node {
                 head,
                 args,
                 annotation: A::default(),
@@ -26,7 +26,7 @@ where
         use Expr::*;
         match self {
             Atom { entry, .. } => Atom { entry, annotation },
-            Compound { head, args, .. } => Compound {
+            Node { head, args, .. } => Node {
                 head,
                 args,
                 annotation,
@@ -43,7 +43,7 @@ where
                 entry,
                 annotation: f(annotation),
             },
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -52,7 +52,7 @@ where
                 let args = args.into_iter().map(|a| a.map_annotations(f)).collect();
                 let annotation = f(annotation);
 
-                Expr::Compound {
+                Expr::Node {
                     head: Box::new(head),
                     args,
                     annotation,
@@ -71,7 +71,7 @@ where
 
         match self {
             Expr::Atom { .. } => f(&self).unwrap_or(self),
-            Expr::Compound {
+            Expr::Node {
                 head,
                 args,
                 annotation,
@@ -82,7 +82,7 @@ where
                     .map(|arg| f(&arg).unwrap_or(arg.replace(f)))
                     .collect();
 
-                Expr::new_compound(head, args).with_annotation(annotation)
+                Expr::new_node(head, args).with_annotation(annotation)
             }
         }
     }
@@ -95,10 +95,10 @@ where
 
         match transformed {
             Expr::Atom { .. } => transformed,
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let head = head.map_top_down(f);
                 let args = args.into_iter().map(|a| a.map_top_down(f)).collect();
-                Expr::new_compound(head, args)
+                Expr::new_node(head, args)
             }
         }
     }
@@ -109,10 +109,10 @@ where
     {
         match self {
             Expr::Atom { .. } => f(self),
-            Expr::Compound { head, args, .. } => {
+            Expr::Node { head, args, .. } => {
                 let head = head.map_bottom_up(f);
                 let args = args.into_iter().map(|a| a.map_bottom_up(f)).collect();
-                f(Expr::new_compound(head, args))
+                f(Expr::new_node(head, args))
             }
         }
     }

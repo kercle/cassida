@@ -246,7 +246,7 @@ impl Ast {
                 let head_expr = symbol_expr(head);
                 let args_exprs = args.iter().map(|a| a.to_tokens_expr());
                 quote! {
-                    Expr::Compound {
+                    Expr::Node {
                         head: ::std::boxed::Box::new(#head_expr),
                         args: ::std::vec![#(#args_exprs),*],
                         annotation: (),

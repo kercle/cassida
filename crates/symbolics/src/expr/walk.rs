@@ -18,7 +18,7 @@ impl<'a, A> Iterator for ExprTopDownWalker<'a, A> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let node = self.stack.pop()?;
-        if let Expr::Compound { head, args, .. } = node {
+        if let Expr::Node { head, args, .. } = node {
             for a in args.iter().rev() {
                 self.stack.push(a);
             }
@@ -47,7 +47,7 @@ impl<'a, A> ExprBottomUpWalker<'a, A> {
 
     fn visit_enter(&mut self, node: &'a Expr<A>) {
         self.stack.push(Visit::Exit(node));
-        if let Expr::Compound { head, args, .. } = node {
+        if let Expr::Node { head, args, .. } = node {
             self.stack.push(Visit::Enter(head));
             for a in args.iter().rev() {
                 self.stack.push(Visit::Enter(a));
