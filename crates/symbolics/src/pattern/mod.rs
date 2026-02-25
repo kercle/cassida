@@ -1,3 +1,5 @@
+pub mod program;
+
 use std::{fmt::Debug, str::FromStr};
 
 use crate::expr::{Expr, walk::ExprTopDownWalker};
