@@ -20,6 +20,12 @@ pub enum Quantity {
 }
 
 #[derive(Debug)]
+pub enum Predicate {
+    IsNumberQ,
+    IsSymbolQ,
+}
+
+#[derive(Debug)]
 pub enum Instruction<A: Clone + PartialEq> {
     Literal(Expr<A>),
     Variadic {
@@ -28,7 +34,8 @@ pub enum Instruction<A: Clone + PartialEq> {
     },
     Bind(VarId),
     Predicate {
-        /* pred_id: PredId, */ inner: InstrId,
+        pred_id: Predicate,
+        inner: InstrId,
     },
     Node {
         head: InstrId,
