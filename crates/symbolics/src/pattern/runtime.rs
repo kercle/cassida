@@ -1,5 +1,5 @@
 use crate::pattern::program::Instruction;
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use crate::{
     expr::Expr,
@@ -53,8 +53,14 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         todo!()
     }
 
-    fn exec_instr(&mut self, i: InstrId, subject: &'s Expr<A>) -> bool {
-        let Some(instr) = self.program.instructions.get(i) else {
+    fn step(&mut self, frame: Frame<'s, A>) -> bool {
+        match frame {
+            Frame::Exec { instr, subject } => self.step_exec(instr, subject),
+        }
+    }
+
+    fn step_exec(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+        let Some(instr) = self.program.instructions.get(instr) else {
             return false;
         };
 
@@ -84,14 +90,16 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         }
     }
 
-    fn step(&mut self) -> bool {
-        false
-    }
-
     pub fn next_match(&mut self) -> Option<&Environment<'s, A>> {
         loop {
-            if self.frames.is_empty() {
+            let Some(frame) = self.frames.pop() else {
                 return Some(&self.environment);
+            };
+
+            if !self.step(frame) {
+                // todo: choicepoints
+                // fail for now
+                return None;
             }
         }
     }
