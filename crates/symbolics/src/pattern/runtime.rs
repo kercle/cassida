@@ -1,4 +1,7 @@
-use crate::pattern::program::{ArgPlan, Instruction};
+use crate::{
+    dbg_matcher,
+    pattern::program::{ArgPlan, Instruction},
+};
 use std::collections::HashMap;
 
 use crate::{
@@ -58,19 +61,36 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         }
     }
 
-    fn bind_one(&mut self, bind: &Option<VarId>, expr: &'s Expr<A>) -> bool {
-        todo!()
+    pub fn next_match(&mut self) -> Option<&Environment<'s, A>> {
+        loop {
+            let Some(frame) = self.frames.pop() else {
+                return Some(&self.environment);
+            };
+
+            if !self.step(frame) {
+                // todo: choicepoints
+                // fail for now
+                return None;
+            }
+        }
     }
 
     fn step(&mut self, frame: Frame<'p, 's, A>) -> bool {
         match frame {
-            Frame::Exec { instr, subject } => self.step_exec_instr(instr, subject),
-            Frame::MatchSequence { .. } => todo!(),
+            Frame::Exec { instr, subject } => self.exec(instr, subject),
+            Frame::MatchSequence {
+                instrs,
+                subjects,
+                pattern_index,
+                subject_index,
+            } => self.match_sequence(instrs, subjects, pattern_index, subject_index),
             Frame::MatchMultiset { .. } => todo!(),
         }
     }
 
-    fn step_exec_instr(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+    fn exec(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+        dbg_matcher!("exec {instr:02} subject={subject:?}");
+
         let Some(instr) = self.program.instructions.get(instr) else {
             return false;
         };
@@ -93,7 +113,11 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                 plan,
                 bind: _bind,
             } => {
-                let (Some(subject_head), Some(subject_args)) = (subject.head(), subject.args())
+                let Expr::Node {
+                    head: subject_head,
+                    args: subject_args,
+                    ..
+                } = subject
                 else {
                     // subject is an Atom -> no match
                     return false;
@@ -116,24 +140,24 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                     subject: subject_head,
                 });
 
-                todo!()
+                true
             }
             Variadic { .. } => todo!(),
             Predicate { .. } => todo!(),
         }
     }
 
-    pub fn next_match(&mut self) -> Option<&Environment<'s, A>> {
-        loop {
-            let Some(frame) = self.frames.pop() else {
-                return Some(&self.environment);
-            };
+    fn match_sequence(
+        &mut self,
+        instrs: &[InstrId],
+        subjects: &[Expr<A>],
+        pattern_index: usize,
+        subject_index: usize,
+    ) -> bool {
+        todo!()
+    }
 
-            if !self.step(frame) {
-                // todo: choicepoints
-                // fail for now
-                return None;
-            }
-        }
+    fn bind_one(&mut self, bind: &Option<VarId>, expr: &'s Expr<A>) -> bool {
+        todo!()
     }
 }

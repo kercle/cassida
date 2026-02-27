@@ -3,6 +3,8 @@ mod fmt;
 pub mod program;
 pub mod runtime;
 
+mod macros;
+
 #[cfg(test)]
 mod tests;
 
