@@ -17,6 +17,13 @@ impl<A> Expr<A> {
         }
     }
 
+    pub fn args(&self) -> Option<&[Expr<A>]> {
+        match self {
+            Expr::Atom { .. } => None,
+            Expr::Node { args, .. } => Some(args.as_slice()),
+        }
+    }
+
     pub fn args_len(&self) -> usize {
         match self {
             Expr::Atom { .. } => 0,
@@ -109,9 +116,7 @@ impl<A> Expr<A> {
     pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {
         match self {
             Expr::Atom { .. } => false,
-            Expr::Node { head, args, .. } => {
-                head.matches_symbol(head_sym) && args.len() == arity
-            }
+            Expr::Node { head, args, .. } => head.matches_symbol(head_sym) && args.len() == arity,
         }
     }
 }

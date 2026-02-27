@@ -1,4 +1,4 @@
-use crate::pattern::program::Instruction;
+use crate::pattern::program::{ArgPlan, Instruction};
 use std::collections::HashMap;
 
 use crate::{
@@ -6,10 +6,19 @@ use crate::{
     pattern::program::{InstrId, Program, VarId},
 };
 
-enum Frame<'s, A: Clone + PartialEq> {
+enum Frame<'p, 's, A: Clone + PartialEq> {
     Exec {
         instr: InstrId,
         subject: &'s Expr<A>,
+    },
+    MatchSequence {
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+        pattern_index: usize,
+        subject_index: usize,
+    },
+    MatchMultiset {
+        instrs: Vec<InstrId>,
     },
 }
 
@@ -33,7 +42,7 @@ impl<'s, A: Clone + PartialEq> Environment<'s, A> {
 pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     program: &'p Program<A>,
     environment: Environment<'s, A>,
-    frames: Vec<Frame<'s, A>>,
+    frames: Vec<Frame<'p, 's, A>>,
     // todo: stacks, choicepoints, etc.
 }
 
@@ -53,13 +62,15 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         todo!()
     }
 
-    fn step(&mut self, frame: Frame<'s, A>) -> bool {
+    fn step(&mut self, frame: Frame<'p, 's, A>) -> bool {
         match frame {
-            Frame::Exec { instr, subject } => self.step_exec(instr, subject),
+            Frame::Exec { instr, subject } => self.step_exec_instr(instr, subject),
+            Frame::MatchSequence { .. } => todo!(),
+            Frame::MatchMultiset { .. } => todo!(),
         }
     }
 
-    fn step_exec(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+    fn step_exec_instr(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
         let Some(instr) = self.program.instructions.get(instr) else {
             return false;
         };
@@ -77,10 +88,32 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                     false
                 }
             }
-            Node { head, plan, bind } => {
+            Node {
+                head,
+                plan,
+                bind: _bind,
+            } => {
+                let (Some(subject_head), Some(subject_args)) = (subject.head(), subject.args())
+                else {
+                    // subject is an Atom -> no match
+                    return false;
+                };
+
+                match plan {
+                    ArgPlan::Sequence(pattern_args) => {
+                        self.frames.push(Frame::MatchSequence {
+                            instrs: pattern_args.as_slice(),
+                            subjects: subject_args,
+                            pattern_index: 0,
+                            subject_index: 0,
+                        });
+                    }
+                    ArgPlan::Multiset(_) => todo!(),
+                }
+
                 self.frames.push(Frame::Exec {
                     instr: *head,
-                    subject,
+                    subject: subject_head,
                 });
 
                 todo!()
