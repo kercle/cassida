@@ -2,12 +2,17 @@ use crate::{
     dbg_matcher,
     pattern::program::{ArgPlan, Instruction},
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     expr::Expr,
     pattern::program::{InstrId, Program, VarId},
 };
+
+struct ChoicePoint {
+    frame_stack_len: usize,
+    bindings: HashSet<VarId>,
+}
 
 enum Frame<'p, 's, A: Clone + PartialEq> {
     Exec {
@@ -17,11 +22,11 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
     MatchSequence {
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
-        pattern_index: usize,
-        subject_index: usize,
     },
     MatchMultiset {
-        instrs: Vec<InstrId>,
+        literals: &'p [Expr<A>],
+        fixed: &'p [InstrId],
+        rest: &'p [(VarId, usize)],
     },
 }
 
@@ -45,8 +50,8 @@ impl<'s, A: Clone + PartialEq> Environment<'s, A> {
 pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     program: &'p Program<A>,
     environment: Environment<'s, A>,
-    frames: Vec<Frame<'p, 's, A>>,
-    // todo: stacks, choicepoints, etc.
+    frame_stack: Vec<Frame<'p, 's, A>>,
+    choice_points: Vec<ChoicePoint>,
 }
 
 impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
@@ -54,16 +59,17 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         Runtime {
             program,
             environment: Environment::new(),
-            frames: vec![Frame::Exec {
+            frame_stack: vec![Frame::Exec {
                 instr: program.entry,
                 subject: expr,
             }],
+            choice_points: Vec::new(),
         }
     }
 
     pub fn next_match(&mut self) -> Option<&Environment<'s, A>> {
         loop {
-            let Some(frame) = self.frames.pop() else {
+            let Some(frame) = self.frame_stack.pop() else {
                 return Some(&self.environment);
             };
 
@@ -78,13 +84,12 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
     fn step(&mut self, frame: Frame<'p, 's, A>) -> bool {
         match frame {
             Frame::Exec { instr, subject } => self.exec(instr, subject),
-            Frame::MatchSequence {
-                instrs,
-                subjects,
-                pattern_index,
-                subject_index,
-            } => self.match_sequence(instrs, subjects, pattern_index, subject_index),
-            Frame::MatchMultiset { .. } => todo!(),
+            Frame::MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
+            Frame::MatchMultiset {
+                literals,
+                fixed,
+                rest,
+            } => self.match_multiset(literals, fixed, rest),
         }
     }
 
@@ -125,17 +130,21 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
 
                 match plan {
                     ArgPlan::Sequence(pattern_args) => {
-                        self.frames.push(Frame::MatchSequence {
+                        self.frame_stack.push(Frame::MatchSequence {
                             instrs: pattern_args.as_slice(),
                             subjects: subject_args,
-                            pattern_index: 0,
-                            subject_index: 0,
                         });
                     }
-                    ArgPlan::Multiset(_) => todo!(),
+                    ArgPlan::Multiset(plan) => {
+                        self.frame_stack.push(Frame::MatchMultiset {
+                            literals: plan.literals.as_slice(),
+                            fixed: plan.fixed.as_slice(),
+                            rest: plan.rest.as_slice(),
+                        });
+                    }
                 }
 
-                self.frames.push(Frame::Exec {
+                self.frame_stack.push(Frame::Exec {
                     instr: *head,
                     subject: subject_head,
                 });
@@ -147,12 +156,35 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         }
     }
 
-    fn match_sequence(
+    fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
+        if instrs.is_empty() || subjects.is_empty() {
+            if instrs.is_empty() && subjects.is_empty() {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Continue matching rest...
+        self.frame_stack.push(Frame::MatchSequence {
+            instrs: &instrs[1..],
+            subjects: &subjects[1..],
+        });
+
+        // ...after matching first.
+        self.frame_stack.push(Frame::Exec {
+            instr: *instrs.first().unwrap(),
+            subject: subjects.first().unwrap(),
+        });
+
+        true
+    }
+
+    fn match_multiset(
         &mut self,
-        instrs: &[InstrId],
-        subjects: &[Expr<A>],
-        pattern_index: usize,
-        subject_index: usize,
+        literals: &[Expr<A>],
+        fixed: &[InstrId],
+        rest: &[(VarId, usize)],
     ) -> bool {
         todo!()
     }
