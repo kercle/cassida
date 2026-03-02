@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 use crate::expr::Expr;
-use crate::pattern::{PATTERN_HEAD, PATTERN_TEST_HEAD, PatternPredicate, builtin::*};
+use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -140,7 +140,7 @@ where
                     bind,
                 )
             }
-            Node { head, args, .. } if pat_expr.is_application_of(PATTERN_HEAD, 2) => {
+            Node { head, args, .. } if pat_expr.is_application_of(HEAD_PATTERN, 2) => {
                 let [lhs, rhs] = args.as_slice() else {
                     unreachable!()
                 };
@@ -157,7 +157,7 @@ where
                 let var_id = self.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
             }
-            Node { head, args, .. } if pat_expr.is_application_of(PATTERN_TEST_HEAD, 2) => {
+            Node { head, args, .. } if pat_expr.is_application_of(HEAD_PATTERN_TEST, 2) => {
                 let [lhs, rhs] = args.as_slice() else {
                     unreachable!()
                 };
