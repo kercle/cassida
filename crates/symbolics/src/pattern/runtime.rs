@@ -1,6 +1,9 @@
 use crate::{
     dbg_matcher,
-    pattern::program::{ArgPlan, Instruction, Predicate, Quantity},
+    pattern::{
+        PatternPredicate,
+        program::{ArgPlan, Instruction, Quantity},
+    },
 };
 use std::{
     collections::{HashMap, HashSet, hash_map::Keys},
@@ -42,7 +45,7 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
     },
     TestPredicate {
         subject: &'s Expr<A>,
-        predicate: Predicate,
+        predicate: PatternPredicate,
     },
 }
 
@@ -217,7 +220,27 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 }
             }
             Variadic { .. } => unreachable!("Variadics with quantity Many not handled here."),
-            Predicate { .. } => todo!(),
+            Predicate {
+                predicate,
+                inner,
+                bind,
+            } => {
+                if let Some(&bind_var) = bind.as_ref() {
+                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                }
+
+                self.frame_stack.push(Frame::TestPredicate {
+                    subject,
+                    predicate: *predicate,
+                });
+
+                self.frame_stack.push(Frame::Exec {
+                    instr: *inner,
+                    subject,
+                });
+
+                true
+            }
         }
     }
 
@@ -382,8 +405,8 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         todo!()
     }
 
-    fn test_predicate(&self, subject: &'s Expr<A>, predicate: Predicate) -> bool {
-        use Predicate::*;
+    fn test_predicate(&self, subject: &'s Expr<A>, predicate: PatternPredicate) -> bool {
+        use PatternPredicate::*;
         match predicate {
             IsNumberQ => subject.is_number(),
             IsSymbolQ => subject.is_symbol(),

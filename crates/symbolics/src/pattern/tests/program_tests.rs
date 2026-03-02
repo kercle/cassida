@@ -45,3 +45,19 @@ fn test_program_executation_one_blank_no_multiset() {
     let mut runtime = Runtime::new(&program, &subject);
     dbg!(runtime.next_match());
 }
+
+#[test]
+fn test_predicate_matching() {
+    let pattern = expr! { f[PatternTest[Pattern[x, Blank[]], IsNumberQ]] };
+    let program = Compiler::new(|_| ArgOrder::Sequence).compile(&pattern);
+
+    dbg!(&program);
+
+    let subject = expr! { f[42] };
+    let mut runtime = Runtime::new(&program, &subject);
+    let m = runtime.next_match();
+
+    dbg!(&m);
+
+    assert!(m.is_some());
+}

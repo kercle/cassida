@@ -57,6 +57,13 @@ impl<A: Clone + PartialEq + Debug> Debug for Instruction<A> {
             Node { head, plan, bind } => {
                 write!(f, "node{} head={head:?} plan={plan:?}", format_bind(bind))
             }
+            Predicate {
+                predicate,
+                inner,
+                bind,
+            } => {
+                write!(f, "pred{} {predicate:?} {inner:?}", format_bind(bind))
+            }
             _ => todo!(),
         }
     }

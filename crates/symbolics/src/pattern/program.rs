@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::str::FromStr;
 
 use crate::expr::Expr;
-use crate::pattern::{PATTERN_HEAD, builtin::*};
+use crate::pattern::{PATTERN_HEAD, PATTERN_TEST_HEAD, PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -18,12 +19,6 @@ pub enum Quantity {
     Many { min: usize },
 }
 
-#[derive(Debug)]
-pub enum Predicate {
-    IsNumberQ,
-    IsSymbolQ,
-}
-
 pub enum Instruction<A: Clone + PartialEq> {
     Literal {
         inner: Expr<A>,
@@ -35,8 +30,9 @@ pub enum Instruction<A: Clone + PartialEq> {
         bind: Option<VarId>,
     },
     Predicate {
-        predicate: Predicate,
+        predicate: PatternPredicate,
         inner: InstrId,
+        bind: Option<VarId>,
     },
     Node {
         head: InstrId,
@@ -158,6 +154,39 @@ where
 
                 let var_id = self.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
+            }
+            Node { head, args, .. } if pat_expr.is_application_of(PATTERN_TEST_HEAD, 2) => {
+                let [lhs, rhs] = args.as_slice() else {
+                    unreachable!()
+                };
+
+                let Some(predicate_symbol) = rhs.get_symbol() else {
+                    return self.compile_node(
+                        head,
+                        (self.arg_order_predicate)(pat_expr),
+                        args,
+                        bind,
+                    );
+                };
+
+                let Ok(predicate) = PatternPredicate::from_str(predicate_symbol) else {
+                    // Maybe error reporting instead?
+
+                    return self.compile_node(
+                        head,
+                        (self.arg_order_predicate)(pat_expr),
+                        args,
+                        bind,
+                    );
+                };
+
+                let inner = self.compile_pattern(lhs, None);
+
+                self.emit(Instruction::Predicate {
+                    predicate,
+                    inner,
+                    bind,
+                })
             }
             Node { head, args, .. } => {
                 self.compile_node(head, (self.arg_order_predicate)(pat_expr), args, bind)
