@@ -2,7 +2,7 @@ use crate::{
     dbg_matcher,
     pattern::program::{ArgPlan, Instruction},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Keys};
 
 use crate::{
     expr::Expr,
@@ -10,8 +10,8 @@ use crate::{
 };
 
 struct ChoicePoint {
-    frame_stack_len: usize,
-    bindings: HashSet<VarId>,
+    pub frame_stack_len: usize,
+    pub bindings: HashSet<VarId>,
 }
 
 enum Frame<'p, 's, A: Clone + PartialEq> {
@@ -28,6 +28,14 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
         fixed: &'p [InstrId],
         rest: &'p [(VarId, usize)],
     },
+    BindOne {
+        bind_var: VarId,
+        subject: &'s Expr<A>,
+    },
+    BindSeq {
+        bind_var: VarId,
+        subjects: Vec<&'s Expr<A>>,
+    },
 }
 
 enum Binding<'s, A: Clone + PartialEq> {
@@ -40,9 +48,35 @@ pub struct Environment<'s, A: Clone + PartialEq> {
 }
 
 impl<'s, A: Clone + PartialEq> Environment<'s, A> {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             bindings: HashMap::new(),
+        }
+    }
+
+    fn bound_variables(&self) -> Keys<'_, u32, Binding<'_, A>> {
+        self.bindings.keys()
+    }
+
+    fn bind_one(&mut self, bind_var: VarId, subject: &'s Expr<A>) -> bool {
+        match self.bindings.get(&bind_var) {
+            Some(Binding::One(_bound_subject)) => todo!(),
+            None => {
+                self.bindings.insert(bind_var, Binding::One(subject));
+                true
+            }
+            _ => false,
+        }
+    }
+
+    fn bind_seq(&mut self, bind_var: VarId, subjects: Vec<&'s Expr<A>>) -> bool {
+        match self.bindings.get(&bind_var) {
+            Some(Binding::Many(_bound_subject)) => todo!(),
+            None => {
+                self.bindings.insert(bind_var, Binding::Many(subjects));
+                true
+            }
+            _ => false,
         }
     }
 }
@@ -90,6 +124,8 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                 fixed,
                 rest,
             } => self.match_multiset(literals, fixed, rest),
+            Frame::BindOne { bind_var, subject } => self.environment.bind_one(bind_var, subject),
+            Frame::BindSeq { bind_var, subjects } => self.environment.bind_seq(bind_var, subjects),
         }
     }
 
@@ -107,17 +143,17 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                     return false;
                 }
 
-                if subject == inner {
-                    self.bind_one(bind, subject)
+                if subject != inner {
+                    return false;
+                }
+
+                if let Some(&bind_var) = bind.as_ref() {
+                    self.environment.bind_one(bind_var, subject)
                 } else {
-                    false
+                    true
                 }
             }
-            Node {
-                head,
-                plan,
-                bind: _bind,
-            } => {
+            Node { head, plan, bind } => {
                 let Expr::Node {
                     head: subject_head,
                     args: subject_args,
@@ -127,6 +163,10 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
                     // subject is an Atom -> no match
                     return false;
                 };
+
+                if let Some(&bind_var) = bind.as_ref() {
+                    self.frame_stack.push(Frame::BindOne { bind_var, subject });
+                }
 
                 match plan {
                     ArgPlan::Sequence(pattern_args) => {
@@ -189,7 +229,16 @@ impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
         todo!()
     }
 
-    fn bind_one(&mut self, bind: &Option<VarId>, expr: &'s Expr<A>) -> bool {
-        todo!()
+    fn push_choice_point(&mut self) {
+        let mut choice_point = ChoicePoint {
+            frame_stack_len: self.frame_stack.len(),
+            bindings: HashSet::new(),
+        };
+
+        for &v_id in self.environment.bound_variables() {
+            choice_point.bindings.insert(v_id);
+        }
+
+        self.choice_points.push(choice_point);
     }
 }
