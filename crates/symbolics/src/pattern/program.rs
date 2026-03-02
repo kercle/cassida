@@ -12,6 +12,7 @@ pub struct Program<A: Clone + PartialEq> {
     pub(super) entry: InstrId,
     pub(super) instructions: Vec<Instruction<A>>,
     pub(super) vars: Vec<String>,
+    pub(super) var_ids: HashMap<String, VarId>,
 }
 
 pub enum Quantity {
@@ -107,6 +108,7 @@ where
             entry,
             instructions: self.instructions,
             vars: self.vars,
+            var_ids: self.var_ids,
         }
     }
 

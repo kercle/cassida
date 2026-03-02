@@ -1,18 +1,16 @@
-use crate::{
-    dbg_matcher,
-    pattern::{
-        PatternPredicate,
-        program::{ArgPlan, Instruction, Quantity},
-    },
-};
 use std::{
     collections::{HashMap, HashSet, hash_map::Keys},
     fmt::Debug,
 };
 
 use crate::{
+    dbg_matcher,
     expr::Expr,
     pattern::program::{InstrId, Program, VarId},
+    pattern::{
+        PatternPredicate,
+        program::{ArgPlan, Instruction, Quantity},
+    },
 };
 
 struct ChoicePoint {
@@ -91,6 +89,32 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
                 true
             }
             _ => false,
+        }
+    }
+
+    fn var_id_from_name<T: AsRef<str>>(&self, name: T) -> Option<VarId> {
+        self.program.var_ids.get(name.as_ref()).cloned()
+    }
+
+    pub fn get_one<T: AsRef<str>>(&self, name: T) -> Option<&'s Expr<A>> {
+        use EnvBinding::*;
+
+        let var_id = self.var_id_from_name(name.as_ref())?;
+
+        match self.bindings.get(&var_id)? {
+            One(val) => Some(val),
+            Many(_) => None,
+        }
+    }
+
+    pub fn get_seq<T: AsRef<str>>(&self, name: T) -> Option<&[&'s Expr<A>]> {
+        use EnvBinding::*;
+
+        let var_id = self.var_id_from_name(name.as_ref())?;
+
+        match self.bindings.get(&var_id)? {
+            One(_) => None,
+            Many(val) => Some(val.as_slice()),
         }
     }
 }
