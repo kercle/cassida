@@ -15,7 +15,7 @@ use crate::{
 #[derive(Debug)]
 struct ChoicePoint<'p, 's, A: Clone + PartialEq> {
     pub frame_stack_len: usize,
-    pub bindings: HashSet<VarId>,
+    pub bind_stack_len: usize,
     pub resume_frame: Frame<'p, 's, A>,
 }
 
@@ -147,6 +147,7 @@ pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     environment: Environment<'p, 's, A>,
     frame_stack: Vec<Frame<'p, 's, A>>,
     choice_points: Vec<ChoicePoint<'p, 's, A>>,
+    bind_stack: Vec<VarId>,
 }
 
 impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
@@ -159,6 +160,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 subject: expr,
             }],
             choice_points: Vec::new(),
+            bind_stack: Vec::new(),
         }
     }
 
@@ -191,8 +193,8 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 fixed,
                 rest,
             } => self.match_multiset(literals, fixed, rest),
-            Frame::BindOne { bind_var, subject } => self.environment.bind_one(bind_var, subject),
-            Frame::BindSeq { bind_var, subjects } => self.environment.bind_seq(bind_var, subjects),
+            Frame::BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
+            Frame::BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
             Frame::TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
             Frame::ResumeMatchSequence {
                 instrs,
@@ -225,7 +227,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 }
 
                 if let Some(&bind_var) = bind.as_ref() {
-                    self.environment.bind_one(bind_var, subject)
+                    self.bind_one(bind_var, subject)
                 } else {
                     true
                 }
@@ -274,7 +276,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 }
 
                 if let Some(head_pattern_instr) = head_pattern {
-                    self.match_head_pattern(*head_pattern_instr, subject)
+                    self.stage_match_head_pattern(*head_pattern_instr, subject)
                 } else {
                     true
                 }
@@ -304,7 +306,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
-    fn match_head_pattern(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
+    fn stage_match_head_pattern(&mut self, instr: InstrId, subject: &'s Expr<A>) -> bool {
         let Some(head) = subject.head() else {
             // Subject is Atom
             return false;
@@ -384,7 +386,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return false;
         }
 
-        for (&instr, subject) in instrs.iter().zip(subjects) {
+        for (&instr, subject) in instrs.iter().zip(subjects).rev() {
             self.frame_stack.push(Frame::Exec { instr, subject });
         }
 
@@ -468,6 +470,8 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         head_pattern: &Option<InstrId>,
         bind: &Option<VarId>,
     ) -> bool {
+        // Push bind before, so when the stack is popped, this is
+        // executed after the head pattern check succeeds.
         if let Some(&bind_var) = bind.as_ref() {
             self.frame_stack.push(Frame::BindSeq {
                 bind_var,
@@ -475,9 +479,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             });
         }
 
+        // Push head pattern stack to top of frame stack.
         if let Some(head_pattern_instr) = head_pattern {
             for subject in subjects {
-                if !self.match_head_pattern(*head_pattern_instr, subject) {
+                if !self.stage_match_head_pattern(*head_pattern_instr, subject) {
                     return false;
                 }
             }
@@ -539,16 +544,22 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
+    fn bind_one(&mut self, bind_var: VarId, subject: &'s Expr<A>) -> bool {
+        self.bind_stack.push(bind_var);
+        self.environment.bind_one(bind_var, subject)
+    }
+
+    fn bind_seq(&mut self, bind_var: VarId, subjects: Vec<&'s Expr<A>>) -> bool {
+        self.bind_stack.push(bind_var);
+        self.environment.bind_seq(bind_var, subjects)
+    }
+
     fn push_choice_point(&mut self, resume_frame: Frame<'p, 's, A>) {
-        let mut choice_point = ChoicePoint {
+        let choice_point = ChoicePoint {
             frame_stack_len: self.frame_stack.len(),
-            bindings: HashSet::new(),
+            bind_stack_len: self.bind_stack.len(),
             resume_frame,
         };
-
-        for &v_id in self.environment.bindings.keys() {
-            choice_point.bindings.insert(v_id);
-        }
 
         self.choice_points.push(choice_point);
     }
@@ -558,12 +569,9 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return false;
         };
 
-        let keys: Vec<VarId> = self.environment.bindings.keys().cloned().collect();
-
-        for k in keys {
-            if !choice_point.bindings.contains(&k) {
-                self.environment.bindings.remove(&k);
-            }
+        while self.bind_stack.len() > choice_point.bind_stack_len {
+            let var = self.bind_stack.pop().unwrap();
+            self.environment.bindings.remove(&var);
         }
 
         self.frame_stack.truncate(choice_point.frame_stack_len);
