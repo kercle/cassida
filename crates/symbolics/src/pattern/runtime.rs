@@ -13,9 +13,10 @@ use crate::{
     },
 };
 
-struct ChoicePoint {
+struct ChoicePoint<'p, 's, A: Clone + PartialEq> {
     pub frame_stack_len: usize,
     pub bindings: HashSet<VarId>,
+    pub resume_frame: Frame<'p, 's, A>,
 }
 
 #[derive(Debug)]
@@ -88,7 +89,7 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
         match self.bindings.get(&bind_var) {
             Some(EnvBinding::Many(_bound_subject)) => {
                 todo!()
-            },
+            }
             None => {
                 self.bindings.insert(bind_var, EnvBinding::Many(subjects));
                 true
@@ -128,7 +129,7 @@ pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     program: &'p Program<A>,
     environment: Environment<'p, 's, A>,
     frame_stack: Vec<Frame<'p, 's, A>>,
-    choice_points: Vec<ChoicePoint>,
+    choice_points: Vec<ChoicePoint<'p, 's, A>>,
 }
 
 impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
@@ -534,11 +535,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn push_choice_point(&mut self, resume_frame: Frame<'p, 's, A>) {
-        self.frame_stack.push(resume_frame);
-
         let mut choice_point = ChoicePoint {
             frame_stack_len: self.frame_stack.len(),
             bindings: HashSet::new(),
+            resume_frame,
         };
 
         for &v_id in self.environment.bindings.keys() {
@@ -562,6 +562,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         self.frame_stack.truncate(choice_point.frame_stack_len);
+        self.frame_stack.push(choice_point.resume_frame);
 
         true
     }
