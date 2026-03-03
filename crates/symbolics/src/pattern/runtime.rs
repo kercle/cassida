@@ -182,12 +182,6 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn step(&mut self, frame: Frame<'p, 's, A>) -> bool {
-        // eprintln!("==== STEP ====");
-        // dbg!(&frame);
-        // eprintln!("---- STACK ----");
-        // dbg!(&self.frame_stack);
-        // eprintln!("");
-
         match frame {
             Frame::Exec { instr, subject } => self.exec(instr, subject),
             Frame::MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
