@@ -41,14 +41,14 @@ pub enum Instruction<A: Clone + PartialEq> {
     },
     Node {
         head: InstrId,
-        plan: ArgPlan<A>,
+        plan: ArgPlan,
         bind: Option<VarId>,
     },
 }
 
-pub enum ArgPlan<A: Clone + PartialEq> {
+pub enum ArgPlan {
     Sequence(Vec<InstrId>),
-    Multiset(MultisetPlan<A>),
+    Multiset(Vec<InstrId>),
 }
 
 #[derive(Debug)]
@@ -195,6 +195,8 @@ where
                 })
             }
             Node { head, args, .. } => {
+                // Optimization: check if there are any Pattern-related sub-expressions present.
+                // If not, push the entire node as literal.
                 self.compile_node(head, (self.arg_order_predicate)(pat_expr), args, bind)
             }
         }
@@ -227,43 +229,15 @@ where
     ) -> InstrId {
         let head = Self::compile_pattern(self, head, None);
 
+        let pats = children
+            .iter()
+            .map(|c| self.compile_pattern(c, None))
+            .collect();
         let plan = match arg_order {
-            ArgOrder::Sequence => {
-                let pats = children
-                    .iter()
-                    .map(|c| self.compile_pattern(c, None))
-                    .collect();
-                ArgPlan::Sequence(pats)
-            }
-            ArgOrder::Multiset => {
-                let plan = self.compile_unordered(children);
-                ArgPlan::Multiset(plan)
-            }
+            ArgOrder::Sequence => ArgPlan::Sequence(pats),
+            ArgOrder::Multiset => ArgPlan::Multiset(pats),
         };
 
         self.emit(Instruction::Node { head, plan, bind })
-    }
-
-    fn compile_unordered(&mut self, _children: &[Expr<A>]) -> MultisetPlan<A> {
-        todo!()
-        // let mut literals = Vec::new();
-        // let mut fixed = Vec::new();
-        // let mut rest: Vec<(VarId, usize)> = vec![];
-
-        // for c in children {
-        //     todo!()
-        // }
-
-        // if rest.len() > 1 {
-        //     unimplemented!(
-        //         "Matching unordered children with more than 1 variadic pattern not supported yet"
-        //     )
-        // }
-
-        // MultisetPlan {
-        //     literals,
-        //     fixed,
-        //     rest,
-        // }
     }
 }

@@ -117,3 +117,19 @@ fn test_confirming_rebind_not_wiped_on_backtrack() {
 
     assert!(runtime.next_match().is_none());
 }
+
+#[test]
+fn test_simple_multiset_matching() {
+    let pattern =
+        expr! { f[a, b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[y, BlankSeq[]]] };
+    let program = Compiler::new(|_| ArgOrder::Multiset).compile(&pattern);
+    let subject = expr! {
+        f[a,b,c,d,e,f]
+    };
+    let mut runtime = Runtime::new(&program, &subject);
+
+    let env = runtime.next_match().expect("should match");
+    assert_eq!(env.get_one("x"), Some(&expr! { a }));
+
+    assert!(runtime.next_match().is_none());
+}

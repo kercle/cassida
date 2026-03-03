@@ -34,9 +34,8 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
         first_bind: &'p Option<VarId>,
     },
     MatchMultiset {
-        literals: &'p [Expr<A>],
-        fixed: &'p [InstrId],
-        rest: &'p [(VarId, usize)],
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
     },
     BindOne {
         bind_var: VarId,
@@ -207,11 +206,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         match frame {
             Frame::Exec { instr, subject } => self.exec(instr, subject),
             Frame::MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
-            Frame::MatchMultiset {
-                literals,
-                fixed,
-                rest,
-            } => self.match_multiset(literals, fixed, rest),
+            Frame::MatchMultiset { instrs, subjects } => self.match_multiset(instrs, subjects),
             Frame::BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
             Frame::BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
             Frame::TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
@@ -275,11 +270,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                             subjects: subject_args,
                         });
                     }
-                    ArgPlan::Multiset(plan) => {
+                    ArgPlan::Multiset(pattern_args) => {
                         self.frame_stack.push(Frame::MatchMultiset {
-                            literals: plan.literals.as_slice(),
-                            fixed: plan.fixed.as_slice(),
-                            rest: plan.rest.as_slice(),
+                            instrs: pattern_args.as_slice(),
+                            subjects: subject_args,
                         });
                     }
                 }
@@ -524,12 +518,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
     // ---- Multiset Matching ----
 
-    fn match_multiset(
-        &mut self,
-        _literals: &[Expr<A>],
-        _fixed: &[InstrId],
-        _rest: &[(VarId, usize)],
-    ) -> bool {
+    fn match_multiset(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
         todo!()
     }
 

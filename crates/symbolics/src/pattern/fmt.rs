@@ -14,7 +14,7 @@ impl Debug for Quantity {
     }
 }
 
-impl<A: Clone + PartialEq + Debug> Debug for ArgPlan<A> {
+impl Debug for ArgPlan {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         use ArgPlan::*;
         match self {
@@ -30,7 +30,18 @@ impl<A: Clone + PartialEq + Debug> Debug for ArgPlan<A> {
                     write!(f, "]")
                 }
             }
-            Multiset(_) => todo!(),
+            Multiset(instructions) => {
+                let mut leading_char = '{';
+                for instr in instructions.iter() {
+                    write!(f, "{leading_char}{instr}")?;
+                    leading_char = ',';
+                }
+                if leading_char == '{' {
+                    write!(f, "{{}}")
+                } else {
+                    write!(f, "}}")
+                }
+            }
         }
     }
 }
