@@ -279,7 +279,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                     true
                 }
             }
-            Variadic { .. } => unreachable!("Variadics with quantity Many not handled here."),
+            Variadic { .. } => unreachable!("Variadics handled in match_variadic_subsequence."),
             Predicate {
                 predicate,
                 inner,
@@ -324,7 +324,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
 
         let Some(rest_start) = self.position_first_variadic(instrs) else {
-            return self.match_subseq_lits_and_wildcards(instrs, subjects);
+            return self.match_subsequence_of_literals_and_wildcards(instrs, subjects);
         };
         let Some(rest_end) = self.position_last_variadic(instrs) else {
             return false;
@@ -361,11 +361,12 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 subjects: &subjects[rest_start..subjects.len() - back_exact_len],
             });
 
-            let front_match_result = self.match_subseq_lits_and_wildcards(
+            let front_match_result = self.match_subsequence_of_literals_and_wildcards(
                 &instrs[..front_exact_len],
                 &subjects[..front_exact_len],
             );
-            let back_match_result = self.match_subseq_lits_and_wildcards(
+
+            let back_match_result = self.match_subsequence_of_literals_and_wildcards(
                 &instrs[rest_end + 1..],
                 &subjects[subjects.len() - back_exact_len..],
             );
@@ -374,7 +375,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
-    fn match_subseq_lits_and_wildcards(
+    fn match_subsequence_of_literals_and_wildcards(
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
@@ -416,7 +417,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
         if instrs.len() == 1 {
             // Single variadics are deterministic -> no backtracking
-            self.match_sequence_single_variadic(subjects, head_pattern, bind)
+            self.match_single_variadic(subjects, head_pattern, bind)
         } else {
             // Multiple variadics require backtracking
             self.try_split_variadic_subsequence(instrs, subjects, *min_len, head_pattern, bind)
@@ -458,10 +459,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             subjects: rest_subjects,
         });
 
-        self.match_sequence_single_variadic(first_chunk, first_head_pattern, first_bind)
+        self.match_single_variadic(first_chunk, first_head_pattern, first_bind)
     }
 
-    fn match_sequence_single_variadic(
+    fn match_single_variadic(
         &mut self,
         subjects: &'s [Expr<A>],
         head_pattern: &Option<InstrId>,
@@ -490,7 +491,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
         let mut sum = 0usize;
         for &id in instrs {
-            let instr = self.program.instructions.get(id).unwrap();
+            let instr = self
+                .program
+                .instructions
+                .get(id)
+                .expect("Referenced instruction does not exist in program.");
 
             if let Variadic { min_len, .. } = instr {
                 sum = sum + *min_len;
