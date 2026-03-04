@@ -7,9 +7,7 @@ pub struct BitMask(BitMaskBase);
 impl BitMask {
     pub fn new(capacity: usize) -> Self {
         let max_cap = std::mem::size_of::<BitMaskBase>() * 8;
-        if capacity > max_cap {
-            todo!("Allow for bit masks larger than {max_cap} bits.")
-        }
+        assert!(capacity <= max_cap, "Allow for bit masks larger than {max_cap} bits.");
         Self(0)
     }
 
