@@ -120,8 +120,7 @@ fn test_confirming_rebind_not_wiped_on_backtrack() {
 
 #[test]
 fn test_simple_multiset_matching_only_literals() {
-    let pattern =
-        expr! { f[4, 2, 3, 1] };
+    let pattern = expr! { f[4, 2, 3, 1] };
     let program = Compiler::new(|_| ArgOrder::Multiset).compile(&pattern);
     let subject = expr! {
         f[1, 2, 3, 4]
@@ -132,17 +131,25 @@ fn test_simple_multiset_matching_only_literals() {
     runtime.next_match().expect("should match");
 }
 
-
 #[test]
 fn test_simple_multiset_matching() {
     let pattern =
         expr! { f[g[a], b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[y, BlankSeq[]]] };
-    let program = Compiler::new(|_| ArgOrder::Multiset).compile(&pattern);
+
+    let program = Compiler::new(|e| {
+        if e.has_head_symbol("f") {
+            ArgOrder::Multiset
+        } else {
+            ArgOrder::Sequence
+        }
+    })
+    .compile(&pattern);
     let subject = expr! {
         f[g[a],b,c,d,e,f]
     };
     dbg!(&program);
     let mut runtime = Runtime::new(&program, &subject);
 
-    runtime.next_match().expect("should match");
+    let m = runtime.next_match().expect("should match");
+    dbg!(&m);
 }

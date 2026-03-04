@@ -114,9 +114,13 @@ impl<A> Expr<A> {
     }
 
     pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {
+        self.has_head_symbol(head_sym) && self.args_len() == arity
+    }
+
+    pub fn has_head_symbol<T: AsRef<str>>(&self, head_sym: T) -> bool {
         match self {
             Expr::Atom { .. } => false,
-            Expr::Node { head, args, .. } => head.matches_symbol(head_sym) && args.len() == arity,
+            Expr::Node { head, .. } => head.matches_symbol(head_sym),
         }
     }
 }

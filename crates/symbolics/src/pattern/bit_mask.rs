@@ -2,6 +2,7 @@ use std::fmt;
 
 type BitMaskBase = u8;
 
+#[derive(Clone)]
 pub struct BitMask {
     mask: BitMaskBase,
     capacity: usize,
@@ -29,16 +30,20 @@ impl BitMask {
         self.mask & (1 << i) != 0
     }
 
-    pub fn is_clear(&self, i: usize) -> bool {
-        !self.is_set(i)
-    }
-
     pub fn is_full(&self) -> bool {
         self.count_matched() == self.capacity
     }
 
     pub fn count_matched(&self) -> usize {
         self.mask.count_ones() as usize
+    }
+
+    pub fn count_unmatched(&self) -> usize {
+        self.capacity - self.count_matched()
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.capacity
     }
 }
 

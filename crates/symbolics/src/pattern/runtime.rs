@@ -39,6 +39,13 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
         instrs_mask: BitMask,
         subjects_mask: BitMask,
     },
+    ResumeMatchMultiset {
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+        instrs_mask: BitMask,
+        subjects_mask: BitMask,
+        next_unmatched_subject_pos: usize,
+    },
     BindOne {
         bind_var: VarId,
         subject: &'s Expr<A>,
@@ -205,19 +212,11 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn step(&mut self, frame: Frame<'p, 's, A>) -> bool {
+        use Frame::*;
         match frame {
-            Frame::Exec { instr, subject } => self.exec(instr, subject),
-            Frame::MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
-            Frame::MatchMultiset {
-                instrs,
-                subjects,
-                instrs_mask,
-                subjects_mask,
-            } => self.match_multiset(instrs, subjects, instrs_mask, subjects_mask),
-            Frame::BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
-            Frame::BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
-            Frame::TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
-            Frame::ResumeMatchSequence {
+            Exec { instr, subject } => self.exec(instr, subject),
+            MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
+            ResumeMatchSequence {
                 instrs,
                 subjects,
                 first_consume_count,
@@ -230,6 +229,28 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 first_head_pattern,
                 first_bind,
             ),
+            MatchMultiset {
+                instrs,
+                subjects,
+                instrs_mask,
+                subjects_mask,
+            } => self.match_multiset(instrs, subjects, instrs_mask, subjects_mask, 0),
+            ResumeMatchMultiset {
+                instrs,
+                subjects,
+                instrs_mask,
+                subjects_mask,
+                next_unmatched_subject_pos,
+            } => self.match_multiset(
+                instrs,
+                subjects,
+                instrs_mask,
+                subjects_mask,
+                next_unmatched_subject_pos,
+            ),
+            BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
+            BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
+            TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
         }
     }
 
@@ -533,6 +554,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         subjects: &'s [Expr<A>],
         mut instrs_mask: BitMask,
         mut subjects_mask: BitMask,
+        next_unmatched_subject_pos: usize,
     ) -> bool {
         // Get rid of all literals. If any literal in the pattern does
         // not match any subject, the pattern does not match and we abort.
@@ -567,7 +589,115 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             }
         }
 
-        todo!()
+        // Iterate over all unmatched instructions (wildcards and variadics):
+
+        let mut variadic_instr = None;
+
+        let mut unmatched_counter = 0;
+        let mut next_subject = None;
+        for subj_pos in 0..subjects_mask.capacity() {
+            if subjects_mask.is_set(subj_pos) {
+                continue;
+            }
+
+            if unmatched_counter == next_unmatched_subject_pos {
+                next_subject = Some(&subjects[subj_pos])
+            }
+
+            unmatched_counter += 1;
+        }
+
+        let Some(next_subject) = next_subject else {
+            return false;
+        };
+
+        for (pos, instr) in instrs.iter().enumerate() {
+            if instrs_mask.is_set(pos) {
+                continue;
+            }
+
+            if self.is_variadic(*instr) {
+                // we first match non-variadic and handle those later.
+                variadic_instr = Some(self.program.instructions.get(*instr).unwrap());
+                continue;
+            }
+
+            // unmatched instruction
+            if next_unmatched_subject_pos < subjects_mask.count_unmatched() {
+                self.push_choice_point(Frame::ResumeMatchMultiset {
+                    instrs,
+                    subjects,
+                    instrs_mask: instrs_mask.clone(),
+                    subjects_mask: subjects_mask.clone(),
+                    next_unmatched_subject_pos: next_unmatched_subject_pos + 1,
+                });
+            }
+
+            instrs_mask.set(pos);
+            subjects_mask.set(pos);
+            self.frame_stack.push(Frame::MatchMultiset {
+                instrs,
+                subjects,
+                instrs_mask,
+                subjects_mask,
+            });
+
+            self.frame_stack.push(Frame::Exec {
+                instr: *instr,
+                subject: next_subject,
+            });
+
+            dbg!(&self.frame_stack);
+            return true;
+        }
+
+        match instrs_mask.count_unmatched() {
+            0 => subjects_mask.is_full(), // everything matched
+            1 if variadic_instr.is_some() => {
+                // no predicates or head constraints for now
+                // also: tricky to implement with how they are
+                // handled now.
+
+                let &Instruction::Variadic {
+                    min_len,
+                    head_pattern,
+                    bind,
+                } = variadic_instr.unwrap()
+                else {
+                    unreachable!();
+                };
+
+                if head_pattern.is_some() {
+                    todo!("Head patterns for variadics in multisets not supported yet");
+                }
+
+                if subjects_mask.count_unmatched() < min_len {
+                    return false;
+                }
+
+                if let Some(bind_var) = bind {
+                    let rest = subjects
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(p, e)| {
+                            if subjects_mask.is_set(p) {
+                                None
+                            } else {
+                                Some(e)
+                            }
+                        })
+                        .collect();
+
+                    self.frame_stack.push(Frame::BindSeq {
+                        bind_var,
+                        subjects: rest,
+                    });
+                }
+
+                true
+            }
+            _ => todo!("Multiple variadics in multisets are note supported yet."),
+        }
     }
 
     // ---- Program Queries ----
