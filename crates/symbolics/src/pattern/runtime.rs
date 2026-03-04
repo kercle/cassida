@@ -5,7 +5,7 @@ use crate::{
     pattern::{
         PatternPredicate,
         bit_mask::BitMask,
-        program::{ArgPlan, InstrId, Instruction, Program, VarId},
+        program::{self, ArgPlan, InstrId, Instruction, Program, VarId},
     },
 };
 
@@ -531,9 +531,42 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
-        instrs_mask: BitMask,
-        subjects_mask: BitMask,
+        mut instrs_mask: BitMask,
+        mut subjects_mask: BitMask,
     ) -> bool {
+        // Get rid of all literals. If any literal in the pattern does
+        // not match any subject, the pattern does not match and we abort.
+
+        for (instr_pos, instr) in instrs.iter().enumerate() {
+            if !self.is_literal(*instr) {
+                continue;
+            }
+
+            let mut found_match = false;
+            for (subject_pos, subject) in subjects.iter().enumerate() {
+                if self.exec(*instr, subject) {
+                    found_match = true;
+                    instrs_mask.set(instr_pos);
+                    subjects_mask.set(subject_pos);
+                    break;
+                }
+            }
+
+            if !found_match {
+                return false;
+            }
+        }
+
+        if instrs_mask.is_full() {
+            // all instructions exhausted
+
+            if subjects_mask.is_full() {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         todo!()
     }
 
@@ -572,6 +605,13 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         matches!(
             self.program.instructions.get(instr),
             Some(Instruction::Variadic { .. })
+        )
+    }
+
+    fn is_literal(&self, instr: InstrId) -> bool {
+        matches!(
+            self.program.instructions.get(instr),
+            Some(Instruction::Literal { .. })
         )
     }
 

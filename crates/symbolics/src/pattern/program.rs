@@ -170,7 +170,7 @@ where
                 })
             }
             Node { head, args, .. } => {
-                if Self::is_literal(pat_expr) {
+                if self.is_literal(pat_expr) {
                     self.emit(Instruction::Literal {
                         inner: pat_expr.clone(),
                         bind,
@@ -261,8 +261,16 @@ where
         expr.get_arg(1).unwrap().is_symbol()
     }
 
-    fn is_literal(root: &Expr<A>) -> bool {
+    fn is_literal(&self, root: &Expr<A>) -> bool {
         for expr in ExprTopDownWalker::new(root) {
+            if matches!((self.arg_order_predicate)(expr), ArgOrder::Multiset) {
+                // Since multisets can be ordered arbitrary
+                // expressions can match, even if the don't
+                // map 1:1 onto each other.
+
+                return false;
+            }
+
             if Self::is_blank(expr)
                 || Self::is_blank_null_seq(expr)
                 || Self::is_blank_seq(expr)
