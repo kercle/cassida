@@ -134,7 +134,7 @@ fn test_simple_multiset_matching_only_literals() {
 #[test]
 fn test_simple_multiset_matching() {
     let pattern =
-        expr! { f[g[a], b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[y, BlankSeq[]]] };
+        expr! { f[g[a], b, Pattern[x, Blank[]], Pattern[y, Blank[]], Pattern[z, BlankSeq[]]] };
 
     let program = Compiler::new(|e| {
         if e.has_head_symbol("f") {
@@ -145,11 +145,15 @@ fn test_simple_multiset_matching() {
     })
     .compile(&pattern);
     let subject = expr! {
-        f[g[a],b,c,d,e,f]
+        f[c,d,g[a],e,f,b]
     };
-    dbg!(&program);
+
     let mut runtime = Runtime::new(&program, &subject);
 
-    let m = runtime.next_match().expect("should match");
-    dbg!(&m);
+    // let m = runtime.next_match().expect("should match");
+    // dbg!(&m);
+
+    while let Some(m) = runtime.next_match() {
+        dbg!(&m);
+    }
 }

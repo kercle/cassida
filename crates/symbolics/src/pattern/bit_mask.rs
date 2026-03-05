@@ -42,7 +42,7 @@ impl BitMask {
         self.capacity - self.count_matched()
     }
 
-    pub fn capacity(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.capacity
     }
 }
