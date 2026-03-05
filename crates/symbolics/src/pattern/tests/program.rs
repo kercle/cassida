@@ -150,10 +150,5 @@ fn test_simple_multiset_matching() {
 
     let mut runtime = Runtime::new(&program, &subject);
 
-    // let m = runtime.next_match().expect("should match");
-    // dbg!(&m);
-
-    while let Some(m) = runtime.next_match() {
-        dbg!(&m);
-    }
+    runtime.next_match().expect("should match");
 }

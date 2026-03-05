@@ -1,4 +1,10 @@
-mod program_tests;
+mod literals;
+mod mixed;
+mod multiset;
+mod predicate;
+mod program;
+mod sequence;
+mod wildcards;
 
 use expr_macro::expr;
 
