@@ -58,12 +58,13 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
     },
 }
 
+#[derive(Clone)]
 pub(super) enum EnvBinding<'s, A: Clone + PartialEq> {
     One(&'s Expr<A>),
     Many(Vec<&'s Expr<A>>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Environment<'p, 's, A: Clone + PartialEq> {
     bindings: HashMap<VarId, EnvBinding<'s, A>>,
     program: &'p Program<A>,
@@ -175,7 +176,7 @@ pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     bind_stack: Vec<VarId>,
 }
 
-impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
+impl<'p, 's, A: Clone + PartialEq> Runtime<'p, 's, A> {
     pub fn new(program: &'p Program<A>, expr: &'s Expr<A>) -> Self {
         Runtime {
             program,
@@ -187,6 +188,10 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             choice_points: Vec::new(),
             bind_stack: Vec::new(),
         }
+    }
+
+    pub fn first_match(&mut self) -> Option<&Environment<'p, 's, A>> {
+        self.next_match()
     }
 
     pub fn next_match(&mut self) -> Option<&Environment<'p, 's, A>> {
@@ -784,5 +789,16 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         self.frame_stack.push(choice_point.resume_frame);
 
         true
+    }
+}
+
+impl<'p, 's, A> Iterator for Runtime<'p, 's, A>
+where
+    A: PartialEq + Clone,
+{
+    type Item = Environment<'p, 's, A>;
+
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        self.next_match().cloned()
     }
 }
