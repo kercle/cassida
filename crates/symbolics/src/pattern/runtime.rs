@@ -253,19 +253,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
 
         use Instruction::*;
         match instr {
-            Literal { inner, bind } => {
-                // TODO: check hash from Merkle tree first once implemented
-
-                if subject != inner {
-                    return false;
-                }
-
-                if let Some(&bind_var) = bind.as_ref() {
-                    self.bind_one(bind_var, subject)
-                } else {
-                    true
-                }
-            }
+            Literal { inner, bind } => self.match_literal(inner, subject, *bind),
             Node { head, plan, bind } => {
                 let Expr::Node {
                     head: subject_head,
@@ -362,6 +350,27 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
+    // ---- Literal Matching ----
+
+    fn match_literal(
+        &mut self,
+        inner: &Expr<A>,
+        subject: &'s Expr<A>,
+        bind: Option<VarId>,
+    ) -> bool {
+        // TODO: check hash from Merkle tree first once implemented
+
+        if subject != inner {
+            return false;
+        }
+
+        if let Some(bind_var) = bind {
+            self.bind_one(bind_var, subject)
+        } else {
+            true
+        }
+    }
+
     // ---- Sequence Matching ----
 
     fn match_sequence(&mut self, instrs: &'p [InstrId], subjects: &'s [Expr<A>]) -> bool {
@@ -369,15 +378,15 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             return subjects.is_empty();
         }
 
-        let Some(rest_start) = self.position_first_variadic(instrs) else {
-            return self.match_subsequence_of_literals_and_wildcards(instrs, subjects);
+        let Some(first_variadic_pos) = self.position_first_variadic(instrs) else {
+            return self.match_subsequence_only_literals_and_wildcards(instrs, subjects);
         };
-        let Some(rest_end) = self.position_last_variadic(instrs) else {
+        let Some(last_variadic_pos) = self.position_last_variadic(instrs) else {
             return false;
         };
 
-        let front_exact_len = rest_start;
-        let back_exact_len = instrs.len() - rest_end - 1;
+        let front_exact_len = first_variadic_pos;
+        let back_exact_len = instrs.len() - last_variadic_pos - 1;
 
         if front_exact_len + back_exact_len > subjects.len() {
             return false;
@@ -393,27 +402,28 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             // sure that all obvious bindings are in place before pushing
             // choicepoint.
 
-            self.match_variadic_subsequence(
-                &instrs[rest_start..=rest_end],
-                &subjects[rest_start..subjects.len() - back_exact_len],
+            self.match_subsequence_with_variadic_start_and_end(
+                &instrs[first_variadic_pos..=last_variadic_pos],
+                &subjects[first_variadic_pos..subjects.len() - back_exact_len],
             )
         } else {
-            // Defer matching rest of the sequence before we match all
+            // Defer matching variadics in sequence to after we matched all
             // deterministic match options.
-            // The rest starts and ends with a variadic pattern.
 
+            // queue matching of subsequence starting and ending in variadic.
             self.frame_stack.push(Frame::MatchSequence {
-                instrs: &instrs[rest_start..=rest_end],
-                subjects: &subjects[rest_start..subjects.len() - back_exact_len],
+                instrs: &instrs[first_variadic_pos..=last_variadic_pos],
+                subjects: &subjects[first_variadic_pos..subjects.len() - back_exact_len],
             });
 
-            let front_match_result = self.match_subsequence_of_literals_and_wildcards(
+            // the rest is completely deterministically matchable.
+            let front_match_result = self.match_subsequence_only_literals_and_wildcards(
                 &instrs[..front_exact_len],
                 &subjects[..front_exact_len],
             );
 
-            let back_match_result = self.match_subsequence_of_literals_and_wildcards(
-                &instrs[rest_end + 1..],
+            let back_match_result = self.match_subsequence_only_literals_and_wildcards(
+                &instrs[last_variadic_pos + 1..],
                 &subjects[subjects.len() - back_exact_len..],
             );
 
@@ -421,7 +431,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
-    fn match_subsequence_of_literals_and_wildcards(
+    fn match_subsequence_only_literals_and_wildcards(
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
@@ -437,16 +447,16 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         true
     }
 
-    fn match_variadic_subsequence(
+    fn match_subsequence_with_variadic_start_and_end(
         &mut self,
         instrs: &'p [InstrId],
         subjects: &'s [Expr<A>],
     ) -> bool {
-        if instrs.is_empty() {
+        let Some(&instr) = instrs.first() else {
+            // no instructions left. pattern matches only if also
+            // subjects are exhausted.
             return subjects.is_empty();
-        }
-
-        let &instr = instrs.first().unwrap();
+        };
 
         let Some(Instruction::Variadic {
             min_len,
@@ -454,6 +464,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             bind,
         }) = self.program.instructions.get(instr)
         else {
+            // Function assumes that instrs starts with variadic.
             unreachable!("Rest with only one instruction is required to be variadic many");
         };
 
@@ -468,44 +479,6 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             // Multiple variadics require backtracking
             self.try_split_variadic_subsequence(instrs, subjects, *min_len, head_pattern, bind)
         }
-    }
-
-    fn try_split_variadic_subsequence(
-        &mut self,
-        instrs: &'p [InstrId],
-        subjects: &'s [Expr<A>],
-        first_seq_len: usize,
-        first_head_pattern: &'p Option<InstrId>,
-        first_bind: &'p Option<VarId>,
-    ) -> bool {
-        debug_assert!(instrs.len() >= 2);
-
-        let suffix_min = self.min_subjects_needed(&instrs[1..]);
-        let required_min_len = first_seq_len + suffix_min;
-
-        if subjects.len() < required_min_len {
-            return false;
-        }
-
-        if required_min_len < subjects.len() {
-            // we can afford to add one more subject to first sequence
-            self.push_choice_point(Frame::ResumeMatchSequence {
-                instrs,
-                subjects,
-                first_consume_count: first_seq_len + 1,
-                first_head_pattern,
-                first_bind,
-            });
-        }
-
-        let (first_chunk, rest_subjects) = subjects.split_at(first_seq_len);
-
-        self.frame_stack.push(Frame::MatchSequence {
-            instrs: &instrs[1..],
-            subjects: rest_subjects,
-        });
-
-        self.match_single_variadic(first_chunk, first_head_pattern, first_bind)
     }
 
     fn match_single_variadic(
@@ -535,6 +508,44 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         true
     }
 
+    fn try_split_variadic_subsequence(
+        &mut self,
+        instrs: &'p [InstrId],
+        subjects: &'s [Expr<A>],
+        first_variadic_len: usize,
+        first_head_pattern: &'p Option<InstrId>,
+        first_bind: &'p Option<VarId>,
+    ) -> bool {
+        debug_assert!(instrs.len() >= 2);
+
+        let suffix_min = self.min_subjects_needed(&instrs[1..]);
+        let required_min_len = first_variadic_len + suffix_min;
+
+        if subjects.len() < required_min_len {
+            return false;
+        }
+
+        if required_min_len < subjects.len() {
+            // we can afford to add one more subject to first sequence
+            self.push_choice_point(Frame::ResumeMatchSequence {
+                instrs,
+                subjects,
+                first_consume_count: first_variadic_len + 1,
+                first_head_pattern,
+                first_bind,
+            });
+        }
+
+        let (first_chunk, rest_subjects) = subjects.split_at(first_variadic_len);
+
+        self.frame_stack.push(Frame::MatchSequence {
+            instrs: &instrs[1..],
+            subjects: rest_subjects,
+        });
+
+        self.match_single_variadic(first_chunk, first_head_pattern, first_bind)
+    }
+
     // ---- Multiset Matching ----
 
     fn match_multiset(
@@ -544,30 +555,27 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         mut state: MultisetMatchState,
         already_tried_count: usize,
     ) -> bool {
-        // Get rid of all literals. If any literal in the pattern does
-        // not match any subject, the pattern does not match and we abort.
+        // Get rid of all literals. If any literal in the pattern doesn't
+        // match any subject we abort.
 
-        for (instr_pos, instr) in instrs.iter().enumerate() {
-            if !self.is_literal(*instr) || state.is_instruction_set(instr_pos) {
+        for (instr_pos, &instr) in instrs.iter().enumerate() {
+            if !self.is_literal(instr) || state.is_instruction_set(instr_pos) {
                 continue;
             }
 
-            let mut found_match = false;
-            for (subject_pos, subject) in subjects.iter().enumerate() {
-                if state.is_subject_set(subject_pos) {
-                    continue;
+            let Some(subject_pos) = ('find_subject: {
+                for (subject_pos, subject) in subjects.iter().enumerate() {
+                    if !state.is_subject_set(subject_pos) && self.exec(instr, subject) {
+                        break 'find_subject Some(subject_pos);
+                    }
                 }
-
-                if self.exec(*instr, subject) {
-                    found_match = true;
-                    state.set(instr_pos, subject_pos);
-                    break;
-                }
-            }
-
-            if !found_match {
+                None
+            }) else {
+                // No subject found that matches given literal pattern: abort.
                 return false;
-            }
+            };
+
+            state.set(instr_pos, subject_pos);
         }
 
         if state.is_instructions_mask_full() {
