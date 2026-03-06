@@ -1,6 +1,9 @@
 use std::fmt::{Debug, Formatter};
 
-use crate::pattern::{environment::EnvBinding, program::{ArgPlan, Instruction, Program, Quantity, VarId}};
+use crate::pattern::{
+    environment::EnvBinding,
+    program::{ArgPlan, Instruction, Program, Quantity, VarId},
+};
 
 impl Debug for Quantity {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {

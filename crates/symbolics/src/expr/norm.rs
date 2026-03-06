@@ -317,15 +317,11 @@ impl<A: Clone + PartialEq + Default> Expr<A> {
         }
     }
 
-    fn apply_to_nodes(
-        self,
-        f: impl Fn(&Expr<A>, &[Expr<A>]) -> Option<Expr<A>> + Copy,
-    ) -> Self {
+    fn apply_to_nodes(self, f: impl Fn(&Expr<A>, &[Expr<A>]) -> Option<Expr<A>> + Copy) -> Self {
         match self {
             Expr::Atom { .. } => self.annotation_to_default(),
             Expr::Node { head, args, .. } => {
-                let args: Vec<Expr<A>> =
-                    args.into_iter().map(|a| a.apply_to_nodes(f)).collect();
+                let args: Vec<Expr<A>> = args.into_iter().map(|a| a.apply_to_nodes(f)).collect();
 
                 if let Some(e) = f(&head, &args) {
                     e

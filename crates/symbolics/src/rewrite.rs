@@ -2,8 +2,6 @@ use std::fmt::Debug;
 
 use crate::{
     expr::{Expr, NormalizedExpr},
-    matcher::CommutativePredicate,
-    parser::ast::{ADD_HEAD, MUL_HEAD},
     pattern::{
         environment::Environment,
         program::{Compiler, Program},
@@ -28,7 +26,6 @@ where
     A: Clone + PartialEq,
 {
     rules: Vec<Rule<A>>,
-    is_commutative: Option<CommutativePredicate<A>>,
 }
 
 impl<A> Rewriter<A>
@@ -44,18 +41,6 @@ impl<A> Rewriter<A>
 where
     A: Clone + PartialEq + Default + Debug,
 {
-    pub fn commutative_if<F>(mut self, f: F) -> Self
-    where
-        F: Fn(&Expr<A>) -> bool + 'static,
-    {
-        debug_assert!(
-            self.rules.is_empty(),
-            "call commutative_if() before adding rules"
-        );
-        self.is_commutative = Some(CommutativePredicate::new(f));
-        self
-    }
-
     pub fn with_rule<F>(mut self, pattern: NormalizedExpr<A>, transform: F) -> Self
     where
         F: Fn(&Environment<'_, '_, A>) -> Expr<A> + Send + Sync + 'static,
@@ -88,9 +73,9 @@ where
 
             for rule in &self.rules {
                 let mut runtime = Runtime::new(&rule.program, &sub_expr);
-                if let Some(mut env) = runtime.first_match() {
+                if let Some(env) = runtime.first_match() {
                     let f = &rule.transform;
-                    sub_expr = f(&mut env).normalize();
+                    sub_expr = f(env).normalize();
                     break;
                 }
             }
@@ -111,9 +96,7 @@ where
         I: IntoIterator<Item = (NormalizedExpr<A>, F)>,
         F: Fn(&Environment<'_, '_, A>) -> Expr<A> + Send + Sync + 'static,
     {
-        let rw: Rewriter<A> = Rewriter::new()
-            .commutative_if(|head| head.matches_symbol(ADD_HEAD) || head.matches_symbol(MUL_HEAD))
-            .with_rules(rules);
+        let rw: Rewriter<A> = Rewriter::new().with_rules(rules);
 
         let mut expr = NormalizedExpr::new(self);
 

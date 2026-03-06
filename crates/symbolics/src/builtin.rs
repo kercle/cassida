@@ -55,4 +55,3 @@ pub const CANNONICAL_SYM_PLUS_INFINITY: &str = "Infinity";
 
 pub const CANNONICAL_HEAD_APPLY: &str = "Apply";
 pub const CANNONICAL_HEAD_LIST: &str = "List";
-

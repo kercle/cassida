@@ -1,9 +1,12 @@
-use std::{collections::HashMap, fmt::Debug, rc::Rc};
+use std::{fmt::Debug, rc::Rc};
 
 use crate::{
     expr::Expr,
     pattern::{
-        PatternPredicate, environment::Environment, program::{ArgPlan, InstrId, Instruction, Program, VarId}, utils::MultisetMatchState
+        PatternPredicate,
+        environment::Environment,
+        program::{ArgPlan, InstrId, Instruction, Program, VarId},
+        utils::MultisetMatchState,
     },
 };
 

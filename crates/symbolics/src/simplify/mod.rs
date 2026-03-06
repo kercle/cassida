@@ -82,8 +82,7 @@ impl Simplifier {
         self,
         rules: Vec<(NormalizedExpr, Expr)>,
     ) -> NormalizedExpr {
-        let res = self
-            .expr
+        self.expr
             .take_expr()
             .drop_annotation()
             .apply_until_fixed_point(
@@ -93,8 +92,6 @@ impl Simplifier {
                     })
                 }),
                 1000,
-            );
-
-        res
+            )
     }
 }

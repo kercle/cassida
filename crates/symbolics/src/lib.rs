@@ -4,7 +4,6 @@ pub mod calculus;
 pub mod expr;
 pub mod format;
 pub mod macros;
-pub mod matcher;
 pub mod parser;
 pub mod pattern;
 pub mod rewrite;

@@ -49,6 +49,10 @@ impl fmt::Debug for BitMask {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bits = std::mem::size_of::<BitMaskBase>() * 8;
         let bits_string = format!("{:0width$b}", self.mask, width = bits);
-        write!(f, "BitMask({})", &bits_string[bits_string.len() - self.capacity..])
+        write!(
+            f,
+            "BitMask({})",
+            &bits_string[bits_string.len() - self.capacity..]
+        )
     }
 }

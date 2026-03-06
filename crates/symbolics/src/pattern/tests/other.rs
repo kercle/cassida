@@ -3,7 +3,11 @@ use expr_macro::expr;
 use crate::{
     atom::Atom,
     expr::Expr,
-    pattern::{program::Compiler, runtime::Runtime, tests::utils::{count_matches, first_match}},
+    pattern::{
+        program::Compiler,
+        runtime::Runtime,
+        tests::utils::{count_matches, first_match},
+    },
 };
 
 // ---- Literal Tests ----
