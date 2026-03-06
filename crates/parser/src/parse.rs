@@ -23,7 +23,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
     };
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return Ok(ParserAst::new_named_value(identifier));
+        return Ok(ParserAst::new_symbol(identifier));
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {
@@ -82,7 +82,7 @@ fn parse_power(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     let mut result = parse_atom(stream)?;
 
     if stream.next_if_matches_token(&Token::Caret).is_some() {
-        result = ParserAst::new_pow(result, parse_power(stream)?);
+        result = ParserAst::new_pow(result, parse_signed_power(stream)?);
     }
 
     Ok(result)
@@ -374,7 +374,7 @@ mod tests {
                         ParserAst::new_mul_pair(
                             ParserAst::new_constant(Number::from_str("5").unwrap()),
                             ParserAst::new_pow(
-                                ParserAst::new_named_value("pi".to_string()),
+                                ParserAst::new_symbol("pi".to_string()),
                                 ParserAst::new_constant(Number::from_str("2").unwrap())
                             )
                         ),
@@ -382,16 +382,16 @@ mod tests {
                     ),
                     ParserAst::new_cos(ParserAst::new_div(
                         ParserAst::new_mul_pair(
-                            ParserAst::new_named_value("pi".to_string()),
-                            ParserAst::new_named_value("x".to_string())
+                            ParserAst::new_symbol("pi".to_string()),
+                            ParserAst::new_symbol("x".to_string())
                         ),
                         ParserAst::new_constant(Number::from_str("2").unwrap())
                     ))
                 ),
                 ParserAst::new_sin(ParserAst::new_div(
                     ParserAst::new_mul_pair(
-                        ParserAst::new_named_value("pi".to_string()),
-                        ParserAst::new_named_value("y".to_string()),
+                        ParserAst::new_symbol("pi".to_string()),
+                        ParserAst::new_symbol("y".to_string()),
                     ),
                     ParserAst::new_constant(Number::from_str("2").unwrap())
                 ))
@@ -416,6 +416,34 @@ mod tests {
                     ParserAst::new_constant(Number::from_str("6").unwrap())
                 )
             ])
+        );
+    }
+
+    #[test]
+    fn test_parse_negative_exponent() {
+        let input = "a^-1";
+        let ast = parse(input).expect("Failed to parse block with nested expressions");
+
+        assert_eq!(
+            ast,
+            ParserAst::new_pow(
+                ParserAst::new_symbol("a"),
+                ParserAst::new_negation(ParserAst::from_i64(1))
+            ),
+        );
+    }
+
+    #[test]
+    fn test_parse_minus_before_base_has_lower_precidence() {
+        let input = "-2^3";
+        let ast = parse(input).expect("Failed to parse block with nested expressions");
+
+        assert_eq!(
+            ast,
+            ParserAst::new_negation(ParserAst::new_pow(
+                ParserAst::from_i64(2),
+                ParserAst::from_i64(3)
+            )),
         );
     }
 }
