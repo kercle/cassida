@@ -119,7 +119,7 @@ fn parse_product(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
         let c = stream.next_if_matches(|token| matches!(token, Token::Asterisk | Token::Slash));
 
         result = match c {
-            Some(Token::Asterisk) => ParserAst::new_mul_pair(result, parse_signed_power(stream)?),
+            Some(Token::Asterisk) => ParserAst::new_mul(result, parse_signed_power(stream)?),
             Some(Token::Slash) => ParserAst::new_div(result, parse_signed_power(stream)?),
             None => break,
             _ => unreachable!(),
@@ -138,7 +138,7 @@ fn parse_sum(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
         let op = stream.next_if_matches(|token| matches!(token, Token::Plus | Token::Minus));
 
         result = match op {
-            Some(Token::Plus) => ParserAst::new_add_pair(result, parse_product(stream)?),
+            Some(Token::Plus) => ParserAst::new_add(result, parse_product(stream)?),
             Some(Token::Minus) => ParserAst::new_sub(result, parse_product(stream)?),
             None => break, // No more operators
             _ => unreachable!(),
@@ -256,15 +256,15 @@ mod tests {
         assert_eq!(
             ast,
             ParserAst::new_sub(
-                ParserAst::new_add_pair(
+                ParserAst::new_add(
                     ParserAst::new_constant(Number::from_str("3").unwrap()),
-                    ParserAst::new_mul_pair(
+                    ParserAst::new_mul(
                         ParserAst::new_constant(Number::from_str("4").unwrap()),
                         ParserAst::new_constant(Number::from_str("2").unwrap()),
                     )
                 ),
                 ParserAst::new_pow(
-                    ParserAst::new_add_pair(
+                    ParserAst::new_add(
                         ParserAst::new_constant(Number::from_str("1").unwrap()),
                         ParserAst::new_constant(Number::from_str("5").unwrap()),
                     ),
@@ -285,7 +285,7 @@ mod tests {
         assert_eq!(
             ast,
             ParserAst::new_sub(
-                ParserAst::new_add_pair(
+                ParserAst::new_add(
                     ParserAst::new_constant(Number::from_str("3").unwrap()),
                     ParserAst::new_constant(Number::from_str("5").unwrap()),
                 ),
@@ -301,7 +301,7 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_add_pair(
+            ParserAst::new_add(
                 ParserAst::new_constant(Number::from_str("3.14").unwrap()),
                 ParserAst::new_constant(Number::from_str("2.71").unwrap()),
             )
@@ -323,9 +323,9 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_add_pair(
+            ParserAst::new_add(
                 ParserAst::new_constant(Number::from_str("3").unwrap()),
-                ParserAst::new_mul_pair(
+                ParserAst::new_mul(
                     ParserAst::new_constant(Number::from_str("5").unwrap()),
                     ParserAst::new_constant(Number::from_str("2").unwrap())
                 ),
@@ -340,8 +340,8 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_add_pair(
-                ParserAst::new_mul_pair(
+            ParserAst::new_add(
+                ParserAst::new_mul(
                     ParserAst::new_constant(Number::from_str("7").unwrap()),
                     ParserAst::new_pow(
                         ParserAst::new_constant(Number::from_str("2").unwrap()),
@@ -360,8 +360,8 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_mul_pair(
-                ParserAst::new_add_pair(
+            ParserAst::new_mul(
+                ParserAst::new_add(
                     ParserAst::new_constant(Number::from_str("3").unwrap()),
                     ParserAst::new_constant(Number::from_str("5").unwrap()),
                 ),
@@ -377,10 +377,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_add_pair(
+            ParserAst::new_add(
                 ParserAst::new_constant(Number::from_str("3").unwrap()),
                 ParserAst::new_pow(
-                    ParserAst::new_mul_pair(
+                    ParserAst::new_mul(
                         ParserAst::new_constant(Number::from_str("2").unwrap()),
                         ParserAst::new_sub(
                             ParserAst::new_constant(Number::from_str("5").unwrap()),
@@ -400,10 +400,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            ParserAst::new_mul_pair(
-                ParserAst::new_mul_pair(
+            ParserAst::new_mul(
+                ParserAst::new_mul(
                     ParserAst::new_div(
-                        ParserAst::new_mul_pair(
+                        ParserAst::new_mul(
                             ParserAst::new_constant(Number::from_str("5").unwrap()),
                             ParserAst::new_pow(
                                 ParserAst::new_symbol("pi".to_string()),
@@ -413,7 +413,7 @@ mod tests {
                         ParserAst::new_constant(Number::from_str("4").unwrap())
                     ),
                     ParserAst::new_cos(ParserAst::new_div(
-                        ParserAst::new_mul_pair(
+                        ParserAst::new_mul(
                             ParserAst::new_symbol("pi".to_string()),
                             ParserAst::new_symbol("x".to_string())
                         ),
@@ -421,7 +421,7 @@ mod tests {
                     ))
                 ),
                 ParserAst::new_sin(ParserAst::new_div(
-                    ParserAst::new_mul_pair(
+                    ParserAst::new_mul(
                         ParserAst::new_symbol("pi".to_string()),
                         ParserAst::new_symbol("y".to_string()),
                     ),
@@ -439,11 +439,11 @@ mod tests {
         assert_eq!(
             ast,
             ParserAst::new_block(vec![
-                ParserAst::new_add_pair(
+                ParserAst::new_add(
                     ParserAst::new_constant(Number::from_str("3").unwrap()),
                     ParserAst::new_constant(Number::from_str("4").unwrap()),
                 ),
-                ParserAst::new_mul_pair(
+                ParserAst::new_mul(
                     ParserAst::new_constant(Number::from_str("5").unwrap()),
                     ParserAst::new_constant(Number::from_str("6").unwrap())
                 )
@@ -487,7 +487,7 @@ mod tests {
         assert_eq!(
             ast,
             ParserAst::new_eq(
-                ParserAst::new_add_pair(ParserAst::new_symbol("x"), ParserAst::from_i64(4)),
+                ParserAst::new_add(ParserAst::new_symbol("x"), ParserAst::from_i64(4)),
                 ParserAst::new_negation(ParserAst::new_pow(
                     ParserAst::from_i64(2),
                     ParserAst::from_i64(3)

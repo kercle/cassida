@@ -38,7 +38,8 @@ pub enum ParserAst {
         rhs: Box<ParserAst>,
     },
     Add {
-        nodes: Vec<ParserAst>,
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
     },
     Negation {
         arg: Box<ParserAst>,
@@ -48,7 +49,8 @@ pub enum ParserAst {
         rhs: Box<ParserAst>,
     },
     Mul {
-        nodes: Vec<ParserAst>,
+        lhs: Box<ParserAst>,
+        rhs: Box<ParserAst>,
     },
     Div {
         lhs: Box<ParserAst>,
@@ -129,12 +131,11 @@ impl ParserAst {
         }
     }
 
-    pub fn new_add(nodes: Vec<ParserAst>) -> Self {
-        ParserAst::Add { nodes }
-    }
-
-    pub fn new_add_pair(lhs: ParserAst, rhs: ParserAst) -> Self {
-        Self::new_add(vec![lhs, rhs])
+    pub fn new_add(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::GreaterThan {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
     }
 
     pub fn new_negation(arg: ParserAst) -> Self {
@@ -148,12 +149,11 @@ impl ParserAst {
         }
     }
 
-    pub fn new_mul_pair(lhs: ParserAst, rhs: ParserAst) -> Self {
-        Self::new_mul(vec![lhs, rhs])
-    }
-
-    pub fn new_mul(nodes: Vec<ParserAst>) -> Self {
-        ParserAst::Mul { nodes }
+    pub fn new_mul(lhs: ParserAst, rhs: ParserAst) -> Self {
+        ParserAst::Mul {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        }
     }
 
     pub fn new_div(lhs: ParserAst, rhs: ParserAst) -> Self {
