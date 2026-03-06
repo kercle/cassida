@@ -48,16 +48,6 @@ pub enum Token {
     CodeBlock { language: String, code: String },
 }
 
-impl Token {
-    fn is_operator(&self) -> bool {
-        use Token::*;
-        !matches!(
-            self,
-            Number(_) | Identifier(_) | StringLiteral(_) | CodeBlock { .. }
-        )
-    }
-}
-
 struct CharIterator<'a> {
     iter: std::str::Chars<'a>,
     line: usize,
@@ -130,14 +120,9 @@ impl TokenStream {
     ) -> Result<(), LexError> {
         let pos = iter.pos();
 
-        let mut sign_string = String::new();
         let mut base_string = String::new();
         let mut exp_sign_string = String::new();
         let mut exponent_string = String::new();
-
-        if let Some('+') | Some('-') = iter.peek() {
-            sign_string.push(iter.next().unwrap());
-        }
 
         while let Some(c) = iter.peek() {
             if !c.is_ascii_digit() {
@@ -198,12 +183,9 @@ impl TokenStream {
         }
 
         let number_string = if !exponent_string.is_empty() {
-            format!(
-                "{}{}e{}{}",
-                sign_string, base_string, exp_sign_string, exponent_string
-            )
+            format!("{}e{}{}", base_string, exp_sign_string, exponent_string)
         } else {
-            format!("{}{}", sign_string, base_string)
+            base_string
         };
 
         tokens.push((Token::Number(number_string), pos));
@@ -481,25 +463,6 @@ impl FromStr for TokenStream {
                 tokens.push((Token::CodeBlock { language, code }, pos));
             } else if c.is_whitespace() {
                 iter.next(); // Consume whitespace
-            } else if let Some(char_after_minus) = iter.lookahead(1)
-                && (c == '-' || c == '+')
-            {
-                let prev_token_is_operator_or_start =
-                    tokens.last().map(|(t, _)| t.is_operator()).unwrap_or(true);
-
-                if char_after_minus.is_ascii_digit() && prev_token_is_operator_or_start {
-                    Self::comsume_number_chars(&mut iter, &mut tokens)?;
-                } else if c == '-' {
-                    tokens.push((Token::Minus, iter.pos()));
-                    iter.next(); // Consume '-'
-                } else if c == '+' {
-                    tokens.push((Token::Plus, iter.pos()));
-                    iter.next(); // Consume '+'
-                } else {
-                    unreachable!(
-                        "Sign should have been consumed at least by previous two branches."
-                    )
-                }
             } else if Self::consume_operator_chars(&mut iter, &mut tokens) {
                 continue;
             } else if c.is_ascii_digit() {
@@ -639,12 +602,13 @@ mod tests {
     fn test_pow_minus_one() {
         let input = r#"a^-1"#;
         let token_stream = TokenStream::from_str(input).unwrap();
-        assert_eq!(token_stream.tokens.len(), 3);
+        assert_eq!(token_stream.tokens.len(), 4);
 
         let expected = vec![
             Token::Identifier("a".to_string()),
             Token::Caret,
-            Token::Number("-1".to_string()),
+            Token::Minus,
+            Token::Number("1".to_string()),
         ];
         for ((token, _), expected_token) in token_stream.tokens.iter().zip(expected.iter()) {
             assert_eq!(
@@ -660,7 +624,7 @@ mod tests {
         let input = r#"-2"#;
 
         let token_stream = TokenStream::from_str(input).unwrap();
-        let expected = vec![Token::Number("-2".to_string())];
+        let expected = vec![Token::Minus, Token::Number("2".to_string())];
 
         assert!(token_streams_eq(&token_stream.tokens, &expected));
     }
