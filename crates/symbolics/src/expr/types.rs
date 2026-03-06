@@ -4,11 +4,13 @@ use crate::atom::Atom;
 pub enum Expr<A = ()> {
     Atom {
         entry: Atom,
+        digest: u64,
         annotation: A,
     },
     Node {
         head: Box<Expr<A>>,
         args: Vec<Expr<A>>,
+        digest: u64,
         annotation: A,
     },
 }

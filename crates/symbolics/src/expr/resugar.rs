@@ -118,6 +118,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 head,
                 args,
                 annotation,
+                ..
             } if head.matches_symbol(ADD_HEAD) && !args.is_empty() => {
                 let args = args
                     .into_iter()
@@ -129,6 +130,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 head,
                 args,
                 annotation,
+                ..
             } if head.matches_symbol(MUL_HEAD) && !args.is_empty() => {
                 let args = args
                     .into_iter()
@@ -141,6 +143,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                 head,
                 args,
                 annotation,
+                ..
             } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
                 let one_half = Number::new_rational_from_i64(1, 2).unwrap();
                 if args
@@ -161,14 +164,7 @@ impl<A: Clone + PartialEq + Default> NormalizedExpr<A> {
                     .map(|e| NormalizedExpr::new(e).resugar())
                     .collect();
 
-                Self::resugar_mul(
-                    vec![Expr::Node {
-                        head,
-                        args,
-                        annotation: A::default(),
-                    }],
-                    annotation,
-                )
+                Self::resugar_mul(vec![Expr::new_node(*head, args)], annotation)
             }
             _ => expr,
         }

@@ -312,10 +312,12 @@ where
             Expr::Atom {
                 entry: Atom::Number(x),
                 annotation,
+                ..
             } => Ok(ParserAst::new_constant(x).with_annotation(annotation)),
             Expr::Atom {
                 entry: Atom::Symbol(x),
                 annotation,
+                ..
             } => Ok(ParserAst::new_named_value(x).with_annotation(annotation)),
             Expr::Atom {
                 entry: Atom::StringLiteral(_),
@@ -325,6 +327,7 @@ where
                 head,
                 args,
                 annotation,
+                ..
             } if head.matches_symbol(ADD_HEAD) => {
                 let args = args
                     .into_iter()
@@ -336,6 +339,7 @@ where
                 head,
                 mut args,
                 annotation,
+                ..
             } if head.matches_symbol(SUB_HEAD) && args.len() == 2 => {
                 let rhs = ParserAst::try_from_inner(args.pop().unwrap())?;
                 let lhs = ParserAst::try_from_inner(args.pop().unwrap())?;
@@ -346,6 +350,7 @@ where
                 head,
                 args,
                 annotation,
+                ..
             } if head.matches_symbol(MUL_HEAD) => {
                 let args = args
                     .into_iter()
@@ -357,6 +362,7 @@ where
                 head,
                 mut args,
                 annotation,
+                ..
             } if head.matches_symbol(DIV_HEAD) && args.len() == 2 => {
                 let rhs = ParserAst::try_from_inner(args.pop().unwrap())?;
                 let lhs = ParserAst::try_from_inner(args.pop().unwrap())?;
@@ -367,6 +373,7 @@ where
                 head,
                 mut args,
                 annotation,
+                ..
             } if head.matches_symbol(POW_HEAD) && args.len() == 2 => {
                 let rhs = ParserAst::<A>::try_from_inner(args.pop().unwrap())?;
                 let lhs = ParserAst::try_from_inner(args.pop().unwrap())?;
@@ -376,6 +383,7 @@ where
                 head,
                 args,
                 annotation,
+                ..
             } => {
                 let name = head.get_symbol().ok_or(ExprToParserAstError)?;
                 let args = args

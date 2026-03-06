@@ -246,11 +246,7 @@ impl Ast {
                 let head_expr = symbol_expr(head);
                 let args_exprs = args.iter().map(|a| a.to_tokens_expr());
                 quote! {
-                    Expr::Node {
-                        head: ::std::boxed::Box::new(#head_expr),
-                        args: ::std::vec![#(#args_exprs),*],
-                        annotation: (),
-                    }
+                    Expr::<()>::new_node(#head_expr, ::std::vec![#(#args_exprs),*])
                 }
             }
         }
@@ -263,26 +259,17 @@ impl AtomAst {
             AtomAst::Number(n) => {
                 let number_expr = n.to_tokens_number();
                 quote! {
-                    Expr::Atom {
-                        entry: Atom::Number(#number_expr),
-                        annotation: (),
-                    }
+                    Expr::<()>::new_atom(Atom::Number(#number_expr))
                 }
             }
             AtomAst::Symbol(s) => {
                 quote! {
-                    Expr::Atom {
-                        entry: Atom::Symbol(::std::string::String::from(#s)),
-                        annotation: (),
-                    }
+                    Expr::<()>::new_atom(Atom::Symbol(::std::string::String::from(#s)))
                 }
             }
             AtomAst::StringLiteral(s) => {
                 quote! {
-                    Expr::Atom {
-                        entry: Atom::StringLiteral(::std::string::String::from(#s)),
-                        annotation: (),
-                    }
+                    Expr::<()>::new_atom(Atom::StringLiteral(::std::string::String::from(#s)))
                 }
             }
         }
@@ -304,9 +291,6 @@ impl NumberLit {
 fn symbol_expr<S: AsRef<str>>(s: S) -> proc_macro2::TokenStream {
     let s = s.as_ref();
     quote! {
-        Expr::Atom {
-            entry: Atom::Symbol(::std::string::String::from(#s)),
-            annotation: (),
-        }
+        Expr::<()>::new_atom(Atom::Symbol(::std::string::String::from(#s)))
     }
 }

@@ -6,15 +6,8 @@ where
 {
     pub fn annotation_to_default(self) -> Self {
         match self {
-            Expr::Atom { entry, .. } => Expr::Atom {
-                entry,
-                annotation: A::default(),
-            },
-            Expr::Node { head, args, .. } => Expr::Node {
-                head,
-                args,
-                annotation: A::default(),
-            },
+            Expr::Atom { entry, .. } => Expr::new_atom(entry),
+            Expr::Node { head, args, .. } => Expr::new_node(*head, args),
         }
     }
 
@@ -25,12 +18,8 @@ where
     pub fn with_annotation(self, annotation: A) -> Self {
         use Expr::*;
         match self {
-            Atom { entry, .. } => Atom { entry, annotation },
-            Node { head, args, .. } => Node {
-                head,
-                args,
-                annotation,
-            },
+            Atom { entry, .. } => Expr::new_atom_with_annotation(entry, annotation),
+            Node { head, args, .. } => Expr::new_node_with_annotation(*head, args, annotation),
         }
     }
 
@@ -39,24 +28,20 @@ where
         F: Fn(A) -> B + Copy,
     {
         match self {
-            Expr::Atom { entry, annotation } => Expr::Atom {
-                entry,
-                annotation: f(annotation),
-            },
+            Expr::Atom {
+                entry, annotation, ..
+            } => Expr::new_atom_with_annotation(entry, f(annotation)),
             Expr::Node {
                 head,
                 args,
                 annotation,
+                ..
             } => {
                 let head = head.map_annotations(f);
                 let args = args.into_iter().map(|a| a.map_annotations(f)).collect();
                 let annotation = f(annotation);
 
-                Expr::Node {
-                    head: Box::new(head),
-                    args,
-                    annotation,
-                }
+                Expr::new_node_with_annotation(head, args, annotation)
             }
         }
     }
@@ -75,6 +60,7 @@ where
                 head,
                 args,
                 annotation,
+                ..
             } => {
                 let head = f(&head).unwrap_or(head.replace(f));
                 let args = args

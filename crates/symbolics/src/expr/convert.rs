@@ -11,10 +11,7 @@ where
     A: Default,
 {
     fn from(x: T) -> Self {
-        Expr::Atom {
-            entry: x.into(),
-            annotation: A::default(),
-        }
+        Expr::new_atom(x.into())
     }
 }
 

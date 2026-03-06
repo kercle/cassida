@@ -2,7 +2,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::expr::Expr;
 
-impl<A: Clone + PartialEq> Hash for Expr<A> {
+impl<A> Hash for Expr<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         use Expr::*;
 
@@ -23,10 +23,23 @@ impl<A: Clone + PartialEq> Hash for Expr<A> {
     }
 }
 
-impl<A: Clone + PartialEq> Expr<A> {
-    pub fn to_hash(&self) -> u64 {
+impl<A> Expr<A> {
+    pub fn to_digest(&self) -> u64 {
         let mut state = DefaultHasher::new();
         self.hash(&mut state);
         state.finish()
+    }
+
+    pub fn recompute_digest(mut self) -> Self {
+        let digest: u64 = self.to_digest();
+        match &mut self {
+            Expr::Atom {
+                digest: digest_ref, ..
+            }
+            | Expr::Node {
+                digest: digest_ref, ..
+            } => *digest_ref = digest,
+        }
+        self
     }
 }
