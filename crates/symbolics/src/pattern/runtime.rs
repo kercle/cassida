@@ -71,7 +71,7 @@ enum Frame<'p, 's, A: Clone + PartialEq> {
 #[derive(Clone)]
 pub(super) enum EnvBinding<'s, A: Clone + PartialEq> {
     One(&'s Expr<A>),
-    Many(Vec<&'s Expr<A>>),
+    Many(Rc<Vec<&'s Expr<A>>>),
 }
 
 #[derive(Debug, Clone)]
@@ -114,7 +114,7 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
     fn bind_seq(
         &mut self,
         bind_var: VarId,
-        subjects: &[&'s Expr<A>],
+        subjects: Rc<Vec<&'s Expr<A>>>,
     ) -> Result<bool, ErrorBindCollision> {
         match self.bindings.get(&bind_var) {
             Some(EnvBinding::Many(bound_subjects)) => {
@@ -122,7 +122,10 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
                     return Err(ErrorBindCollision);
                 }
 
-                let all_equal = bound_subjects.iter().zip(subjects).all(|(a, b)| *a == *b);
+                let all_equal = bound_subjects
+                    .iter()
+                    .zip(subjects.iter())
+                    .all(|(a, b)| *a == *b);
 
                 if all_equal {
                     Ok(false)
@@ -131,8 +134,7 @@ impl<'p, 's, A: Clone + PartialEq> Environment<'p, 's, A> {
                 }
             }
             None => {
-                self.bindings
-                    .insert(bind_var, EnvBinding::Many(subjects.to_vec()));
+                self.bindings.insert(bind_var, EnvBinding::Many(subjects));
                 Ok(true)
             }
             _ => Err(ErrorBindCollision),
@@ -263,7 +265,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
                 already_tried_count,
             } => self.match_multiset(instrs, subjects, state, already_tried_count),
             BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
-            BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects.as_slice()),
+            BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
             TestPredicate { subject, predicate } => self.test_predicate(subject, predicate),
         }
     }
@@ -768,7 +770,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         }
     }
 
-    fn bind_seq(&mut self, bind_var: VarId, subjects: &[&'s Expr<A>]) -> bool {
+    fn bind_seq(&mut self, bind_var: VarId, subjects: Rc<Vec<&'s Expr<A>>>) -> bool {
         match self.environment.bind_seq(bind_var, subjects) {
             Ok(true) => {
                 self.bind_stack.push(bind_var);
