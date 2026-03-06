@@ -11,9 +11,19 @@ use crate::{
 
 #[derive(Debug)]
 struct ChoicePoint<'p, 's, A: Clone + PartialEq> {
-    pub frame_stack_snapshot: Vec<Frame<'p, 's, A>>,
+    // pub frame_stack_snapshot: Vec<Frame<'p, 's, A>>,
+    pub frame_stack: Rc<FrameStack<'p, 's, A>>,
     pub bind_stack_len: usize,
     pub resume_frame: Frame<'p, 's, A>,
+}
+
+#[derive(Debug)]
+enum FrameStack<'p, 's, A: Clone + PartialEq> {
+    Empty,
+    More {
+        frame: Frame<'p, 's, A>,
+        next: Rc<FrameStack<'p, 's, A>>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -171,7 +181,8 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Environment<'p, 's, A> {
 pub struct Runtime<'p, 's, A: Clone + PartialEq> {
     program: &'p Program<A>,
     environment: Environment<'p, 's, A>,
-    frame_stack: Vec<Frame<'p, 's, A>>,
+    // frame_stack: Vec<Frame<'p, 's, A>>,
+    frame_stack: Rc<FrameStack<'p, 's, A>>,
     choice_points: Vec<ChoicePoint<'p, 's, A>>,
     bind_stack: Vec<VarId>,
 }
@@ -181,10 +192,17 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
         Runtime {
             program,
             environment: Environment::new(program),
-            frame_stack: vec![Frame::Exec {
-                instr: program.entry,
-                subject: expr,
-            }],
+            // frame_stack: vec![Frame::Exec {
+            //     instr: program.entry,
+            //     subject: expr,
+            // }],
+            frame_stack: Rc::new(FrameStack::More {
+                frame: Frame::Exec {
+                    instr: program.entry,
+                    subject: expr,
+                },
+                next: Rc::new(FrameStack::Empty),
+            }),
             choice_points: Vec::new(),
             bind_stack: Vec::new(),
         }
@@ -761,20 +779,31 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
     }
 
     fn push_frame(&mut self, frame: Frame<'p, 's, A>) {
-        self.frame_stack.push(frame);
+        self.frame_stack = Rc::new(FrameStack::More {
+            frame,
+            next: self.frame_stack.clone(),
+        })
     }
 
     fn pop_frame(&mut self) -> Option<Frame<'p, 's, A>> {
-        self.frame_stack.pop()
+        use FrameStack::*;
+        match self.frame_stack.as_ref() {
+            Empty => None,
+            More { frame, next } => {
+                let frame = frame.clone();
+                self.frame_stack = next.clone();
+                Some(frame)
+            }
+        }
     }
 
     fn is_frame_stack_empty(&self) -> bool {
-        self.frame_stack.is_empty()
+        matches!(*self.frame_stack, FrameStack::Empty)
     }
 
     fn push_choice_point(&mut self, resume_frame: Frame<'p, 's, A>) {
         let choice_point = ChoicePoint {
-            frame_stack_snapshot: self.frame_stack.clone(),
+            frame_stack: self.frame_stack.clone(),
             bind_stack_len: self.bind_stack.len(),
             resume_frame,
         };
@@ -792,7 +821,7 @@ impl<'p, 's, A: Clone + PartialEq + Debug> Runtime<'p, 's, A> {
             self.environment.bindings.remove(&var);
         }
 
-        self.frame_stack = choice_point.frame_stack_snapshot;
+        self.frame_stack = choice_point.frame_stack;
         self.push_frame(choice_point.resume_frame);
 
         true
