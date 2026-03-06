@@ -9,7 +9,7 @@ use crate::{
 };
 
 fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
-    // <named_value_or_function_call> ::= <identifier>
+    // <identifier_or_function_call> ::= <identifier>
     //    | <identifier> "[" "]"
     //    | <identifier> "[" <block> { "," <block> }* ")"
 
@@ -52,7 +52,7 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
 fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
     // <atom> ::= <number>
     //    | "(" <block> ")"
-    //    | <named_value_or_function_call>
+    //    | <identifier_or_function_call>
 
     if stream.next_if_matches_token(&Token::LeftParen).is_some() {
         let expr = parse_block(stream)?;
