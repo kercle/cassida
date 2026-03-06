@@ -70,6 +70,15 @@ pub(crate) fn derivative_rules() -> Vec<(NormalizedExpr, Expr)> {
             ]),
             expr!((f ^ g) *(g / f + D[g, x] * Log[f])),
         ),
+        // =============== Exponential ===============
+        (
+            norm_expr!(
+            D[
+                Exp[Pattern[f, Blank[]]],
+                PatternTest[Pattern[x, Blank[]], IsSymbolQ]
+            ]),
+            expr!(Exp[f] * D[f, x]),
+        ),
         // =============== Logarithms ===============
         (
             norm_expr!(
