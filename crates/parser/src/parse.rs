@@ -15,15 +15,18 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
 
     let identifier = stream.next_if_identifier();
 
-    let Some(identifier) = identifier.map(|i| i.to_string()) else {
+    let Some(identifier) = identifier.map(String::from) else {
         return Err(ParseError {
-            message: "Expected an identifier".to_string(),
+            message: "Expected an identifier or a pattern string".to_string(),
             at_token: stream.peek().cloned(),
         });
     };
 
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return Ok(ParserAst::new_symbol(identifier));
+        return ParserAst::new_symbol_or_pattern(identifier).map_err(|err| ParseError {
+            message: err.message,
+            at_token: stream.peek().cloned(),
+        });
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {

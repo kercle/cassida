@@ -4,6 +4,8 @@ pub mod fmt;
 pub mod lex;
 pub mod parse;
 
+mod utils;
+
 pub use parse::*;
 
 // for proc macros: route numbers through parser crate

@@ -117,6 +117,24 @@ fn ast_to_token_stream(ast: ParserAst) -> proc_macro2::TokenStream {
 
             quote! { #ast_path::new_function_call(#name, vec![#(#args),*]) }
         }
+        Blank {
+            bind_name,
+            head_constraint,
+        } => {
+            quote! { #ast_path::new_blank(#bind_name, #head_constraint) }
+        }
+        BlankSeq {
+            bind_name,
+            head_constraint,
+        } => {
+            quote! { #ast_path::new_blank(#bind_name, #head_constraint) }
+        }
+        BlankNullSeq {
+            bind_name,
+            head_constraint,
+        } => {
+            quote! { #ast_path::new_blank(#bind_name, #head_constraint) }
+        }
         Block { .. } => todo!(),
     }
 }

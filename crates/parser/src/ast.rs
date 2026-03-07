@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use numbers::Number;
 
+use crate::{error::ParseError, utils::nonempty};
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParserAst {
     Constant {
@@ -60,6 +62,18 @@ pub enum ParserAst {
     Block {
         nodes: Vec<ParserAst>,
     },
+    Blank {
+        bind_name: Option<String>,
+        head_constraint: Option<String>,
+    },
+    BlankSeq {
+        bind_name: Option<String>,
+        head_constraint: Option<String>,
+    },
+    BlankNullSeq {
+        bind_name: Option<String>,
+        head_constraint: Option<String>,
+    },
 }
 
 impl ParserAst {
@@ -83,9 +97,98 @@ impl ParserAst {
         Self::new_constant_from_i64(0)
     }
 
-    pub fn new_symbol<T: ToString>(name: T) -> Self {
+    pub fn new_symbol<T: AsRef<str>>(name: T) -> Self {
         ParserAst::Symbol {
-            name: name.to_string(),
+            name: name.as_ref().to_string(),
+        }
+    }
+
+    pub fn new_symbol_or_pattern<T: AsRef<str>>(name: T) -> Result<Self, ParseError> {
+        debug_assert!(!name.as_ref().is_empty());
+
+        if !name.as_ref().contains('_') {
+            return Ok(Self::new_symbol(name));
+        }
+
+        let parts: Vec<&str> = name.as_ref().split('_').collect();
+        let ret = match parts.as_slice() {
+            ["", ""] => {
+                // blank _
+                Self::new_blank(None, None)
+            }
+            ["", "", ""] => {
+                // double blank __
+                Self::new_blank_seq(None, None)
+            }
+            ["", "", "", ""] => {
+                // blank sequence ___
+                Self::new_blank_null_seq(None, None)
+            }
+            [bind_name, ""] => {
+                // blank with binding x_
+                Self::new_blank(nonempty(bind_name), None)
+            }
+            ["", head_constr] => {
+                // blank with head constraint _x
+                Self::new_blank(None, nonempty(head_constr))
+            }
+            [bind_name, head_constr] => {
+                // blank with binding and head constr x_y
+                Self::new_blank(nonempty(bind_name), nonempty(head_constr))
+            }
+            [bind_name, "", ""] => {
+                // blank seq with bind name x__
+                Self::new_blank_seq(nonempty(bind_name), None)
+            }
+            ["", "", head_constr] => {
+                // blank seq with head constraint __x
+                Self::new_blank_seq(None, nonempty(head_constr))
+            }
+            [bind_name, "", head_constr] => {
+                // blank seq with binding and head constr x_y
+                Self::new_blank_seq(nonempty(bind_name), nonempty(head_constr))
+            }
+            [bind_name, "", "", ""] => {
+                // blank null seq with bind name x___
+                Self::new_blank_null_seq(nonempty(bind_name), None)
+            }
+            ["", "", "", head_constr] => {
+                // blank null seq with head constraint ___x
+                Self::new_blank_null_seq(None, nonempty(head_constr))
+            }
+            [bind_name, "", "", head_constr] => {
+                // blank null seq with binding and head constr x_y
+                Self::new_blank_null_seq(nonempty(bind_name), nonempty(head_constr))
+            }
+            _ => {
+                return Err(ParseError {
+                    message: format!("The pattern `{}` is invalid.", name.as_ref()),
+                    at_token: None,
+                });
+            }
+        };
+
+        Ok(ret)
+    }
+
+    pub fn new_blank(bind_name: Option<String>, head_constraint: Option<String>) -> Self {
+        ParserAst::Blank {
+            bind_name,
+            head_constraint,
+        }
+    }
+
+    pub fn new_blank_seq(bind_name: Option<String>, head_constraint: Option<String>) -> Self {
+        ParserAst::BlankSeq {
+            bind_name,
+            head_constraint,
+        }
+    }
+
+    pub fn new_blank_null_seq(bind_name: Option<String>, head_constraint: Option<String>) -> Self {
+        ParserAst::BlankNullSeq {
+            bind_name,
+            head_constraint,
         }
     }
 
