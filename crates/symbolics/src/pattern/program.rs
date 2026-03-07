@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
-use parser::ast::{ADD_HEAD, MUL_HEAD};
-
+use crate::builtin::*;
 use crate::expr::Expr;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::pattern::{PatternPredicate, builtin::*};

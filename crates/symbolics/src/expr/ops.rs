@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, ops};
 
+use crate::builtin::*;
 use numbers::Number;
-use parser::ast::ADD_HEAD;
 
 use crate::expr::Expr;
 

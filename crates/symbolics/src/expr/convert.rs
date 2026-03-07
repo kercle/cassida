@@ -1,8 +1,7 @@
+use crate::builtin::*;
+
 use numbers::Number;
-use parser::ast::{
-    ADD_HEAD, DIV_HEAD, EQ_HEAD, GE_HEAD, GT_HEAD, LE_HEAD, LT_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD,
-    ParserAst, SUB_HEAD,
-};
+use parser::ast::ParserAst;
 
 use crate::{atom::Atom, expr::Expr};
 

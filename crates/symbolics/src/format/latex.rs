@@ -1,3 +1,4 @@
+use crate::builtin::*;
 use crate::{
     atom::Atom,
     builtin::{
@@ -7,7 +8,6 @@ use crate::{
     },
 };
 use numbers::Number;
-use parser::ast::{ADD_HEAD, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD};
 
 use crate::expr::Expr;
 

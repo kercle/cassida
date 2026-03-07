@@ -2,19 +2,6 @@ use std::fmt::Debug;
 
 use numbers::Number;
 
-pub const LT_HEAD: &str = "Lesser";
-pub const LE_HEAD: &str = "LesserEq";
-pub const EQ_HEAD: &str = "Equals";
-pub const GE_HEAD: &str = "GreaterEq";
-pub const GT_HEAD: &str = "Greater";
-
-pub const ADD_HEAD: &str = "Add";
-pub const SUB_HEAD: &str = "Sub";
-pub const MUL_HEAD: &str = "Mul";
-pub const DIV_HEAD: &str = "Div";
-pub const NEG_HEAD: &str = "Neg";
-pub const POW_HEAD: &str = "Pow";
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParserAst {
     Constant {
