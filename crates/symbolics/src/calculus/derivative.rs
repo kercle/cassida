@@ -40,8 +40,8 @@ pub(crate) fn derivative_rules() -> Vec<(NormExpr, NormExpr)> {
             norm_expr!(0),
         ),
         (
-            norm_expr!( D[f_ * g_, PatternTest[x_, IsSymbolQ]] ),
-            hold_expr!(D[f, x] * g + f * D[g, x]),
+            norm_expr!( D[f_ * g__, PatternTest[x_, IsSymbolQ]] ),
+            hold_expr!(D[f, x] * g + f * D[Mul[g], x]),
         ),
         // =============== Powers ===============
         (
