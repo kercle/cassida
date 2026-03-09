@@ -165,7 +165,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         ExprKind::Atom {
             entry: Atom::Number(Number::Rational(_)),
             ..
-        } => unimplemented!("Should have been resgared to Div"),
+        } => unimplemented!("Should have been resugared to Div"),
 
         ExprKind::Atom {
             entry: Atom::Symbol(name),

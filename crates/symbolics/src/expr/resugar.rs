@@ -10,11 +10,10 @@ impl NormExpr {
         Self::resugar_inner(self.into_raw())
     }
 
-    fn resugar_inner(expr: RawExpr) -> RawExpr {
-        match expr.kind {
-            ExprKind::Atom {
-                entry: Atom::Number(Number::Rational(value)),
-            } => {
+    fn resugar_number(num: Number) -> RawExpr {
+        match num {
+            Number::Integer(_) => Atom::number(num).into(),
+            Number::Rational(value) => {
                 let numerator = Number::Integer(value.numerator().clone());
                 let denominator = Number::Integer(value.denominator().clone());
 
@@ -28,6 +27,14 @@ impl NormExpr {
                     )
                 }
             }
+        }
+    }
+
+    fn resugar_inner(expr: RawExpr) -> RawExpr {
+        match expr.kind {
+            ExprKind::Atom {
+                entry: Atom::Number(num),
+            } => Self::resugar_number(num),
             ExprKind::Node { head, args } if head.matches_symbol(ADD_HEAD) => {
                 Self::resugar_add(args)
             }
@@ -67,7 +74,11 @@ impl NormExpr {
             } else if coeff.is_one() {
                 positives.push(term);
             } else {
-                positives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.into(), term));
+                positives.push(RawExpr::new_binary_node(
+                    MUL_HEAD,
+                    Self::resugar_number(coeff),
+                    term,
+                ));
             }
         }
 
@@ -121,11 +132,11 @@ impl NormExpr {
             let coeff = coeff.abs();
 
             let new_pow_expr = if exp_rest.is_number_one() {
-                RawExpr::new_binary_node(POW_HEAD, base, RawExpr::new_number(coeff))
+                RawExpr::new_binary_node(POW_HEAD, base, Self::resugar_number(coeff))
             } else if coeff.is_one() {
                 RawExpr::new_binary_node(POW_HEAD, base, exp_rest)
             } else {
-                let exp = RawExpr::collapse_mul(vec![coeff.abs().into(), exp_rest]);
+                let exp = RawExpr::collapse_mul(vec![Self::resugar_number(coeff.abs()), exp_rest]);
                 RawExpr::new_binary_node(POW_HEAD, base, exp)
             };
 
