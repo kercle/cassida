@@ -1,2 +1,2 @@
 #[cfg(test)]
-mod misc;
+mod integration_tests;
