@@ -8,6 +8,9 @@ This project emerged from my PDE solver where I experimented with WebGL and WebA
 
 The project comes with a library that provides WASM bindings, which allows one to embed the CAS in a website. To try it out, visit [the demo website](https://kercle.github.io/toy-cas/).
 
+Example screenshot of the web app demonstrating plotting and differentiation:
+![Demo Screenshot](assets/screenshot.png)
+
 ## Design goals
 
 Since this is just a toy project of mine, I want to keep the core modules independent of external crates. For now the CLI tool links against the library. In the future, I'd like to have a dedicated kernel that a UI application can connect to.

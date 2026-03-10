@@ -40,6 +40,13 @@ impl Number {
         todo!()
     }
 
+    pub fn to_f64(&self) -> Option<f64> {
+        match self {
+            Self::Integer(x) => x.to_i64().map(|x| x as f64),
+            Self::Rational(x) => x.to_f64(),
+        }
+    }
+
     pub fn zero() -> Self {
         Self::from_i64(0)
     }

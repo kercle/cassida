@@ -7,8 +7,6 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-parser = { path = "../parser" }
-symbolics = { path = "../symbolics" }
 common = { path = "../common" }
 wasm-bindgen = "0.2"
 serde = { version = "1", features = ["derive"] }

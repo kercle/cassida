@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! raw_expr {
     ($($tt:tt)*) => {
-        $crate::expr::RawExpr::from(parser_macros::tcas_parse!($($tt)*))
+        $crate::expr::RawExpr::from($crate::_parser_macros::tcas_parse!($($tt)*))
     };
 }
 

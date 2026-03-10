@@ -14,4 +14,12 @@ type ServerMessage = {
         input: string,
         msg: string,
     }
+} | {
+    plot: {
+        input: {
+            raw: string,
+            latex: string
+        },
+        data: []
+    }
 };

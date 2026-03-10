@@ -1,3 +1,5 @@
+pub mod hacks;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
@@ -12,6 +14,10 @@ pub enum KernelMessage {
     EvalResult {
         input: ExpressionForms,
         output: ExpressionForms,
+    },
+    Plot {
+        input: ExpressionForms,
+        data: Vec<(f64, f64)>
     },
     ParseError {
         input: String,

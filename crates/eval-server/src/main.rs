@@ -4,10 +4,8 @@ use axum::{
     response::Response,
     routing::get,
 };
-use common::{ClientMessage, ExpressionForms, KernelMessage};
+use common::{ hacks::process_message};
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use parser::parse;
-use symbolics::{expr::RawExpr, format::MathDisplay, simplify::Simplifier};
 use tracing::Level;
 use tracing::{error, info};
 
@@ -58,41 +56,4 @@ async fn handle_socket(socket: WebSocket) {
         }
     }
     info!("Client disconnected.");
-}
-
-fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessage> {
-    let inbound_msg: ClientMessage =
-        serde_json::from_str(&inbound_msg).map_err(|err| KernelMessage::ParseError {
-            input: "n/a".to_string(),
-            msg: format!("Cannot unpack inbound message: {err}"),
-        })?;
-
-    let ClientMessage::Eval(input) = inbound_msg;
-
-    let ast_in = parse(&input).map_err(|err| KernelMessage::ParseError {
-        input: input.clone(),
-        msg: format!("Error parsing input: {}", err),
-    })?;
-
-    let input_expr = RawExpr::from(ast_in);
-
-    let input_expr_forms: ExpressionForms = ExpressionForms {
-        raw: input_expr.to_input_form(),
-        latex: input_expr.to_latex_form(),
-    };
-
-    let input_expr = input_expr.normalize();
-
-    let result_expr = Simplifier::new(input_expr)
-        .simple()
-        .resugar()
-        .canonicalize();
-
-    Ok(KernelMessage::EvalResult {
-        input: input_expr_forms,
-        output: ExpressionForms {
-            raw: result_expr.to_input_form(),
-            latex: result_expr.to_latex_form(),
-        },
-    })
 }

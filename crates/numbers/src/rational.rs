@@ -56,6 +56,13 @@ impl BigRational {
         Self::from_decimal_str(&s).expect("Failed to convert f64 to Rational")
     }
 
+    pub fn to_f64(&self) -> Option<f64> {
+        let numerator_f64 = self.numerator.to_i64()? as f64;
+        let denominator_f64 = self.denominator.to_i64()? as f64;
+
+        Some(numerator_f64 / denominator_f64)
+    }
+
     pub fn zero() -> Self {
         Self {
             numerator: BigInteger::from_u64(0),

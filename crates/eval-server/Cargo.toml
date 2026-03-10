@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-parser = { path = "../parser" }
-symbolics = { path = "../symbolics" }
 common = { path = "../common" }
 axum = { version = "0.8.8", features = ["ws"] }
 futures-util = "0.3.31"

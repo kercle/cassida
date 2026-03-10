@@ -87,6 +87,26 @@ impl BigInteger {
         BigInteger::from_vec(Sign::Positive, vec![value])
     }
 
+    pub fn to_i64(&self) -> Option<i64> {
+        if self.digits.len() != 1 {
+            return None;
+        }
+
+        let value = self.digit(0);
+
+        if self.is_negative() {
+            if value > i64::MAX as u64 + 1 {
+                None
+            } else if value == i64::MAX as u64 + 1 {
+                Some(i64::MIN)
+            } else {
+                Some(-(value as i64))
+            }
+        } else {
+            i64::try_from(value).ok()
+        }
+    }
+
     pub fn zero() -> Self {
         BigInteger::from_u64(0)
     }
