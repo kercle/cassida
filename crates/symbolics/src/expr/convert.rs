@@ -1,6 +1,6 @@
 use crate::{
     builtin::*,
-    expr::{Expr, ExprKind, NormExpr, RawExpr},
+    expr::{Expr, ExprKind, RawExpr},
     pattern::{BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD},
 };
 
@@ -9,7 +9,7 @@ use parser::ast::ParserAst;
 
 use crate::atom::Atom;
 
-impl ExprKind<NormExpr> {
+impl<S> ExprKind<S> {
     pub fn into_raw_expr(self) -> RawExpr {
         let raw: ExprKind<RawExpr> = unsafe { std::mem::transmute(self) };
         RawExpr::new(raw)

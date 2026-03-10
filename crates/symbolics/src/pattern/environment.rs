@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Debug, rc::Rc};
 
 use crate::{
     atom::Atom,
-    expr::{ExprKind, NormExpr, RawExpr},
+    expr::{Expr, ExprKind, NormExpr, RawExpr},
     pattern::program::{Program, VarId},
 };
 
@@ -111,7 +111,7 @@ impl<'p, 's> Environment<'p, 's> {
 }
 
 impl<'p, 's> Environment<'p, 's> {
-    pub fn fill(&self, target_expr: NormExpr) -> RawExpr {
+    pub fn fill<S>(&self, target_expr: Expr<S>) -> RawExpr {
         match target_expr.into_kind() {
             ExprKind::Atom {
                 entry: Atom::Symbol(name),
