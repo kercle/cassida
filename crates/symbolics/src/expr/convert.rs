@@ -76,14 +76,17 @@ impl From<ParserAst> for RawExpr {
             Blank {
                 bind_name,
                 head_constraint,
+                optional: _optional,
             } => make_blank_variant(BLANK_ONE_HEAD, bind_name, head_constraint),
             BlankSeq {
                 bind_name,
                 head_constraint,
+                optional: _optional,
             } => make_blank_variant(BLANK_SEQ_HEAD, bind_name, head_constraint),
             BlankNullSeq {
                 bind_name,
                 head_constraint,
+                optional: _optional,
             } => make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint),
             Block { .. } => todo!(),
         }

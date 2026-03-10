@@ -515,14 +515,8 @@ impl TokenStream {
         self.next_if_matches(|t| t == token)
     }
 
-    pub fn next_if_identifier(&mut self) -> Option<&str> {
-        let token = self.next_if_matches(|t| matches!(t, Token::Identifier(_)))?;
-
-        if let Token::Identifier(name) = token {
-            Some(name.as_str())
-        } else {
-            None
-        }
+    pub fn next_if_symbol_or_pattern(&mut self) -> Option<&Token> {
+        Some(self.next_if_matches(|t| matches!(t, Token::Identifier(_) | Token::Pattern { .. }))?)
     }
 
     pub fn next_if_number(&mut self) -> Option<&str> {

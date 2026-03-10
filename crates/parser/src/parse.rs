@@ -5,7 +5,7 @@ use numbers::Number;
 use crate::{
     ast::ParserAst,
     error::{BoxedError, ParseError},
-    lex::{Token, TokenStream},
+    lex::{Quantity, Token, TokenStream},
 };
 
 fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
@@ -13,24 +13,43 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
     //    | <identifier> "[" "]"
     //    | <identifier> "[" <block> { "," <block> }* ")"
 
-    let identifier = stream.next_if_identifier();
-
-    let Some(identifier) = identifier.map(String::from) else {
+    let Some(symbol_or_pattern) = stream.next_if_symbol_or_pattern().cloned() else {
         return Err(ParseError {
-            message: "Expected an identifier or a pattern string".to_string(),
+            message: "Expected a symbol or a pattern".to_string(),
             at_token: stream.peek().cloned(),
         });
     };
 
+    let ast_node = match symbol_or_pattern {
+        Token::Identifier(value) => ParserAst::new_symbol(value),
+        Token::Pattern {
+            quantity,
+            prefix,
+            postfix,
+            optional,
+        } => match quantity {
+            Quantity::One => ParserAst::new_blank(prefix, postfix, optional),
+            Quantity::Many(1) => ParserAst::new_blank_seq(prefix, postfix, optional),
+            Quantity::Many(0) => ParserAst::new_blank_null_seq(prefix, postfix, optional),
+            _ => unreachable!("No other blank varieties are supported"),
+        },
+        _ => unreachable!("Already exlcuded in next_if_symbol_or_pattern()"),
+    };
+
     if stream.next_if_matches_token(&Token::LeftBracket).is_none() {
-        return ParserAst::new_symbol_or_pattern(identifier).map_err(|err| ParseError {
-            message: err.message,
-            at_token: stream.peek().cloned(),
-        });
+        // return ParserAst::new_symbol_or_pattern(symbol_or_pattern).map_err(|err| ParseError {
+        //     message: err.message,
+        //     at_token: stream.peek().cloned(),
+        // });
+        return Ok(ast_node);
     }
 
     if stream.next_if_matches_token(&Token::RightBracket).is_some() {
-        return Ok(ParserAst::new_function_call(identifier, vec![]));
+        let ParserAst::Symbol { name } = ast_node else {
+            todo!("Having non-symbol patterns is not supported in parser yet");
+        };
+
+        return Ok(ParserAst::new_function_call(name, vec![]));
     }
 
     let mut args = vec![parse_block(stream)?];
@@ -49,7 +68,11 @@ fn parse_identifier_or_call(stream: &mut TokenStream) -> Result<ParserAst, Parse
         });
     }
 
-    Ok(ParserAst::new_function_call(identifier, args))
+    let ParserAst::Symbol { name } = ast_node else {
+        todo!("Having non-symbol patterns is not supported in parser yet");
+    };
+
+    Ok(ParserAst::new_function_call(name, args))
 }
 
 fn parse_atom(stream: &mut TokenStream) -> Result<ParserAst, ParseError> {
@@ -497,5 +520,11 @@ mod tests {
                 ))
             ),
         );
+    }
+
+    #[test]
+    fn test_parse_pattern() {
+        let input = "a+r_^m_.";
+        let _ast = parse(input).expect("Failed to parse block with nested expressions");
     }
 }
