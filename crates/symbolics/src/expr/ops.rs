@@ -36,7 +36,7 @@ fn cmp_expr<S>(lhs: &ExprKind<Expr<S>>, rhs: &ExprKind<Expr<S>>) -> Ordering {
 
 impl<S> PartialEq for Expr<S> {
     fn eq(&self, other: &Expr<S>) -> bool {
-        self.digest() == other.digest() && self.kind == other.kind
+        self.fingerprint() == other.fingerprint() && self.kind == other.kind
     }
 }
 

@@ -276,7 +276,7 @@ impl<'p, 's> Runtime<'p, 's> {
     }
 
     fn expressions_equal(inner: &NormExpr, subject: &'s NormExpr) -> bool {
-        // digest checking is implemented in PartialEq for NormExpr
+        // fingerprint checking is implemented in PartialEq for NormExpr
         subject == inner
     }
 

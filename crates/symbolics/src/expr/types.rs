@@ -17,7 +17,7 @@ pub enum ExprKind<E> {
 #[derive(Clone)]
 pub struct Expr<S> {
     pub(super) kind: ExprKind<Expr<S>>,
-    digest: u64,
+    fingerprint: u64,
     _state: PhantomData<S>,
 }
 
@@ -26,16 +26,16 @@ pub type NormExpr = Expr<Normalized>;
 
 impl<S> Expr<S> {
     pub(super) fn new_unchecked(kind: ExprKind<Expr<S>>) -> Self {
-        let digest = kind.digest();
+        let fingerprint = kind.digest();
         Self {
             kind,
-            digest,
+            fingerprint,
             _state: PhantomData,
         }
     }
 
-    pub fn digest(&self) -> u64 {
-        self.digest
+    pub fn fingerprint(&self) -> u64 {
+        self.fingerprint
     }
 
     pub fn kind(&self) -> &ExprKind<Self> {

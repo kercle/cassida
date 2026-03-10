@@ -131,13 +131,13 @@ impl RawExpr {
             current = f(current);
 
             if let Some(last_hash) = last_hash
-                && last_hash == current.digest()
+                && last_hash == current.fingerprint()
             {
                 // if hashes agree, assume fixed point
                 break;
             }
 
-            last_hash = Some(current.digest());
+            last_hash = Some(current.fingerprint());
         }
 
         current
