@@ -8,3 +8,6 @@ eval-server:
 
 [parallel]
 serve-dev: eval-server serve-frontend-dev
+
+profile-integration-tests:
+    cargo flamegraph -p symbolics --profile profiling --unit-test -- tests::integration_tests::test_full_processing_chain

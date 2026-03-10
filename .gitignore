@@ -1,3 +1,5 @@
 target
 test_output.md
 notes
+flamegraph.svg
+perf.data
