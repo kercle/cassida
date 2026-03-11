@@ -275,7 +275,7 @@ impl TokenStream {
             Token::Pattern {
                 quantity,
                 prefix: prefix.map(|x| x.0),
-                postfix: postfix,
+                postfix,
                 optional,
             },
             pos,
@@ -516,7 +516,7 @@ impl TokenStream {
     }
 
     pub fn next_if_symbol_or_pattern(&mut self) -> Option<&Token> {
-        Some(self.next_if_matches(|t| matches!(t, Token::Identifier(_) | Token::Pattern { .. }))?)
+        self.next_if_matches(|t| matches!(t, Token::Identifier(_) | Token::Pattern { .. }))
     }
 
     pub fn next_if_number(&mut self) -> Option<&str> {

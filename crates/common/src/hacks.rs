@@ -1,9 +1,6 @@
 use parser::parse;
 use symbolics::{
-    eval::{
-        program::EvalProgram,
-        runtime::{self, EvalRuntime},
-    },
+    eval::{program::EvalProgram, runtime::EvalRuntime},
     expr::{NormExpr, RawExpr},
     format::MathDisplay,
     norm_expr,

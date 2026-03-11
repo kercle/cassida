@@ -1,13 +1,15 @@
 use numbers::Number;
 
-use crate::{expr::NormExpr, simplify::Simplifier};
+use crate::{expr::NormExpr};
 
 #[derive(Clone)]
 pub struct UnivariatePolynomial(Vec<Number>);
 
 impl UnivariatePolynomial {
-    pub fn from_expr(expr: &NormExpr) -> Option<Self> {
-        let expr = Simplifier::new(expr.clone()).with_expansion();
+    pub fn from_expr(_expr: &NormExpr) -> Option<Self> {
+        // needs polynom checking predicate
+        // which in turn needs Optional in
+        // pattern matcher.
         todo!()
     }
 

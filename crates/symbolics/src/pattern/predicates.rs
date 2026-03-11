@@ -2,7 +2,6 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::{ADD_HEAD, MUL_HEAD},
     expr::{Expr, ExprKind, NormExpr},
 };
 
@@ -38,4 +37,8 @@ pub fn is_positive<S>(expr: &Expr<S>) -> bool {
 
 pub fn is_negative<S>(expr: &Expr<S>) -> bool {
     expr.is_number_negative()
+}
+
+pub fn is_univ_poly_over_q(_expr: NormExpr) -> bool {
+    todo!()
 }
