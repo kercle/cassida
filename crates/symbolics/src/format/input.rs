@@ -101,9 +101,9 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         } => value.to_string(),
 
         ExprKind::Atom {
-            entry: Atom::Number(Number::Rational(_)),
+            entry: Atom::Number(Number::Rational(r)),
             ..
-        } => unimplemented!("Should have been resugared to Div"),
+        } => unimplemented!("{r} should have been resugared to Div"),
 
         ExprKind::Atom {
             entry: Atom::StringLiteral(value),

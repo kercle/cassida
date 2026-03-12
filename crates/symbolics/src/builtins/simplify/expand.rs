@@ -1,12 +1,10 @@
 use crate::{
     builtins::traits::{BuiltIn, PatternDoc},
-    expr::{ExprKind, NormExpr, RawExpr},
+    expr::NormExpr,
     hold_expr, norm_expr,
     pattern::environment::Environment,
     rewrite::Rewriter,
 };
-
-const EXPAND_HEAD_SYMBOL: &'static str = "Expand";
 
 pub struct Expand {
     pattern_doc: Vec<PatternDoc>,
@@ -45,10 +43,8 @@ impl BuiltIn for Expand {
         self.pattern_doc.clone()
     }
 
-    fn apply_all(&self, mut expr: NormExpr) -> NormExpr {
-        let last_fingerprint = expr.fingerprint();
-
-        expr.rewrite_all(&self.rewriter, 20)
+    fn apply_all(&self, expr: NormExpr) -> NormExpr {
+        expr.rewrite_all(&self.rewriter, 100)
     }
 }
 

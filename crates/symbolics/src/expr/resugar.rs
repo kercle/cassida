@@ -103,7 +103,7 @@ impl NormExpr {
         let mut negatives = Vec::new();
 
         for arg in args {
-            let (coeff, term) = split_coefficient(arg);
+            let (mut coeff, term) = split_coefficient(arg);
             let term = term.map(Self::resugar_inner);
 
             if let Some(term) = term {
@@ -112,14 +112,24 @@ impl NormExpr {
                 } else if coeff.is_minus_one() {
                     negatives.push(term);
                 } else if coeff.is_positive() {
-                    positives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.into(), term));
+                    positives.push(RawExpr::new_binary_node(
+                        MUL_HEAD,
+                        Self::resugar_number(coeff),
+                        term,
+                    ));
                 } else {
-                    negatives.push(RawExpr::new_binary_node(MUL_HEAD, coeff.abs().into(), term));
+                    coeff.flip_sign();
+                    negatives.push(RawExpr::new_binary_node(
+                        MUL_HEAD,
+                        Self::resugar_number(coeff),
+                        term,
+                    ));
                 }
             } else if coeff.is_positive() {
-                positives.push(coeff.into());
+                positives.push(Self::resugar_number(coeff));
             } else {
-                negatives.push(coeff.abs().into());
+                coeff.flip_sign();
+                negatives.push(Self::resugar_number(coeff));
             }
         }
 
