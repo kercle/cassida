@@ -1,8 +1,6 @@
 use clap::Parser;
-use parser::parse;
-use symbolics::expr::RawExpr;
 use symbolics::format::MathDisplay;
-use symbolics::simplify::Simplifier;
+use symbolics::kernel::Kernel;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -14,16 +12,14 @@ struct Args {
 }
 
 fn print_markdown(input: &str) {
-    let ast = parse(input).unwrap_or_else(|err| {
-        eprintln!("Error parsing input: {}", err);
-        std::process::exit(1);
-    });
+    let result = Kernel::default().eval(input);
 
-    let expr = RawExpr::from(ast).normalize();
-    let result = Simplifier::new(expr).simple().resugar();
-
-    let latex = result.to_latex_form();
-    println!("$$\n{}\n$$", latex);
+    match result {
+        Ok(expr) => {
+            println!("{}", expr.resugar().to_input_form());
+        }
+        Err(err) => eprintln!("{err:?}"),
+    }
 }
 
 fn main() {

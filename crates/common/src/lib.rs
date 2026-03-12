@@ -12,12 +12,21 @@ pub enum ClientMessage {
 #[serde(rename_all = "camelCase")]
 pub enum KernelMessage {
     EvalResult {
-        input: ExpressionForms,
+        input: String,
         output: ExpressionForms,
     },
     Plot {
-        input: ExpressionForms,
+        input: String,
         data: Vec<(f64, f64)>,
+    },
+    HelpTableOfContents {
+        input: String,
+        builtins: Vec<(String, String)>,
+    },
+    HelpBuiltin {
+        input: String,
+        title: String,
+        patterns: Vec<(String, String)>,
     },
     ParseError {
         input: String,

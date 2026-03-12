@@ -1,6 +1,4 @@
-use parser::parse;
-
-use crate::{expr::RawExpr, format::MathDisplay, simplify::Simplifier};
+use crate::{format::MathDisplay, kernel::Kernel};
 
 #[test]
 fn test_full_processing_chain() {
@@ -36,30 +34,39 @@ fn test_full_processing_chain() {
         ("Integrate[1/x, x]", "Log[Abs[x]]"),
         ("Integrate[2*x, x]", "x^2"),
         ("Integrate[f, x]", "f * x"),
-        ("D[Cos[Sin[x]],x]", "-Cos[x] * Sin[Sin[x]]"),
-        ("D[x, x]", "1"),
-        ("D[x^2, x]", "2 * x"),
-        ("D[x^3, x]", "3 * x^2"),
-        ("D[x^n, x]", "n * x^(n - 1)"),
-        ("D[Sin[x], x]", "Cos[x]"),
-        ("D[Cos[x], x]", "-Sin[x]"),
-        ("D[Tan[x], x]", "1/Cos[x]^2"),
-        ("D[Log[x], x]", "1/x"),
-        ("D[Exp[x], x]", "Exp[x]"),
-        ("D[Exp[2*x], x]", "2 * Exp[2 * x]"),
-        ("D[Sin[x^2], x]", "2 * x * Cos[x^2]"),
-        ("D[Log[Sin[x]], x]", "Cos[x]/Sin[x]"),
-        ("D[x*Sin[x], x]", "x * Cos[x] + Sin[x]"),
-        ("D[Sin[x]/x, x]", "Cos[x]/x - Sin[x]/x^2"),
-        ("D[5, x]", "0"),
-        ("D[f, x]", "0"),
+        ("Diff[Cos[Sin[x]],x]", "-Cos[x] * Sin[Sin[x]]"),
+        ("Diff[x, x]", "1"),
+        ("Diff[x^2, x]", "2 * x"),
+        ("Diff[x^3, x]", "3 * x^2"),
+        ("Diff[x^n, x]", "n * x^(n - 1)"),
+        ("Diff[Sin[x], x]", "Cos[x]"),
+        ("Diff[Cos[x], x]", "-Sin[x]"),
+        ("Diff[Tan[x], x]", "1/Cos[x]^2"),
+        ("Diff[Log[x], x]", "1/x"),
+        ("Diff[Exp[x], x]", "Exp[x]"),
+        ("Diff[Exp[2*x], x]", "2 * Exp[2 * x]"),
+        ("Diff[Sin[x^2], x]", "2 * x * Cos[x^2]"),
+        ("Diff[Log[Sin[x]], x]", "Cos[x]/Sin[x]"),
+        ("Diff[x*Sin[x], x]", "x * Cos[x] + Sin[x]"),
+        ("Diff[Sin[x]/x, x]", "Cos[x]/x - Sin[x]/x^2"),
+        ("Diff[5, x]", "0"),
+        ("Diff[f, x]", "0"),
     ];
 
     for (input, output) in cases {
-        let ast = parse(input).expect(&format!("Parsing of `{input}` failed"));
+        // let ast = parse(input).expect(&format!("Parsing of `{input}` failed"));
 
-        let expr = RawExpr::from(ast).normalize();
-        let result = Simplifier::new(expr).simple();
+        // let expr = RawExpr::from(ast).normalize();
+        // let result = Simplifier::new(expr).simple();
+        let kernel = Kernel::default();
+        let result = kernel
+            .eval(input)
+            .expect(&format!("Input fails to evaluate: {input}"));
+
+        let result = kernel
+            .get_builtin("Simplify")
+            .expect("Simplify not a valid builtin")
+            .apply_all(result);
 
         assert_eq!(
             output,

@@ -123,9 +123,9 @@ fn render_derivative(args: &[RawExpr]) -> String {
     let f_latex = expr_to_latex_with_pos(f, Position::FnArg);
     let x_latex = expr_to_latex_with_pos(x, Position::FnArg);
     if x.is_symbol() {
-        format!("\\frac{{ \\text{{d}} }}{{ \\text{{d}} {x_latex} }}\\left({f_latex}\\right)")
+        format!("\\frac{{ \\partial }}{{ \\partial {x_latex} }}\\left({f_latex}\\right)")
     } else {
-        format!("\\text{{D}}\\left[{f_latex}, {x_latex}\\right]")
+        format!("\\text{{{CANNONICAL_HEAD_DERIVATIVE}}}\\left[{f_latex}, {x_latex}\\right]")
     }
 }
 

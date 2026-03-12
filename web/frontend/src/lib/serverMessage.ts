@@ -1,9 +1,6 @@
 type ServerMessage = {
     evalResult: {
-        input: {
-            raw: string,
-            latex: string
-        },
+        input: string,
         output: {
             raw: string,
             latex: string
@@ -16,10 +13,18 @@ type ServerMessage = {
     }
 } | {
     plot: {
-        input: {
-            raw: string,
-            latex: string
-        },
+        input: string,
         data: []
+    }
+} | {
+    helpTableOfContents: {
+        input: string,
+        builtins: Array<[string, string]>
+    }
+} | {
+    helpBuiltin: {
+        input: string,
+        title: string,
+        patterns: [],
     }
 };

@@ -1,8 +1,9 @@
-use crate::expr::NormExpr;
 use crate::norm_expr;
+use crate::pattern::environment::Environment;
+use crate::rewrite::Rewriter;
 
-pub(super) fn known_function_values_rules() -> Vec<(NormExpr, NormExpr)> {
-    vec![
+pub(super) fn build_rewriter() -> Rewriter {
+    let rules = vec![
         // =============== Sin exact values ===============
         (norm_expr!(Sin[0]), norm_expr!(0)),
         (
@@ -38,5 +39,11 @@ pub(super) fn known_function_values_rules() -> Vec<(NormExpr, NormExpr)> {
         // =============== Log exact values ===============
         (norm_expr!(Log[0]), norm_expr! { -Infinity }),
         (norm_expr!(Log[1]), norm_expr!(0)),
-    ]
+    ];
+
+    Rewriter::new().with_rules(rules.into_iter().map(|(pat, repl)| {
+        (pat, move |ctx: &Environment<'_, '_>| {
+            ctx.fill(repl.clone()).normalize()
+        })
+    }))
 }

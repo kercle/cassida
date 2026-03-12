@@ -72,13 +72,16 @@ impl Rewriter {
 }
 
 impl NormExpr {
-    pub fn apply_until_fixed_point<F, I>(self, rules: I, limit_guard: u32) -> NormExpr
+    pub fn apply_rules_until_fixed_point<F, I>(self, rules: I, limit_guard: u32) -> NormExpr
     where
         I: IntoIterator<Item = (NormExpr, F)>,
         F: Fn(&Environment<'_, '_>) -> NormExpr + Send + Sync + 'static,
     {
         let rw: Rewriter = Rewriter::new().with_rules(rules);
+        self.rewrite_all(&rw, limit_guard)
+    }
 
+    pub fn rewrite_all(self, rw: &Rewriter, limit_guard: u32) -> NormExpr {
         let mut expr = self;
 
         for _ in 0..limit_guard {

@@ -1,7 +1,7 @@
-use crate::{expr::NormExpr, hold_expr, norm_expr};
+use crate::{hold_expr, norm_expr, pattern::environment::Environment, rewrite::Rewriter};
 
-pub(super) fn expansion_rules() -> Vec<(NormExpr, NormExpr)> {
-    vec![
+pub(super) fn _build_rewriter() -> Rewriter {
+    let rules = vec![
         // (a + b]² → a² + 2ab + b²
         (
             norm_expr!((a_ + b_) ^ 2 + r___),
@@ -77,5 +77,11 @@ pub(super) fn expansion_rules() -> Vec<(NormExpr, NormExpr)> {
             norm_expr!(Log[a_ ^ n_] + r___),
             hold_expr!(n * Log[a] + Add[r]),
         ),
-    ]
+    ];
+
+    Rewriter::new().with_rules(rules.into_iter().map(|(pat, repl)| {
+        (pat, move |ctx: &Environment<'_, '_>| {
+            ctx.fill(repl.clone()).normalize()
+        })
+    }))
 }

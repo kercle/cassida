@@ -1,7 +1,61 @@
-use crate::{expr::NormExpr, hold_expr, norm_expr};
+use crate::{
+    builtins::traits::{BuiltIn, PatternDoc},
+    expr::NormExpr,
+    format::MathDisplay,
+    hold_expr, norm_expr,
+    pattern::environment::Environment,
+    raw_expr,
+    rewrite::Rewriter,
+};
 
-pub(crate) fn indefinite_integrals_rules() -> Vec<(NormExpr, NormExpr)> {
-    vec![
+pub struct Integrate {
+    pattern_doc: Vec<PatternDoc>,
+    rewriter: Rewriter,
+}
+
+impl Integrate {
+    pub fn new() -> Self {
+        Self {
+            pattern_doc: vec![PatternDoc {
+                pattern: raw_expr!( Integrate[f_, PatternTest[x_, IsSymbol]] ).to_input_form(),
+                summary: "gives the indefinite integral (anti-derivative) if $f(x)$: $\\int f\\,{\rm d}x$"
+                    .to_string(),
+            }],
+            rewriter: build_rewriter(),
+        }
+    }
+}
+
+impl Default for Integrate {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BuiltIn for Integrate {
+    fn title(&self) -> String {
+        "Integration".to_string()
+    }
+
+    fn head_symbol(&self) -> &'static str {
+        "Integrate"
+    }
+
+    fn summary(&self) -> &'static str {
+        "Determine integrals."
+    }
+
+    fn pattern_doc(&self) -> Vec<PatternDoc> {
+        self.pattern_doc.clone()
+    }
+
+    fn apply_all(&self, expr: NormExpr) -> NormExpr {
+        expr.rewrite_all(&self.rewriter, 1000)
+    }
+}
+
+fn build_rewriter() -> Rewriter {
+    let rules = vec![
         // =============== Linearity ===============
         (
             norm_expr!( Integrate[f_ + r__, PatternTest[x_, IsSymbol]] ),
@@ -92,5 +146,11 @@ pub(crate) fn indefinite_integrals_rules() -> Vec<(NormExpr, NormExpr)> {
             ]),
             hold_expr!(Sin[x]),
         ),
-    ]
+    ];
+
+    Rewriter::new().with_rules(rules.into_iter().map(|(pat, repl)| {
+        (pat, move |ctx: &Environment<'_, '_>| {
+            ctx.fill(repl.clone()).normalize().release_all_holds()
+        })
+    }))
 }

@@ -1,11 +1,10 @@
-use parser::parse;
 use symbolics::{
     eval::{program::EvalProgram, runtime::EvalRuntime},
-    expr::{NormExpr, RawExpr},
+    expr::NormExpr,
     format::MathDisplay,
+    kernel::Kernel,
     norm_expr,
     pattern::{program::Compiler as PatternCompiler, runtime::Runtime as PatternRuntime},
-    simplify::Simplifier,
 };
 
 use crate::{ClientMessage, ExpressionForms, KernelMessage};
@@ -19,32 +18,29 @@ pub fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessa
 
     let ClientMessage::Eval(input) = inbound_msg;
 
-    let ast_in = parse(&input).map_err(|err| KernelMessage::ParseError {
-        input: input.clone(),
-        msg: format!("Error parsing input: {}", err),
-    })?;
-
-    let input_expr = RawExpr::from(ast_in);
-
-    let input_expr_forms: ExpressionForms = ExpressionForms {
-        raw: input_expr.to_input_form(),
-        latex: input_expr.to_latex_form(),
+    let kernel = Kernel::default();
+    let expr = match kernel.eval(input.clone()) {
+        Ok(expr) => expr,
+        Err(err) => {
+            return Err(KernelMessage::ParseError {
+                input: "n/a".to_string(),
+                msg: format!("Cannot unpack inbound message: {err:?}"),
+            });
+        }
     };
-
-    let input_expr = input_expr.normalize();
-
-    let expr = Simplifier::new(input_expr).simple();
 
     if let Some(data) = generate_data_if_plot(&expr) {
         Ok(KernelMessage::Plot {
-            input: input_expr_forms,
+            input: input.clone(),
             data,
         })
+    } else if let Some(msg) = help(input.clone(), &kernel, &expr) {
+        Ok(msg)
     } else {
         let expr = expr.resugar();
 
         Ok(KernelMessage::EvalResult {
-            input: input_expr_forms,
+            input: input.clone(),
             output: ExpressionForms {
                 raw: expr.to_input_form(),
                 latex: expr.to_latex_form(),
@@ -85,4 +81,31 @@ pub fn generate_data_if_plot(expr: &NormExpr) -> Option<Vec<(f64, f64)>> {
     }
 
     Some(data)
+}
+
+pub fn help(input: String, kernel: &Kernel, expr: &NormExpr) -> Option<KernelMessage> {
+    if expr == &norm_expr!(Help[]) {
+        return Some(KernelMessage::HelpTableOfContents {
+            input,
+            builtins: kernel.help_builtins(),
+        });
+    }
+
+    let program = PatternCompiler::new().compile(&norm_expr!(
+        Help[PatternTest[name_, IsSymbol]]
+    ));
+
+    let mut runtime = PatternRuntime::new(&program, expr);
+    let env = runtime.first_match()?;
+
+    let builtin = kernel.get_builtin(env.get_one("name")?.get_symbol()?)?;
+    Some(KernelMessage::HelpBuiltin {
+        input,
+        title: builtin.title(),
+        patterns: builtin
+            .pattern_doc()
+            .into_iter()
+            .map(|e| (e.pattern, e.summary))
+            .collect(),
+    })
 }

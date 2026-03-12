@@ -1,7 +1,7 @@
-use crate::{expr::NormExpr, hold_expr, norm_expr};
+use crate::{hold_expr, norm_expr, pattern::environment::Environment, rewrite::Rewriter};
 
-pub(super) fn factorization_rules() -> Vec<(NormExpr, NormExpr)> {
-    vec![
+pub(super) fn build_rewriter() -> Rewriter {
+    let rules = vec![
         (
             // a² + 2ab + b² → (a + b)²
             norm_expr!(a_ ^ 2 + 2 * a_ * b_ + b_ ^ 2 + r___),
@@ -49,5 +49,11 @@ pub(super) fn factorization_rules() -> Vec<(NormExpr, NormExpr)> {
             norm_expr!(a_ ^ 2 + a_ * b___ + r___),
             hold_expr!(a * (a + Mul[b]) + Add[r]),
         ),
-    ]
+    ];
+
+    Rewriter::new().with_rules(rules.into_iter().map(|(pat, repl)| {
+        (pat, move |ctx: &Environment<'_, '_>| {
+            ctx.fill(repl.clone()).normalize()
+        })
+    }))
 }

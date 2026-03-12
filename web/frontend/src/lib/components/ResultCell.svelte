@@ -1,4 +1,6 @@
 <script lang="ts">
+	import HelpBuiltin from './help/HelpBuiltin.svelte';
+	import HelpTableOfContents from './help/HelpTableOfContents.svelte';
 	import Math from './Math.svelte';
 	import Plot from './Plot.svelte';
 
@@ -11,9 +13,13 @@
 		}
 
 		if ('evalResult' in entry) {
-			return entry.evalResult.input.raw;
+			return entry.evalResult.input;
 		} else if ('plot' in entry) {
-			return entry.plot.input.raw;
+			return entry.plot.input;
+		} else if ('helpTableOfContents' in entry) {
+			return entry.helpTableOfContents.input;
+		} else if ('helpBuiltin' in entry) {
+			return entry.helpBuiltin.input;
 		} else {
 			return null;
 		}
@@ -60,6 +66,10 @@
 				<Plot data={entry.plot.data} />
 			</div>
 		</div>
+	{:else if entry && 'helpTableOfContents' in entry}
+		<HelpTableOfContents builtins={entry.helpTableOfContents.builtins} />
+	{:else if entry && 'helpBuiltin' in entry}
+		<HelpBuiltin title={entry.helpBuiltin.title} patterns={entry.helpBuiltin.patterns} />
 	{:else}
 		<p>Unknown server message.</p>
 	{/if}
