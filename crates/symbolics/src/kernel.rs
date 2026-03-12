@@ -32,7 +32,6 @@ impl Kernel {
     fn register_initial_builtins(&mut self) {
         self.register_builtin::<builtins::calculus::Integrate>(true);
         self.register_builtin::<builtins::calculus::Derivative>(true);
-        self.register_builtin::<builtins::calculus::Derivative>(true);
         self.register_builtin::<builtins::simplify::Simplify>(true);
         self.register_builtin::<builtins::simplify::Expand>(true);
         self.register_builtin::<builtins::system::Help>(false);
