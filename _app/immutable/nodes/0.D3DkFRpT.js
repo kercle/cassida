@@ -1,8 +1,8 @@
-import { c as u, a as o, f as c } from "../chunks/zVqqKAUD.js";
-import { D as p, E as _, a as E, aP as v, ay as y, h as i, aC as h, aD as l, K as f, J as m, e as g, a8 as T, w as C, x as F } from "../chunks/s7bkdGGr.js";
-import { B as w } from "../chunks/BZrbxSmN.js";
-import { s as D, __tla as __tla_0 } from "../chunks/7TgvDnPi.js";
-let B;
+import { c as u, a as o, f as c } from "../chunks/DkayNNiV.js";
+import { D as p, E, a as _, aQ as v, ay as y, h as i, aD as h, aE as l, K as f, J as m, e as g, a8 as T, w as F, x as w } from "../chunks/Bp716flw.js";
+import { B as C } from "../chunks/DRCcKVOS.js";
+import { s as D, __tla as __tla_0 } from "../chunks/DB1CUcEo.js";
+let O;
 let __tla = Promise.all([
   (() => {
     try {
@@ -12,11 +12,11 @@ let __tla = Promise.all([
   })()
 ]).then(async () => {
   function R(s, n, ...t) {
-    var r = new w(s);
+    var r = new C(s);
     p(() => {
       const a = n() ?? null;
       r.ensure(a, a && ((e) => a(e, ...t)));
-    }, _);
+    }, E);
   }
   function b(s, n) {
     let t = null, r = i;
@@ -30,7 +30,7 @@ let __tla = Promise.all([
         e.remove(), m(d);
       }
     }
-    i || (a = document.head.appendChild(E()));
+    i || (a = document.head.appendChild(_()));
     try {
       p(() => n(a), v | y);
     } finally {
@@ -39,17 +39,17 @@ let __tla = Promise.all([
   }
   const x = "" + new URL("../assets/favicon.dfyh6Zu5.svg", import.meta.url).href;
   var N = c('<link rel="icon"/>');
-  B = function(s, n) {
+  O = function(s, n) {
     var t = u();
     b("12qhfyh", (a) => {
       var e = N();
-      F(() => D(e, "href", x)), o(a, e);
+      w(() => D(e, "href", x)), o(a, e);
     });
-    var r = C(t);
+    var r = F(t);
     R(r, () => n.children), o(s, t);
   };
 });
 export {
   __tla,
-  B as component
+  O as component
 };
