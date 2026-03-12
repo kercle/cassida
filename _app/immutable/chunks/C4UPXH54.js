@@ -39,7 +39,7 @@ function gt(e) {
 function de({ href: e }) {
   return e.split("#")[0];
 }
-function _t(...e) {
+function mt(...e) {
   let t = 5381;
   for (const n of e) if (typeof n == "string") {
     let a = n.length;
@@ -53,7 +53,7 @@ function _t(...e) {
 }
 new TextEncoder();
 new TextDecoder();
-function mt(e) {
+function _t(e) {
   const t = atob(e), n = new Uint8Array(t.length);
   for (let a = 0; a < t.length; a++) n[a] = t.charCodeAt(a);
   return n;
@@ -67,7 +67,7 @@ function vt(e, t) {
     a.remove();
     let { body: r, ...i } = JSON.parse(a.textContent);
     const o = a.getAttribute("data-ttl");
-    return o && W.set(n, { body: r, init: i, ttl: 1e3 * Number(o) }), a.getAttribute("data-b64") !== null && (r = mt(r)), Promise.resolve(new Response(r, i));
+    return o && W.set(n, { body: r, init: i, ttl: 1e3 * Number(o) }), a.getAttribute("data-b64") !== null && (r = _t(r)), Promise.resolve(new Response(r, i));
   }
   return window.fetch(e, t);
 }
@@ -85,7 +85,7 @@ function Re(e, t) {
   let a = `script[data-sveltekit-fetched][data-url=${JSON.stringify(e instanceof Request ? e.url : e)}]`;
   if ((t == null ? void 0 : t.headers) || (t == null ? void 0 : t.body)) {
     const r = [];
-    t.headers && r.push([...new Headers(t.headers)].join(",")), t.body && (typeof t.body == "string" || ArrayBuffer.isView(t.body)) && r.push(t.body), a += `[data-hash="${_t(...r)}"]`;
+    t.headers && r.push([...new Headers(t.headers)].join(",")), t.body && (typeof t.body == "string" || ArrayBuffer.isView(t.body)) && r.push(t.body), a += `[data-hash="${mt(...r)}"]`;
   }
   return a;
 }
@@ -102,7 +102,7 @@ function kt(e) {
     return "/" + o.map((l, c) => {
       if (c % 2) {
         if (l.startsWith("x+")) return he(String.fromCharCode(parseInt(l.slice(2), 16)));
-        if (l.startsWith("u+")) return he(String.fromCharCode(...l.slice(2).split("-").map((m) => parseInt(m, 16))));
+        if (l.startsWith("u+")) return he(String.fromCharCode(...l.slice(2).split("-").map((_) => parseInt(_, 16))));
         const f = bt.exec(l), [, h, w, u, p] = f;
         return t.push({ name: u, matcher: p, optional: !!h, rest: !!w, chained: w ? c === 1 && o[0] === "" : false }), w ? "([^]*?)" : h ? "([^/]*)?" : "([^/]+?)";
       }
@@ -145,8 +145,8 @@ function xt({ nodes: e, server_loads: t, dictionary: n, matchers: a }) {
   const r = new Set(t);
   return Object.entries(n).map(([s, [l, c, f]]) => {
     const { pattern: h, params: w } = kt(s), u = { id: s, exec: (p) => {
-      const m = h.exec(p);
-      if (m) return Rt(m, w, a);
+      const _ = h.exec(p);
+      if (_) return Rt(_, w, a);
     }, errors: [1, ...f || []].map((p) => e[p]), layouts: [0, ...c || []].map(o), leaf: i(l) };
     return u.errors.length = u.layouts.length = Math.max(u.errors.length, u.layouts.length), u;
   });
@@ -171,7 +171,7 @@ function Ne(e, t, n = JSON.stringify) {
   } catch {
   }
 }
-const x = ((_a = globalThis.__sveltekit_n7haab) == null ? void 0 : _a.base) ?? "/cassidoid", Lt = ((_b = globalThis.__sveltekit_n7haab) == null ? void 0 : _b.assets) ?? x ?? "", At = "1773316506425", Fe = "sveltekit:snapshot", Ge = "sveltekit:scroll", Ye = "sveltekit:states", Ut = "sveltekit:pageurl", K = "sveltekit:history", G = "sveltekit:navigation", j = { tap: 1, hover: 2, viewport: 3, eager: 4, off: -1, false: -1 }, xe = location.origin;
+const x = ((_a = globalThis.__sveltekit_qm58l2) == null ? void 0 : _a.base) ?? "/cassidoid", Lt = ((_b = globalThis.__sveltekit_qm58l2) == null ? void 0 : _b.assets) ?? x ?? "", At = "1773316602247", Fe = "sveltekit:snapshot", Ge = "sveltekit:scroll", Ye = "sveltekit:states", Ut = "sveltekit:pageurl", K = "sveltekit:history", G = "sveltekit:navigation", j = { tap: 1, hover: 2, viewport: 3, eager: 4, off: -1, false: -1 }, xe = location.origin;
 function ze(e) {
   if (e instanceof URL) return e;
   let t = document.baseURI;
@@ -181,13 +181,13 @@ function ze(e) {
   }
   return new URL(e, t);
 }
-function D() {
+function q() {
   return { x: pageXOffset, y: pageYOffset };
 }
 function V(e, t) {
   return e.getAttribute(`data-sveltekit-${t}`);
 }
-const De = { ...j, "": j.hover };
+const qe = { ...j, "": j.hover };
 function He(e) {
   let t = e.assignedSlot ?? e.parentNode;
   return (t == null ? void 0 : t.nodeType) === 11 && (t = t.host), t;
@@ -198,7 +198,7 @@ function Je(e, t) {
     e = He(e);
   }
 }
-function _e(e, t, n) {
+function me(e, t, n) {
   let a;
   try {
     if (a = new URL(e instanceof SVGAElement ? e.href.baseVal : e.href, document.baseURI), n && a.hash.match(/^#[^/]/)) {
@@ -225,9 +225,9 @@ function te(e) {
         return;
     }
   }
-  return { preload_code: De[a ?? "off"], preload_data: De[r ?? "off"], keepfocus: l(t), noscroll: l(n), reload: l(i), replace_state: l(o) };
+  return { preload_code: qe[a ?? "off"], preload_data: qe[r ?? "off"], keepfocus: l(t), noscroll: l(n), reload: l(i), replace_state: l(o) };
 }
-function qe(e) {
+function De(e) {
   const t = be(e);
   let n = true;
   function a() {
@@ -365,9 +365,9 @@ $t ? (k = { data: {}, form: null, error: null, params: {}, route: { id: null }, 
 function Ct(e) {
   Object.assign(k, e);
 }
-const jt = /* @__PURE__ */ new Set(["icon", "shortcut icon", "apple-touch-icon"]), C = We(Ge) ?? {}, z = We(Fe) ?? {}, $ = { url: qe({}), page: qe({}), navigating: be(null), updated: Tt() };
+const jt = /* @__PURE__ */ new Set(["icon", "shortcut icon", "apple-touch-icon"]), C = We(Ge) ?? {}, z = We(Fe) ?? {}, $ = { url: De({}), page: De({}), navigating: be(null), updated: Tt() };
 function Ae(e) {
-  C[e] = D();
+  C[e] = q();
 }
 function Nt(e, t) {
   let n = e + 1;
@@ -386,26 +386,26 @@ async function Ze() {
 }
 function Ve() {
 }
-let Ue, me, ne, I, we, y;
+let Ue, _e, ne, I, we, y;
 const ae = [], re = [];
 let L = null;
 function ve() {
   var _a3;
   (_a3 = L == null ? void 0 : L.fork) == null ? void 0 : _a3.then((e) => e == null ? void 0 : e.discard()), L = null;
 }
-const Z = /* @__PURE__ */ new Map(), et = /* @__PURE__ */ new Set(), Dt = /* @__PURE__ */ new Set(), F = /* @__PURE__ */ new Set();
-let _ = { branch: [], error: null, url: null }, tt = false, oe = false, Ke = true, J = false, B = false, nt = false, Te = false, at, v, R, N;
+const Z = /* @__PURE__ */ new Map(), et = /* @__PURE__ */ new Set(), qt = /* @__PURE__ */ new Set(), F = /* @__PURE__ */ new Set();
+let m = { branch: [], error: null, url: null }, tt = false, oe = false, Ke = true, J = false, B = false, nt = false, Te = false, at, v, R, N;
 const se = /* @__PURE__ */ new Set(), Me = /* @__PURE__ */ new Map();
 async function cn(e, t, n) {
   var _a3, _b2, _c2, _d2, _e6;
-  ((_a3 = globalThis.__sveltekit_n7haab) == null ? void 0 : _a3.data) && globalThis.__sveltekit_n7haab.data, document.URL !== location.href && (location.href = location.href), y = e, await ((_c2 = (_b2 = e.hooks).init) == null ? void 0 : _c2.call(_b2)), Ue = xt(e), I = document.documentElement, we = t, me = e.nodes[0], ne = e.nodes[1], me(), ne(), v = (_d2 = history.state) == null ? void 0 : _d2[K], R = (_e6 = history.state) == null ? void 0 : _e6[G], v || (v = R = Date.now(), history.replaceState({ ...history.state, [K]: v, [G]: R }, ""));
+  ((_a3 = globalThis.__sveltekit_qm58l2) == null ? void 0 : _a3.data) && globalThis.__sveltekit_qm58l2.data, document.URL !== location.href && (location.href = location.href), y = e, await ((_c2 = (_b2 = e.hooks).init) == null ? void 0 : _c2.call(_b2)), Ue = xt(e), I = document.documentElement, we = t, _e = e.nodes[0], ne = e.nodes[1], _e(), ne(), v = (_d2 = history.state) == null ? void 0 : _d2[K], R = (_e6 = history.state) == null ? void 0 : _e6[G], v || (v = R = Date.now(), history.replaceState({ ...history.state, [K]: v, [G]: R }, ""));
   const a = C[v];
   function r() {
     a && (history.scrollRestoration = "manual", scrollTo(a.x, a.y));
   }
   n ? (r(), await Qt(we, n)) : (await M({ type: "enter", url: ze(y.hash ? tn(new URL(location.href)) : location.href), replace_state: true }), r()), Xt();
 }
-function qt() {
+function Dt() {
   ae.length = 0, Te = false;
 }
 function rt(e) {
@@ -450,10 +450,10 @@ async function ge(e) {
 }
 async function st(e, t, n) {
   var _a3;
-  _ = e.state;
+  m = e.state;
   const a = document.querySelector("style[data-sveltekit]");
   if (a && a.remove(), Object.assign(k, e.props.page), at = new y.root({ target: t, props: { ...e.props, stores: $, components: re }, hydrate: n, sync: false }), await Promise.resolve(), ot(R), n) {
-    const r = { from: null, to: { params: _.params, route: { id: ((_a3 = _.route) == null ? void 0 : _a3.id) ?? null }, url: new URL(location.href), scroll: C[v] ?? D() }, willUnload: false, type: "enter", complete: Promise.resolve() };
+    const r = { from: null, to: { params: m.params, route: { id: ((_a3 = m.route) == null ? void 0 : _a3.id) ?? null }, url: new URL(location.href), scroll: C[v] ?? q() }, willUnload: false, type: "enter", complete: Promise.resolve() };
     F.forEach((i) => i(r));
   }
   oe = true;
@@ -466,11 +466,11 @@ function ie({ url: e, params: t, branch: n, status: a, error: r, route: i, form:
   const l = { type: "loaded", state: { url: e, params: t, branch: n, error: r, route: i }, props: { constructors: Ot(n).map((u) => u.node.component), page: Ce(k) } };
   o !== void 0 && (l.props.form = o);
   let c = {}, f = !k, h = 0;
-  for (let u = 0; u < Math.max(n.length, _.branch.length); u += 1) {
-    const p = n[u], m = _.branch[u];
-    (p == null ? void 0 : p.data) !== (m == null ? void 0 : m.data) && (f = true), p && (c = { ...c, ...p.data }, f && (l.props[`data_${h}`] = c), h += 1);
+  for (let u = 0; u < Math.max(n.length, m.branch.length); u += 1) {
+    const p = n[u], _ = m.branch[u];
+    (p == null ? void 0 : p.data) !== (_ == null ? void 0 : _.data) && (f = true), p && (c = { ...c, ...p.data }, f && (l.props[`data_${h}`] = c), h += 1);
   }
-  return (!_.url || e.href !== _.url.href || _.error !== r || o !== void 0 && o !== k.form || f) && (l.props.page = { error: r, params: t, route: { id: (i == null ? void 0 : i.id) ?? null }, state: {}, status: a, url: new URL(e), form: o ?? null, data: f ? c : k.data }), l;
+  return (!m.url || e.href !== m.url.href || m.error !== r || o !== void 0 && o !== k.form || f) && (l.props.page = { error: r, params: t, route: { id: (i == null ? void 0 : i.id) ?? null }, state: {}, status: a, url: new URL(e), form: o ?? null, data: f ? c : k.data }), l;
 }
 async function Ie({ loader: e, parent: t, url: n, params: a, route: r, server_data_node: i }) {
   var _a3, _b2;
@@ -490,7 +490,7 @@ function Bt(e, t, n, a, r, i) {
   if (!r) return false;
   if (r.parent && e || r.route && t || r.url && n) return true;
   for (const o of r.search_params) if (a.has(o)) return true;
-  for (const o of r.params) if (i[o] !== _.params[o]) return true;
+  for (const o of r.params) if (i[o] !== m.params[o]) return true;
   for (const o of r.dependencies) if (ae.some((s) => s(new URL(o)))) return true;
   return false;
 }
@@ -515,12 +515,12 @@ async function it({ id: e, invalidating: t, url: n, params: a, route: r, preload
   o.forEach((g) => g == null ? void 0 : g().catch(() => {
   })), c.forEach((g) => g == null ? void 0 : g[1]().catch(() => {
   }));
-  const f = _.url ? e !== le(_.url) : false, h = _.route ? r.id !== _.route.id : false, w = Wt(_.url, n);
+  const f = m.url ? e !== le(m.url) : false, h = m.route ? r.id !== m.route.id : false, w = Wt(m.url, n);
   let u = false;
   const p = c.map(async (g, d) => {
     var _a3;
     if (!g) return;
-    const S = _.branch[d];
+    const S = m.branch[d];
     return g[1] === (S == null ? void 0 : S.loader) && !Bt(u, h, f, w, (_a3 = S.universal) == null ? void 0 : _a3.uses, a) ? S : (u = true, Ie({ loader: g[1], url: n, params: a, route: r, parent: async () => {
       var _a4;
       const O = {};
@@ -530,9 +530,9 @@ async function it({ id: e, invalidating: t, url: n, params: a, route: r, preload
   });
   for (const g of p) g.catch(() => {
   });
-  const m = [];
+  const _ = [];
   for (let g = 0; g < c.length; g += 1) if (c[g]) try {
-    m.push(await p[g]);
+    _.push(await p[g]);
   } catch (d) {
     if (d instanceof Se) return { type: "redirect", location: d.location };
     if (se.has(i)) return Ft({ error: await X(d, { params: a, url: n, route: { id: r.id } }), url: n, params: a, route: r });
@@ -542,11 +542,11 @@ async function it({ id: e, invalidating: t, url: n, params: a, route: r, preload
       if (await $.updated.check()) return await Ze(), await H(n);
       E = await X(d, { params: a, url: n, route: { id: r.id } });
     }
-    const O = await Gt(g, m, o);
-    return O ? ie({ url: n, params: a, branch: m.slice(0, O.idx).concat(O.node), status: S, error: E, route: r }) : await ct(n, { id: r.id }, E, S);
+    const O = await Gt(g, _, o);
+    return O ? ie({ url: n, params: a, branch: _.slice(0, O.idx).concat(O.node), status: S, error: E, route: r }) : await ct(n, { id: r.id }, E, S);
   }
-  else m.push(void 0);
-  return ie({ url: n, params: a, branch: m, status: 200, error: null, route: r, form: t ? void 0 : null });
+  else _.push(void 0);
+  return ie({ url: n, params: a, branch: _, status: 200, error: null, route: r, form: t ? void 0 : null });
 }
 async function Gt(e, t, n) {
   for (; e--; ) if (n[e]) {
@@ -563,7 +563,7 @@ async function Pe({ status: e, error: t, url: n, route: a }) {
   const r = {};
   let i = null;
   try {
-    const o = await Ie({ loader: me, url: n, params: r, route: a, parent: () => Promise.resolve({}), server_data_node: Oe(i) }), s = { node: await ne(), loader: ne, universal: null, server: null, data: null };
+    const o = await Ie({ loader: _e, url: n, params: r, route: a, parent: () => Promise.resolve({}), server_data_node: Oe(i) }), s = { node: await ne(), loader: ne, universal: null, server: null, data: null };
     return ie({ url: n, params: r, branch: [o, s], status: e, error: t, route: null });
   } catch (o) {
     if (o instanceof Se) return Vt(new URL(o.location, location.href), {}, 0);
@@ -609,7 +609,7 @@ function le(e) {
 }
 function lt({ url: e, type: t, intent: n, delta: a, event: r, scroll: i }) {
   let o = false;
-  const s = $e(_, n, e, t, i ?? null);
+  const s = $e(m, n, e, t, i ?? null);
   a !== void 0 && (s.navigation.delta = a), r !== void 0 && (s.navigation.event = r);
   const l = { ...s.navigation, cancel: () => {
     o = true, s.reject(new Error("navigation cancelled"));
@@ -620,12 +620,12 @@ async function M({ type: e, url: t, popped: n, keepfocus: a, noscroll: r, replac
   var _a3;
   const w = N;
   N = l;
-  const u = await ue(t, false), p = e === "enter" ? $e(_, u, t, e) : lt({ url: t, type: e, delta: n == null ? void 0 : n.delta, intent: u, scroll: n == null ? void 0 : n.scroll, event: h });
+  const u = await ue(t, false), p = e === "enter" ? $e(m, u, t, e) : lt({ url: t, type: e, delta: n == null ? void 0 : n.delta, intent: u, scroll: n == null ? void 0 : n.scroll, event: h });
   if (!p) {
     f(), N === l && (N = w);
     return;
   }
-  const m = v, g = R;
+  const _ = v, g = R;
   c(), J = true, oe && p.navigation.type !== "enter" && $.navigating.set(Y.current = p.navigation);
   let d = u && await it(u);
   if (!d) {
@@ -640,7 +640,7 @@ async function M({ type: e, url: t, popped: n, keepfocus: a, noscroll: r, replac
     }
     d = await Pe({ status: 500, error: await X(new Error("Redirect loop"), { url: t, params: {}, route: { id: null } }), url: t, route: { id: null } });
   } else d.props.page.status >= 400 && await $.updated.check() && (await Ze(), await H(t, i));
-  if (qt(), Ae(m), rt(g), d.props.page.url.pathname !== t.pathname && (t.pathname = d.props.page.url.pathname), o = n ? n.state : o, !n) {
+  if (Dt(), Ae(_), rt(g), d.props.page.url.pathname !== t.pathname && (t.pathname = d.props.page.url.pathname), o = n ? n.state : o, !n) {
     const b = i ? 0 : 1, Q = { [K]: v += b, [G]: R += b, [Ye]: o };
     (i ? history.replaceState : history.pushState).call(history, Q, "", t), i || Nt(v, R);
   }
@@ -648,18 +648,18 @@ async function M({ type: e, url: t, popped: n, keepfocus: a, noscroll: r, replac
   L = null, d.props.page.state = o;
   let E;
   if (oe) {
-    const b = (await Promise.all(Array.from(Dt, (q) => q(p.navigation)))).filter((q) => typeof q == "function");
+    const b = (await Promise.all(Array.from(qt, (D) => D(p.navigation)))).filter((D) => typeof D == "function");
     if (b.length > 0) {
-      let q = function() {
+      let D = function() {
         b.forEach((fe) => {
           F.delete(fe);
         });
       };
-      b.push(q), b.forEach((fe) => {
+      b.push(D), b.forEach((fe) => {
         F.add(fe);
       });
     }
-    _ = d.state, d.props.page && (d.props.page.url = t);
+    m = d.state, d.props.page && (d.props.page.url = t);
     const Q = S && await S;
     Q ? E = Q.commit() : (at.$set(d.props), Ct(d.props.page), E = (_a3 = dt) == null ? void 0 : _a3()), nt = true;
   } else await st(d, we, false);
@@ -667,11 +667,11 @@ async function M({ type: e, url: t, popped: n, keepfocus: a, noscroll: r, replac
   await E, await ee(), await ee();
   let P = null;
   if (Ke) {
-    const b = n ? n.scroll : r ? D() : null;
+    const b = n ? n.scroll : r ? q() : null;
     b ? scrollTo(b.x, b.y) : (P = t.hash && document.getElementById(ut(t))) ? P.scrollIntoView() : scrollTo(0, 0);
   }
   const ft = document.activeElement !== O && document.activeElement !== document.body;
-  !a && !ft && en(t, !P), Ke = true, d.props.page && Object.assign(k, d.props.page), J = false, e === "popstate" && ot(R), p.fulfil(void 0), p.navigation.to && (p.navigation.to.scroll = D()), F.forEach((b) => b(p.navigation)), $.navigating.set(Y.current = null);
+  !a && !ft && en(t, !P), Ke = true, d.props.page && Object.assign(k, d.props.page), J = false, e === "popstate" && ot(R), p.fulfil(void 0), p.navigation.to && (p.navigation.to.scroll = q()), F.forEach((b) => b(p.navigation)), $.navigating.set(Y.current = null);
 }
 async function ct(e, t, n, a, r) {
   return e.origin === xe && e.pathname === location.pathname && !tt ? await Pe({ status: a, error: n, url: e, route: t }) : await H(e, r);
@@ -694,10 +694,10 @@ function Ht() {
   async function i(s, l) {
     const c = Je(s, I), f = c === t.element && (c == null ? void 0 : c.href) === t.href && l >= n;
     if (!c || f) return;
-    const { url: h, external: w, download: u } = _e(c, x, y.hash);
+    const { url: h, external: w, download: u } = me(c, x, y.hash);
     if (w || u) return;
-    const p = te(c), m = h && le(_.url) === le(h);
-    if (!(p.reload || m)) if (l <= p.preload_data) {
+    const p = te(c), _ = h && le(m.url) === le(h);
+    if (!(p.reload || _)) if (l <= p.preload_data) {
       t = { element: c, href: c.href }, n = j.tap;
       const g = await ue(h, false);
       if (!g) return;
@@ -707,7 +707,7 @@ function Ht() {
   function o() {
     r.disconnect();
     for (const s of I.querySelectorAll("a")) {
-      const { url: l, external: c, download: f } = _e(s, x, y.hash);
+      const { url: l, external: c, download: f } = me(s, x, y.hash);
       if (c || f) continue;
       const h = te(s);
       h.reload || (h.preload_code === j.viewport && r.observe(s), h.preload_code === j.eager && ge(l));
@@ -732,7 +732,7 @@ function Xt() {
   history.scrollRestoration = "manual", addEventListener("beforeunload", (t) => {
     let n = false;
     if (Be(), !J) {
-      const a = $e(_, void 0, null, "leave"), r = { ...a.navigation, cancel: () => {
+      const a = $e(m, void 0, null, "leave"), r = { ...a.navigation, cancel: () => {
         n = true, a.reject(new Error("navigation cancelled"));
       } };
       et.forEach((i) => i(r));
@@ -744,7 +744,7 @@ function Xt() {
     if (t.button || t.which !== 1 || t.metaKey || t.ctrlKey || t.shiftKey || t.altKey || t.defaultPrevented) return;
     const n = Je(t.composedPath()[0], I);
     if (!n) return;
-    const { url: a, external: r, target: i, download: o } = _e(n, x, y.hash);
+    const { url: a, external: r, target: i, download: o } = me(n, x, y.hash);
     if (!a) return;
     if (i === "_parent" || i === "_top") {
       if (window.parent !== window) return;
@@ -757,7 +757,7 @@ function Xt() {
       return;
     }
     if (f !== void 0 && h) {
-      const [, w] = _.url.href.split("#");
+      const [, w] = m.url.href.split("#");
       if (w === f) {
         if (t.preventDefault(), f === "" || f === "top" && n.ownerDocument.getElementById("top") === null) scrollTo({ top: 0 });
         else {
@@ -791,9 +791,9 @@ function Xt() {
       if ((_a4 = t.state) == null ? void 0 : _a4[K]) {
         const n = t.state[K];
         if (N = {}, n === v) return;
-        const a = C[n], r = t.state[Ye] ?? {}, i = new URL(t.state[Ut] ?? location.href), o = t.state[G], s = _.url ? de(location) === de(_.url) : false;
+        const a = C[n], r = t.state[Ye] ?? {}, i = new URL(t.state[Ut] ?? location.href), o = t.state[G], s = m.url ? de(location) === de(m.url) : false;
         if (o === R && (nt || s)) {
-          r !== k.state && (k.state = r), e(i), C[v] = D(), a && scrollTo(a.x, a.y), v = n;
+          r !== k.state && (k.state = r), e(i), C[v] = q(), a && scrollTo(a.x, a.y), v = n;
           return;
         }
         const c = n - v;
@@ -815,7 +815,7 @@ function Xt() {
     t.persisted && $.navigating.set(Y.current = null);
   });
   function e(t) {
-    _.url = k.url = t, $.page.set(Ce(k)), $.page.notify();
+    m.url = k.url = t, $.page.set(Ce(k)), $.page.notify();
   }
 }
 async function Qt(e, { status: t = 200, error: n, node_ids: a, params: r, route: i, server_route: o, data: s, form: l }) {
@@ -825,17 +825,17 @@ async function Qt(e, { status: t = 200, error: n, node_ids: a, params: r, route:
   ({ params: r = {}, route: i = { id: null } } = await ue(c, false) || {}), f = Ue.find(({ id: u }) => u === i.id);
   let h, w = true;
   try {
-    const u = a.map(async (m, g) => {
+    const u = a.map(async (_, g) => {
       const d = s[g];
-      return (d == null ? void 0 : d.uses) && (d.uses = Zt(d.uses)), Ie({ loader: y.nodes[m], url: c, params: r, route: i, parent: async () => {
+      return (d == null ? void 0 : d.uses) && (d.uses = Zt(d.uses)), Ie({ loader: y.nodes[_], url: c, params: r, route: i, parent: async () => {
         const S = {};
         for (let E = 0; E < g; E += 1) Object.assign(S, (await u[E]).data);
         return S;
       }, server_data_node: Oe(d) });
     }), p = await Promise.all(u);
     if (f) {
-      const m = f.layouts;
-      for (let g = 0; g < m.length; g++) m[g] || p.splice(g, 0, void 0);
+      const _ = f.layouts;
+      for (let g = 0; g < _.length; g++) _[g] || p.splice(g, 0, void 0);
     }
     h = ie({ url: c, params: r, branch: p, status: t, error: n, form: l, route: f ?? null });
   } catch (u) {
@@ -857,7 +857,7 @@ function en(e, t = true) {
   else {
     const a = ut(e);
     if (a && document.getElementById(a)) {
-      const { x: i, y: o } = D();
+      const { x: i, y: o } = q();
       setTimeout(() => {
         const s = history.state;
         ye = true, location.replace(new URL(`#${a}`, location.href)), history.replaceState(s, "", e), t && scrollTo(i, o), ye = false;
@@ -889,7 +889,7 @@ function $e(e, t, n, a, r = null) {
     i = c, o = f;
   });
   return s.catch(() => {
-  }), { navigation: { from: { params: e.params, route: { id: ((_a3 = e.route) == null ? void 0 : _a3.id) ?? null }, url: e.url, scroll: D() }, to: n && { params: (t == null ? void 0 : t.params) ?? null, route: { id: ((_b2 = t == null ? void 0 : t.route) == null ? void 0 : _b2.id) ?? null }, url: n, scroll: r }, willUnload: !t, type: a, complete: s }, fulfil: i, reject: o };
+  }), { navigation: { from: { params: e.params, route: { id: ((_a3 = e.route) == null ? void 0 : _a3.id) ?? null }, url: e.url, scroll: q() }, to: n && { params: (t == null ? void 0 : t.params) ?? null, route: { id: ((_b2 = t == null ? void 0 : t.route) == null ? void 0 : _b2.id) ?? null }, url: n, scroll: r }, willUnload: !t, type: a, complete: s }, fulfil: i, reject: o };
 }
 function Ce(e) {
   return { data: e.data, error: e.error, form: e.form, params: e.params, route: e.route, state: e.state, status: e.status, url: e.url };
