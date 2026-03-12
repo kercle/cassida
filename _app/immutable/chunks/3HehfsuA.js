@@ -41,7 +41,7 @@ let __tla = (async () => {
     }
     return n;
   }
-  const C = "" + new URL("../assets/kernel_bg.CmupjzoR.wasm", import.meta.url).href, R = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.D3Fr4GEB.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -63,11 +63,11 @@ let __tla = (async () => {
     }
     return n.instance.exports;
   };
-  function B(e) {
+  function R(e) {
     let t, n;
     try {
-      const o = F(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
-      return t = a[0], n = a[1], j(a[0], a[1]);
+      const o = G(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
+      return t = a[0], n = a[1], F(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
     }
@@ -76,14 +76,14 @@ let __tla = (async () => {
     const e = _.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
-  function j(e, t) {
+  function F(e, t) {
     return e = e >>> 0, H(e, t);
   }
   let l = null;
   function u() {
     return (l === null || l.byteLength === 0) && (l = new Uint8Array(_.memory.buffer)), l;
   }
-  function F(e, t, n) {
+  function G(e, t, n) {
     if (n === void 0) {
       const i = d.encode(e), c = t(i.length, 1) >>> 0;
       return u().subarray(c, c + i.length).set(i), w = i.length, c;
@@ -108,10 +108,10 @@ let __tla = (async () => {
     fatal: true
   });
   b.decode();
-  const G = 2146435072;
+  const j = 2146435072;
   let g = 0;
   function H(e, t) {
-    return g += t, g >= G && (b = new TextDecoder("utf-8", {
+    return g += t, g >= j && (b = new TextDecoder("utf-8", {
       ignoreBOM: true,
       fatal: true
     }), b.decode(), g = t), b.decode(u().subarray(e, e + t));
@@ -129,25 +129,25 @@ let __tla = (async () => {
     _ = e;
   }
   URL = globalThis.URL;
-  const f = await R({
+  const f = await C({
     "./kernel_bg.js": {
       __wbindgen_init_externref_table: D
     }
-  }, C), z = f.memory, J = f.eval_input, K = f.__wbindgen_externrefs, P = f.__wbindgen_malloc, V = f.__wbindgen_realloc, Y = f.__wbindgen_free, v = f.__wbindgen_start, $ = Object.freeze(Object.defineProperty({
+  }, B), J = f.memory, K = f.eval_input, P = f.__wbindgen_externrefs, V = f.__wbindgen_malloc, Y = f.__wbindgen_realloc, $ = f.__wbindgen_free, v = f.__wbindgen_start, q = Object.freeze(Object.defineProperty({
     __proto__: null,
-    __wbindgen_externrefs: K,
-    __wbindgen_free: Y,
-    __wbindgen_malloc: P,
-    __wbindgen_realloc: V,
+    __wbindgen_externrefs: P,
+    __wbindgen_free: $,
+    __wbindgen_malloc: V,
+    __wbindgen_realloc: Y,
     __wbindgen_start: v,
-    eval_input: J,
-    memory: z
+    eval_input: K,
+    memory: J
   }, Symbol.toStringTag, {
     value: "Module"
   }));
-  X($);
+  X(q);
   v();
-  function q() {
+  function z() {
     const { subscribe: e, set: t, update: n } = N({
       data: {
         history: []
@@ -164,7 +164,7 @@ let __tla = (async () => {
         connected: true
       })), {
         send: async (r) => {
-          const i = await B(r), c = typeof i == "string" ? JSON.parse(i) : i;
+          const i = await R(r), c = typeof i == "string" ? JSON.parse(i) : i;
           n((m) => (o(m.data, c), {
             ...m,
             connected: true
@@ -181,7 +181,7 @@ let __tla = (async () => {
       send: (r) => a.send(r)
     };
   }
-  Q = q();
+  Q = z();
   te = function(e) {
     const t = {
       eval: e

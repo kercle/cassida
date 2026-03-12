@@ -2,7 +2,7 @@ import { b as _5, a as sr, f as hr } from "../chunks/DkayNNiV.js";
 import { i as F0 } from "../chunks/D_5bwYY3.js";
 import { D as nI, h as Pn, C as om, l as kt, F as iI, G as oI, I as x5, J as Rf, K as vd, e as nl, aD as W7, aK as sI, av as S5, c as Qs, a as cd, aY as zn, b as sm, aZ as lI, s as uI, a4 as hI, a_ as fI, aJ as Iy, a$ as vI, b0 as cI, R as ky, ah as w5, b1 as dI, r as U7, p as Y7, b2 as dd, b3 as pI, aH as gI, d as mI, aE as q7, a8 as Ef, b4 as X7, N as yI, b5 as bI, x as Aa, $ as _I, b6 as xI, aL as SI, aF as wI, a7 as TI, b7 as MI, b8 as CI, b9 as AI, aN as $7, i as xr, M as DI, ba as LI, z as tt, A as Je, aw as II, v as zl, y as Bl, B as la, V as iv, aO as kI, n as $a, bb as PI, bc as RI } from "../chunks/Bp716flw.js";
 import { p as Gi, b as Z7, i as T5, s as EI, a as zI } from "../chunks/BmDnE8IQ.js";
-import { s as BI, r as NI, a as K7, b as OI, __tla as __tla_0 } from "../chunks/DB1CUcEo.js";
+import { s as BI, r as NI, a as K7, b as OI, __tla as __tla_0 } from "../chunks/3HehfsuA.js";
 import { d as VI, a as GI, s as Ca, e as FI } from "../chunks/BwSswmFG.js";
 import { o as HI } from "../chunks/TMq5ylFL.js";
 let cae;
@@ -250,7 +250,7 @@ let __tla = Promise.all([
       }), sr(l, h);
     }), Je(s), Je(n), Aa(() => Ca(o, t())), sr(r, n);
   }
-  var rk = hr('<button type="button" class=" border-0 bg-transparent p-0 hover:brightness-105"><span class="badge badge-accent cursor-pointer font-mono"> </span></button>');
+  var rk = hr('<button type="button" class=" border-0 bg-transparent p-0 hover:brightness-105"><span class="badge badge-info cursor-pointer font-mono"> </span></button>');
   function ak(r, e) {
     zl(e, false);
     let t = Gi(e, "symbol", 8);
