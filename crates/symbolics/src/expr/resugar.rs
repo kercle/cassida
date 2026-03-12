@@ -5,6 +5,48 @@ use crate::{
 };
 use numbers::Number;
 
+struct FactorList {
+    is_negative: bool,
+    factors: Vec<RawExpr>,
+}
+
+impl FactorList {
+    fn new() -> Self {
+        Self {
+            is_negative: false,
+            factors: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, expr: RawExpr) {
+        if let ExprKind::Atom {
+            entry: Atom::Number(mut num),
+        } = expr.kind
+        {
+            if num.is_negative() {
+                self.is_negative = !self.is_negative;
+                num.flip_sign();
+            }
+
+            if num.is_one() {
+                return;
+            }
+
+            self.factors.push(num.into());
+        } else if expr.is_application_of(NEG_HEAD, 1) {
+            let ExprKind::Node { mut args, .. } = expr.kind else {
+                unreachable!()
+            };
+
+            self.is_negative = !self.is_negative;
+
+            self.factors.push(args.pop().unwrap())
+        } else {
+            self.factors.push(expr);
+        }
+    }
+}
+
 impl NormExpr {
     pub fn resugar(self) -> RawExpr {
         Self::resugar_inner(self)
@@ -95,32 +137,25 @@ impl NormExpr {
             )
         }
     }
+
     fn resugar_mul(args: Vec<Self>) -> RawExpr {
-        let mut has_sign = false;
-        let mut numerator = Vec::with_capacity(args.len());
-        let mut denominator = Vec::with_capacity(args.len());
+        let mut numerator = FactorList::new();
+        let mut denominator = FactorList::new();
 
         for arg in args {
-            if arg.is_number_negative() {
-                let num = arg.get_number().unwrap();
-                has_sign = !has_sign;
-
-                match num.abs() {
-                    num @ Number::Integer(_) => {
-                        if !num.is_one() && !num.is_minus_one() {
-                            numerator.push(Expr::new_number(num))
-                        }
-                    }
-                    Number::Rational(r) => {
-                        let num_n = Number::Integer(r.numerator().clone());
-                        let num_d = Number::Integer(r.denominator().clone());
-
-                        numerator.push(Expr::new_number(num_n));
-                        denominator.push(Expr::new_number(num_d));
-                    }
+            match arg.get_number() {
+                Some(Number::Integer(n)) => {
+                    numerator.push(Number::Integer(n.clone()).into());
+                    continue;
                 }
+                Some(Number::Rational(r)) => {
+                    let (n, d) = r.clone().as_pair();
 
-                continue;
+                    numerator.push(Number::Integer(n).into());
+                    denominator.push(Number::Integer(d).into());
+                    continue;
+                }
+                None => {}
             }
 
             let [base, exp]: [NormExpr; 2] = if arg.is_application_of(POW_HEAD, 2) {
@@ -159,10 +194,8 @@ impl NormExpr {
                     )
                 };
                 RawExpr::new_binary_node(POW_HEAD, Self::resugar_inner(base), rhs)
-            } else if coeff_abs.is_one() {
-                base.into_raw()
             } else {
-                RawExpr::new_binary_node(POW_HEAD, base.into_raw(), Self::resugar_number(coeff_abs))
+                Self::resugar_pow_numeric_exp(base, &coeff_abs)
             };
 
             if coeff.is_negative() {
@@ -172,21 +205,23 @@ impl NormExpr {
             }
         }
 
-        let ret_unsigned = match (numerator.is_empty(), denominator.is_empty()) {
-            (_, true) => RawExpr::collapse_mul(numerator),
+        dbg!(&denominator.factors);
+
+        let ret_unsigned = match (numerator.factors.is_empty(), denominator.factors.is_empty()) {
+            (_, true) => RawExpr::collapse_mul(numerator.factors),
             (true, _) => RawExpr::new_binary_node(
                 DIV_HEAD,
                 RawExpr::new_number(Number::one()),
-                RawExpr::collapse_mul(denominator),
+                RawExpr::collapse_mul(denominator.factors),
             ),
             (false, false) => RawExpr::new_binary_node(
                 DIV_HEAD,
-                RawExpr::collapse_mul(numerator),
-                RawExpr::collapse_mul(denominator),
+                RawExpr::collapse_mul(numerator.factors),
+                RawExpr::collapse_mul(denominator.factors),
             ),
         };
 
-        if has_sign {
+        if numerator.is_negative ^ denominator.is_negative {
             RawExpr::new_unary_node(NEG_HEAD, ret_unsigned)
         } else {
             ret_unsigned
@@ -202,6 +237,10 @@ impl NormExpr {
             );
         };
 
+        Self::resugar_pow_numeric_exp(lhs, rhs_num)
+    }
+
+    fn resugar_pow_numeric_exp(lhs: NormExpr, rhs_num: &Number) -> RawExpr {
         let is_neg_exp = rhs_num.is_negative();
         let rhs_num = rhs_num.abs();
 

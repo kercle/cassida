@@ -89,6 +89,10 @@ impl BigRational {
         &self.numerator
     }
 
+    pub fn as_pair(self) -> (BigInteger, BigInteger) {
+        (self.numerator, self.denominator)
+    }
+
     pub fn denominator(&self) -> &BigInteger {
         &self.denominator
     }
