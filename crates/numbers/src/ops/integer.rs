@@ -108,6 +108,18 @@ impl ops::Rem for BigInteger {
     }
 }
 
+impl ops::ShlAssign<usize> for BigInteger {
+    fn shl_assign(&mut self, n: usize) {
+        *self = self.shift_left(n)
+    }
+}
+
+impl ops::ShrAssign<usize> for BigInteger {
+    fn shr_assign(&mut self, n: usize) {
+        *self = self.shift_right(n)
+    }
+}
+
 impl cmp::PartialEq for BigInteger {
     fn eq(&self, other: &Self) -> bool {
         self.eq_inner(other)
