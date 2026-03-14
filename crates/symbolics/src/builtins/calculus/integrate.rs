@@ -1,5 +1,5 @@
 use crate::{
-    builtins::traits::{BuiltIn, PatternDoc},
+    builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
     expr::NormExpr,
     norm_expr,
     pattern::environment::Environment,
@@ -31,35 +31,22 @@ impl Default for Integrate {
 }
 
 impl BuiltIn for Integrate {
-    fn category(&self) -> &'static str {
-        "Calculus"
-    }
-
-    fn title(&self) -> &'static str {
-        "Integration"
+    fn doc(&self) -> BuiltInDoc {
+        BuiltInDoc {
+            category: "Calculus",
+            title: "Integration",
+            summary: "Symbolically determine integrals of expressions.",
+            pattern_doc: self.pattern_doc.clone(),
+            examples: vec![
+                ("Integrate[x,x]", "x^2/2"),
+                ("Integrate[2 * Sqrt[x] + x^6, x]", "(4/3)*x^(3/2) + x^7/7"),
+            ],
+            related: vec!["Diff"],
+        }
     }
 
     fn head_symbol(&self) -> &'static str {
         "Integrate"
-    }
-
-    fn summary(&self) -> &'static str {
-        "Determine integrals."
-    }
-
-    fn pattern_doc(&self) -> Vec<PatternDoc> {
-        self.pattern_doc.clone()
-    }
-
-    fn examples(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("Integrate[x,x]", "x^2/2"),
-            ("Integrate[2 * Sqrt[x] + x^6, x]", "(4/3)*x^(3/2) + x^7/7"),
-        ]
-    }
-
-    fn related(&self) -> Vec<&'static str> {
-        vec!["Diff"]
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

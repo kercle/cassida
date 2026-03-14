@@ -1,6 +1,16 @@
 use crate::expr::NormExpr;
 
 #[derive(Clone, Debug)]
+pub struct BuiltInDoc {
+    pub category: &'static str,
+    pub title: &'static str,
+    pub summary: &'static str,
+    pub pattern_doc: Vec<PatternDoc>,
+    pub examples: Vec<(&'static str, &'static str)>,
+    pub related: Vec<&'static str>,
+}
+
+#[derive(Clone, Debug)]
 pub struct PatternDoc {
     pub pattern: String,
     pub summary: String,
@@ -16,19 +26,9 @@ impl PatternDoc {
 }
 
 pub trait BuiltIn {
-    fn category(&self) -> &'static str;
-
-    fn title(&self) -> &'static str;
-
     fn head_symbol(&self) -> &'static str;
 
-    fn summary(&self) -> &'static str;
-
-    fn pattern_doc(&self) -> Vec<PatternDoc>;
-
-    fn examples(&self) -> Vec<(&'static str, &'static str)>;
-
-    fn related(&self) -> Vec<&'static str>;
+    fn doc(&self) -> BuiltInDoc;
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
         expr

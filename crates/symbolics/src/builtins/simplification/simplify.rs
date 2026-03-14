@@ -1,7 +1,7 @@
 use crate::{
     builtins::{
         simplification::{factor, known_values, trigonometric},
-        traits::{BuiltIn, PatternDoc},
+        traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
     expr::NormExpr,
     rewrite::Rewriter,
@@ -38,32 +38,19 @@ impl Default for Simplify {
 }
 
 impl BuiltIn for Simplify {
-    fn category(&self) -> &'static str {
-        "Simplification"
-    }
-
-    fn title(&self) -> &'static str {
-        "Basic simplification"
+    fn doc(&self) -> BuiltInDoc {
+        BuiltInDoc {
+            category: "Simplification",
+            title: "Basic simplification",
+            summary: "Simplify a given expression.",
+            pattern_doc: self.pattern_doc.clone(),
+            examples: vec![],
+            related: vec!["Expand"],
+        }
     }
 
     fn head_symbol(&self) -> &'static str {
         "Simplify"
-    }
-
-    fn summary(&self) -> &'static str {
-        "Simplify a given expression."
-    }
-
-    fn pattern_doc(&self) -> Vec<PatternDoc> {
-        self.pattern_doc.clone()
-    }
-
-    fn examples(&self) -> Vec<(&'static str, &'static str)> {
-        vec![]
-    }
-
-    fn related(&self) -> Vec<&'static str> {
-        vec!["Expand"]
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

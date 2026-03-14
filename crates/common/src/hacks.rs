@@ -99,19 +99,20 @@ pub fn help(input: String, kernel: &Kernel, expr: &NormExpr) -> Option<KernelMes
     let env = runtime.first_match()?;
 
     let builtin = kernel.get_builtin(env.get_one("name")?.get_symbol()?)?;
+    let doc = builtin.doc();
     Some(KernelMessage::HelpBuiltin {
         input,
-        title: builtin.title().to_string(),
-        patterns: builtin
-            .pattern_doc()
+        title: doc.title.to_string(),
+        patterns: doc
+            .pattern_doc
             .into_iter()
             .map(|e| (e.pattern, e.summary))
             .collect(),
-        examples: builtin
-            .examples()
+        examples: doc
+            .examples
             .iter()
             .map(|(a, b)| (a.to_string(), b.to_string()))
             .collect(),
-        related: builtin.related().iter().map(|a| a.to_string()).collect(),
+        related: doc.related.iter().map(|a| a.to_string()).collect(),
     })
 }

@@ -90,10 +90,19 @@ impl Kernel {
         Ok(())
     }
 
-    pub fn help_builtins(&self) -> Vec<(String, String)> {
+    // TODO: This is just a quick & dirty function for
+    // table of contents. Should be improved.
+    pub fn help_builtins(&self) -> Vec<(String, String, String)> {
         self.builtins
             .iter()
-            .map(|b| (b.head_symbol().to_string(), b.summary().to_string()))
+            .map(|b| {
+                let doc = b.doc();
+                (
+                    b.head_symbol().to_string(),
+                    doc.summary.to_string(),
+                    doc.category.to_string(),
+                )
+            })
             .collect()
     }
 

@@ -19,7 +19,7 @@ type ServerMessage = {
 } | {
     helpTableOfContents: {
         input: string,
-        builtins: Array<[string, string]>
+        builtins: Array<[string, string, string]>
     }
 } | {
     helpBuiltin: {

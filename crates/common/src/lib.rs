@@ -21,7 +21,7 @@ pub enum KernelMessage {
     },
     HelpTableOfContents {
         input: String,
-        builtins: Vec<(String, String)>,
+        builtins: Vec<(String, String, String)>,
     },
     HelpBuiltin {
         input: String,

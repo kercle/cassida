@@ -1,5 +1,5 @@
 use crate::{
-    builtins::traits::{BuiltIn, PatternDoc},
+    builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
     expr::NormExpr,
     norm_expr,
     pattern::environment::Environment,
@@ -31,35 +31,22 @@ impl Default for Derivative {
 }
 
 impl BuiltIn for Derivative {
-    fn category(&self) -> &'static str {
-        "Calculus"
-    }
-
-    fn title(&self) -> &'static str {
-        "Derivative"
+    fn doc(&self) -> BuiltInDoc {
+        BuiltInDoc {
+            category: "Calculus",
+            title: "Derivative",
+            summary: "Symbolically determine derivatives of expressions.",
+            pattern_doc: self.pattern_doc.clone(),
+            examples: vec![
+                ("Diff[Cos[Exp[x]], x]", "-Exp[x]*Sin[Exp[x]]"),
+                ("Diff[y,x]", "0"),
+            ],
+            related: vec!["Integrate"],
+        }
     }
 
     fn head_symbol(&self) -> &'static str {
         "Diff"
-    }
-
-    fn summary(&self) -> &'static str {
-        "Determine derivatives."
-    }
-
-    fn pattern_doc(&self) -> Vec<PatternDoc> {
-        self.pattern_doc.clone()
-    }
-
-    fn examples(&self) -> Vec<(&'static str, &'static str)> {
-        vec![
-            ("Diff[Cos[Exp[x]], x]", "-Exp[x]*Sin[Exp[x]]"),
-            ("Diff[y,x]", "0"),
-        ]
-    }
-
-    fn related(&self) -> Vec<&'static str> {
-        vec!["Integrate"]
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {

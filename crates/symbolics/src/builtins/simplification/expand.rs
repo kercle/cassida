@@ -3,7 +3,7 @@ use numbers::{Number, alg::binomial::BinomialGenerator, integer::BigInteger};
 use crate::{
     atom::Atom,
     builtin::{ADD_HEAD, MUL_HEAD, POW_HEAD},
-    builtins::traits::{BuiltIn, PatternDoc},
+    builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
     expr::{ExprKind, NormExpr, RawExpr},
     kernel::Shared,
     norm_expr,
@@ -29,32 +29,19 @@ impl Expand {
 }
 
 impl BuiltIn for Expand {
-    fn category(&self) -> &'static str {
-        "Simplification"
-    }
-
-    fn title(&self) -> &'static str {
-        "Term expansion"
+    fn doc(&self) -> BuiltInDoc {
+        BuiltInDoc {
+            category: "Simplification",
+            title: "Term expansion",
+            summary: "Expand factors.",
+            pattern_doc: self.pattern_doc.clone(),
+            examples: vec![("x*(4 + x*(5 - x))", "4*x + 5*x^2 - x^3")],
+            related: vec!["Simplify"],
+        }
     }
 
     fn head_symbol(&self) -> &'static str {
         "Expand"
-    }
-
-    fn summary(&self) -> &'static str {
-        "Expand factors."
-    }
-
-    fn pattern_doc(&self) -> Vec<PatternDoc> {
-        self.pattern_doc.clone()
-    }
-
-    fn examples(&self) -> Vec<(&'static str, &'static str)> {
-        vec![("x*(4 + x*(5 - x))", "4*x + 5*x^2 - x^3")]
-    }
-
-    fn related(&self) -> Vec<&'static str> {
-        vec!["Simplify"]
     }
 
     fn apply_all(&self, expr: NormExpr) -> NormExpr {
