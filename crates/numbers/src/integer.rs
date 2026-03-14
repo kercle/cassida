@@ -708,7 +708,7 @@ impl BigInteger {
     pub fn trailing_zeros(&self) -> usize {
         for (i, digit) in self.digits.iter().enumerate() {
             if *digit != 0 {
-                return i + digit.trailing_zeros() as usize;
+                return i * std::mem::size_of::<Digit>() * 8 + digit.trailing_zeros() as usize;
             }
         }
 
