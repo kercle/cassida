@@ -1,3 +1,6 @@
+use std::rc::Rc;
+
+use numbers::alg::binomial::BinomialGenerator;
 use parser::parse;
 
 use crate::{
@@ -14,6 +17,7 @@ pub enum KernelError {
 pub struct Kernel {
     builtins: Vec<Box<dyn BuiltIn>>,
     auto_apply: Vec<usize>,
+    binomial_generator: Rc<BinomialGenerator>,
 }
 
 impl Default for Kernel {
@@ -21,6 +25,7 @@ impl Default for Kernel {
         let mut result = Self {
             builtins: Vec::new(),
             auto_apply: Vec::new(),
+            binomial_generator: Rc::new(BinomialGenerator::default()),
         };
 
         result.register_initial_builtins();
@@ -30,16 +35,26 @@ impl Default for Kernel {
 
 impl Kernel {
     fn register_initial_builtins(&mut self) {
-        self.register_builtin::<builtins::calculus::Integrate>(true);
-        self.register_builtin::<builtins::calculus::Derivative>(true);
-        self.register_builtin::<builtins::simplify::Simplify>(true);
-        self.register_builtin::<builtins::simplify::Expand>(true);
-        self.register_builtin::<builtins::system::Help>(false);
+        self.register_builtin_default::<builtins::calculus::Integrate>(true);
+        self.register_builtin_default::<builtins::calculus::Derivative>(true);
+        self.register_builtin_default::<builtins::simplify::Simplify>(true);
+        self.register_builtin_default::<builtins::system::Help>(false);
+
+        self.register_builtin(
+            Box::new(builtins::simplify::Expand::new(
+                self.binomial_generator.clone(),
+            )),
+            false,
+        );
     }
 
-    pub fn register_builtin<B: BuiltIn + Default + 'static>(&mut self, auto_apply: bool) {
+    pub fn register_builtin_default<B: BuiltIn + Default + 'static>(&mut self, auto_apply: bool) {
+        self.register_builtin(Box::new(B::default()), auto_apply);
+    }
+
+    pub fn register_builtin(&mut self, builtin: Box<dyn BuiltIn>, auto_apply: bool) {
         let id = self.builtins.len();
-        self.builtins.push(Box::new(B::default()));
+        self.builtins.push(builtin);
 
         if auto_apply {
             self.set_auto_apply_by_id(id);

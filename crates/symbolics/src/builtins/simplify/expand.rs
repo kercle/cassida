@@ -1,3 +1,7 @@
+use std::rc::Rc;
+
+use numbers::alg::binomial::BinomialGenerator;
+
 use crate::{
     builtins::traits::{BuiltIn, PatternDoc},
     expr::NormExpr,
@@ -10,20 +14,16 @@ use crate::{
 pub struct Expand {
     pattern_doc: Vec<PatternDoc>,
     rewriter: Rewriter,
+    binomial_generator: Rc<BinomialGenerator>,
 }
 
 impl Expand {
-    pub fn new() -> Self {
+    pub fn new(binomial_generator: Rc<BinomialGenerator>) -> Self {
         Self {
             pattern_doc: vec![PatternDoc::new("Expand[t_]", "Expands the given term $t$.")],
             rewriter: build_rewriter(),
+            binomial_generator,
         }
-    }
-}
-
-impl Default for Expand {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
