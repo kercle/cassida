@@ -487,7 +487,7 @@ impl BigInteger {
         }
     }
 
-    pub fn increment(&mut self) -> Self {
+    pub fn incremented(&mut self) -> Self {
         Self::add(self, &BigInteger::one())
     }
 
@@ -528,7 +528,7 @@ impl BigInteger {
         res
     }
 
-    pub fn decrement(&mut self) -> Self {
+    pub fn decremented(&mut self) -> Self {
         Self::sub(self, &BigInteger::one())
     }
 
@@ -600,7 +600,7 @@ impl BigInteger {
         let mut result = BigInteger::one();
         while !exp.is_zero() {
             result = BigInteger::mul(&result, self);
-            exp = exp.decrement();
+            exp = exp.decremented();
         }
 
         Ok(result)
