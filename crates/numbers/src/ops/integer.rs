@@ -34,6 +34,12 @@ impl ops::Sub for &BigInteger {
     }
 }
 
+impl ops::SubAssign<&BigInteger> for BigInteger {
+    fn sub_assign(&mut self, other: &BigInteger) {
+        *self = &*self - other;
+    }
+}
+
 impl ops::Mul for BigInteger {
     type Output = Self;
 
