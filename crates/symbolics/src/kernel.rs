@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use numbers::alg::binomial::BinomialGenerator;
 use parser::parse;
@@ -17,7 +17,7 @@ pub enum KernelError {
 pub struct Kernel {
     builtins: Vec<Box<dyn BuiltIn>>,
     auto_apply: Vec<usize>,
-    binomial_generator: Rc<BinomialGenerator>,
+    binomial_generator: Arc<Mutex<BinomialGenerator>>,
 }
 
 impl Default for Kernel {
@@ -25,7 +25,7 @@ impl Default for Kernel {
         let mut result = Self {
             builtins: Vec::new(),
             auto_apply: Vec::new(),
-            binomial_generator: Rc::new(BinomialGenerator::default()),
+            binomial_generator: Arc::new(Mutex::new(BinomialGenerator::default())),
         };
 
         result.register_initial_builtins();
@@ -44,7 +44,7 @@ impl Kernel {
             Box::new(builtins::simplify::Expand::new(
                 self.binomial_generator.clone(),
             )),
-            false,
+            true,
         );
     }
 

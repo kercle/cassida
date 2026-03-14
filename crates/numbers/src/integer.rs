@@ -110,6 +110,14 @@ impl BigInteger {
         }
     }
 
+    pub fn to_u64(&self) -> Option<u64> {
+        if self.digits.len() != 1 {
+            return None;
+        }
+
+        u64::try_from(self.digit(0)).ok()
+    }
+
     pub fn zero() -> Self {
         BigInteger::from_u64(0)
     }
@@ -693,15 +701,15 @@ impl BigInteger {
     /// Returns the number of trailing zeros bits in the binary
     /// representation of the integer. This corresponds to the
     /// largest power of two that divides this integer.
-    /// 
+    ///
     /// In case the number is equal to zero, the functions
     /// returns 0.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use numbers::integer::BigInteger;
-    /// 
+    ///
     /// let n = BigInteger::from_u64(12); // 12 = 3 × 2²
     /// assert_eq!(n.trailing_zeros(), 2);
     /// ```
