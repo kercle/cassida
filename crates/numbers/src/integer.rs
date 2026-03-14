@@ -6,6 +6,9 @@ type DoubleDigit = u128;
 const DIGIT_BITS: usize = Digit::BITS as usize;
 const MASK_LOWER: DoubleDigit = Digit::MAX as DoubleDigit;
 
+pub static ZERO: std::sync::LazyLock<BigInteger> = std::sync::LazyLock::new(BigInteger::zero);
+pub static ONE: std::sync::LazyLock<BigInteger> = std::sync::LazyLock::new(BigInteger::one);
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Sign {
     Positive,
