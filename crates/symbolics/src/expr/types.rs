@@ -130,12 +130,12 @@ impl ExprInterner {
         }
     }
 
-    pub fn intern_raw(&mut self, expr: &RawExpr) -> RawHandle<'_> {
+    pub fn intern_raw(&mut self, expr: &RawExpr) -> RawExprHandle<'_> {
         let id = self.intern_expr(expr);
         ExprHandle::new(self, id)
     }
 
-    pub fn intern_norm(&mut self, expr: &NormExpr) -> NormHandle<'_> {
+    pub fn intern_norm(&mut self, expr: &NormExpr) -> NormExprHandle<'_> {
         let id = self.intern_expr(expr);
         ExprHandle::new(self, id)
     }
@@ -148,8 +148,8 @@ struct ExprHandle<'a, S> {
     _state: PhantomData<S>,
 }
 
-pub type RawHandle<'a> = ExprHandle<'a, Raw>;
-pub type NormHandle<'a> = ExprHandle<'a, Normalized>;
+pub type RawExprHandle<'a> = ExprHandle<'a, Raw>;
+pub type NormExprHandle<'a> = ExprHandle<'a, Normalized>;
 
 impl<'a, S> ExprHandle<'a, S> {
     fn new(interner: &'a ExprInterner, root: ExprId) -> Self {
@@ -218,8 +218,8 @@ impl<'a, S: Copy> ExprHandle<'a, S> {
     }
 }
 
-impl<'a> ExprHandle<'a, Raw> {
-    pub(super) fn mark_normalized(self) -> ExprHandle<'a, Normalized> {
+impl<'a> RawExprHandle<'a> {
+    pub(super) fn mark_normalized(self) -> NormExprHandle<'a> {
         ExprHandle::new(self.interner, self.root)
     }
 }
