@@ -67,7 +67,11 @@ fn build_rewriter() -> Rewriter {
         ),
         // =============== Basic ===============
         (
-            norm_expr!( Integrate[PatternTest[c_, IsNumber], PatternTest[x_, IsSymbol]] ),
+            norm_expr!(
+            Integrate[
+                PatternTest[c_, IsNumber],
+                PatternTest[x_, IsSymbol]
+            ]),
             raw_expr!(c * x),
         ),
         (
@@ -89,10 +93,18 @@ fn build_rewriter() -> Rewriter {
         (
             norm_expr!(
             Integrate[
-                PatternTest[a_, IsSymbol],
+                x_ * f__,
                 PatternTest[x_, IsSymbol]
             ]),
-            raw_expr!(a * x),
+            raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
+        ),
+        (
+            norm_expr!(
+            Integrate[
+                x_^PatternTest[n_, IsPositiveInteger] * f__,
+                PatternTest[x_, IsSymbol]
+            ]),
+            raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
         ),
         // =============== Powers ===============
         (
