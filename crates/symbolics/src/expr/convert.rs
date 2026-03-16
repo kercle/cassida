@@ -1,5 +1,6 @@
 use crate::{
     builtin::*,
+    builtins,
     expr::{Expr, ExprKind, RawExpr},
     pattern::{BLANK_NULL_SEQ_HEAD, BLANK_ONE_HEAD, BLANK_SEQ_HEAD, PATTERN_HEAD},
 };
@@ -88,7 +89,10 @@ impl From<ParserAst> for RawExpr {
                 head_constraint,
                 optional: _optional,
             } => make_blank_variant(BLANK_NULL_SEQ_HEAD, bind_name, head_constraint),
-            Block { .. } => todo!(),
+            Compound { nodes } => {
+                let nodes = nodes.into_iter().map(Self::from).collect();
+                Self::new_node(builtins::scoping::compound::COMPOUND_HEAD, nodes)
+            }
         }
     }
 }

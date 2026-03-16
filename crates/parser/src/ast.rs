@@ -57,7 +57,7 @@ pub enum ParserAst {
         name: String,
         args: Vec<ParserAst>,
     },
-    Block {
+    Compound {
         nodes: Vec<ParserAst>,
     },
     Blank {
@@ -238,7 +238,7 @@ impl ParserAst {
     }
 
     pub fn new_block(nodes: Vec<ParserAst>) -> Self {
-        ParserAst::Block { nodes }
+        ParserAst::Compound { nodes }
     }
 
     pub fn value_from_constant(&self) -> Option<Number> {

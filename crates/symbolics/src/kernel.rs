@@ -46,6 +46,8 @@ impl Kernel {
         self.register_builtin_default::<builtins::elementary::arithmetic::Mul>(false);
         self.register_builtin_default::<builtins::elementary::arithmetic::Div>(false);
 
+        self.register_builtin_default::<builtins::scoping::Compound>(false);
+
         self.register_builtin_default::<builtins::calculus::Integrate>(true);
         self.register_builtin_default::<builtins::calculus::Derivative>(true);
 
