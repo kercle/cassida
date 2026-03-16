@@ -130,52 +130,49 @@ impl ExprInterner {
         }
     }
 
-    pub fn intern_raw(&mut self, expr: &RawExpr) -> RawExprHandle<'_> {
+    pub fn intern_raw(&mut self, expr: &RawExpr) -> RawExprHandle {
         let id = self.intern_expr(expr);
-        ExprHandle::new(self, id)
+        ExprHandle::new(id)
     }
 
-    pub fn intern_norm(&mut self, expr: &NormExpr) -> NormExprHandle<'_> {
+    pub fn intern_norm(&mut self, expr: &NormExpr) -> NormExprHandle {
         let id = self.intern_expr(expr);
-        ExprHandle::new(self, id)
+        ExprHandle::new(id)
     }
 }
 
 #[derive(Copy, Clone)]
-struct ExprHandle<'a, S> {
-    interner: &'a ExprInterner,
-    root: ExprId,
+struct ExprHandle<S> {
+    id: ExprId,
     _state: PhantomData<S>,
 }
 
-pub type RawExprHandle<'a> = ExprHandle<'a, Raw>;
-pub type NormExprHandle<'a> = ExprHandle<'a, Normalized>;
+pub type RawExprHandle = ExprHandle<Raw>;
+pub type NormExprHandle = ExprHandle<Normalized>;
 
-impl<'a, S> ExprHandle<'a, S> {
-    fn new(interner: &'a ExprInterner, root: ExprId) -> Self {
+impl<S> ExprHandle<S> {
+    fn new(id: ExprId) -> Self {
         ExprHandle {
-            interner,
-            root,
+            id,
             _state: PhantomData,
         }
     }
 
     fn id(&self) -> ExprId {
-        self.root
+        self.id
     }
 
-    fn materialize(&self) -> Expr<S> {
-        match self.interner.get_obj(self.id()) {
+    fn materialize(&self, interner: &ExprInterner) -> Expr<S> {
+        match interner.get_obj(self.id()) {
             ExprCell::Atom(atom) => Expr::new_unchecked(ExprKind::Atom {
                 entry: atom.clone(),
             }),
             ExprCell::Node { head_id, args_id } => Expr::new_unchecked(ExprKind::Node {
-                head: Box::new(Self::new(self.interner, *head_id).materialize()),
-                args: self
-                    .interner
+                head: Box::new(Self::new(*head_id).materialize(interner)),
+                args: interner
                     .get_args(*args_id)
                     .iter()
-                    .map(|a| Self::new(self.interner, *a).materialize())
+                    .map(|a| Self::new(*a).materialize(&interner))
                     .collect(),
             }),
         }
@@ -185,41 +182,34 @@ impl<'a, S> ExprHandle<'a, S> {
 enum ExprView<'a, S> {
     Atom(&'a Atom),
     Node {
-        head: ExprHandle<'a, S>,
+        head: ExprHandle<S>,
         args: &'a [ExprId],
     },
 }
 
-impl<'a, S: Copy> ExprHandle<'a, S> {
-    fn view(self) -> ExprView<'a, S> {
-        match &self.interner.objs[self.root as usize] {
+impl<S: Copy> ExprHandle<S> {
+    fn view(self, interner: &ExprInterner) -> ExprView<S> {
+        match &interner.objs[self.id as usize] {
             ExprCell::Atom(a) => ExprView::Atom(a),
             ExprCell::Node {
                 head_id: head,
                 args_id: args,
             } => ExprView::Node {
-                head: ExprHandle::new(self.interner, *head),
-                args: &self.interner.args[*args as usize],
+                head: ExprHandle::new(*head),
+                args: &interner.args[*args as usize],
             },
         }
     }
 
-    fn children(self) -> impl Iterator<Item = ExprHandle<'a, S>> {
-        let args = match &self.interner.objs[self.root as usize] {
-            ExprCell::Node { args_id: args, .. } => &self.interner.args[*args as usize],
+    fn children(self, interner: &ExprInterner) -> impl Iterator<Item = ExprHandle<S>> {
+        let args = match &interner.objs[self.id as usize] {
+            ExprCell::Node { args_id: args, .. } => &interner.args[*args as usize],
             ExprCell::Atom(_) => &[] as &[ExprId],
         };
-        args.iter()
-            .map(move |&id| ExprHandle::new(self.interner, id))
+        args.iter().map(move |&id| ExprHandle::new(id))
     }
 
-    fn eq(self, other: ExprHandle<'_, S>) -> bool {
-        self.root == other.root
-    }
-}
-
-impl<'a> RawExprHandle<'a> {
-    pub(super) fn mark_normalized(self) -> NormExprHandle<'a> {
-        ExprHandle::new(self.interner, self.root)
+    fn eq(self, other: ExprHandle<S>) -> bool {
+        self.id == other.id
     }
 }
