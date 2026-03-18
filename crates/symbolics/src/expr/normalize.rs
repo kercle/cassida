@@ -9,37 +9,10 @@ use crate::{
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
     expr::{
-        ExprCell, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawArgsHandle, RawExpr,
+        ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawArgsHandle, RawExpr,
         RawExprHandle,
     },
 };
-
-enum ReducibleHead {
-    Add,
-    Sub,
-    Neg,
-    Mul,
-    Div,
-    Pow,
-    Sqrt,
-    Hold,
-}
-
-impl ReducibleHead {
-    fn from_node(pool: &ExprPool, expr: RawExprHandle, arity: Option<usize>) -> Option<Self> {
-        match expr.view(pool).get_symbol() {
-            Some(ADD_HEAD) => Some(ReducibleHead::Add),
-            Some(SUB_HEAD) if arity == Some(2) => Some(ReducibleHead::Sub),
-            Some(MUL_HEAD) => Some(ReducibleHead::Mul),
-            Some(DIV_HEAD) if arity == Some(2) => Some(ReducibleHead::Div),
-            Some(NEG_HEAD) if arity == Some(1) => Some(ReducibleHead::Neg),
-            Some(POW_HEAD) if arity == Some(2) => Some(ReducibleHead::Pow),
-            Some(CANNONICAL_HEAD_SQRT) if arity == Some(1) => Some(ReducibleHead::Sqrt),
-            Some(CANNONICAL_HEAD_HOLD) if arity == Some(1) => Some(ReducibleHead::Hold),
-            _ => None,
-        }
-    }
-}
 
 impl RawExpr {
     pub fn normalize(self) -> NormExpr {
