@@ -241,11 +241,7 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     flattened_args
 }
 
-fn flatten_node_handle(
-    pool: &mut ExprPool,
-    head_symbol: &str,
-    args_id: ArgsId,
-) -> Vec<NormExprHandle> {
+fn flatten_node_handle(pool: &mut ExprPool, head_symbol: &str, args_id: ArgsId) -> ArgsId {
     let arg_expr_ids = pool.get_args(args_id).to_vec();
     let mut flattened = Vec::with_capacity(arg_expr_ids.len());
 
@@ -255,7 +251,7 @@ fn flatten_node_handle(
         let (norm_head_id, norm_args_id) = match pool.get_obj(norm.id()) {
             ExprCell::Node { head_id, args_id } => (*head_id, *args_id),
             ExprCell::Atom(_) => {
-                flattened.push(norm);
+                flattened.push(norm.id());
                 continue;
             }
         };
@@ -265,22 +261,18 @@ fn flatten_node_handle(
             .get_symbol()
             .map(|s| s == head_symbol)
         else {
-            flattened.push(norm);
+            flattened.push(norm.id());
             continue;
         };
 
         if matches_head {
-            flattened.extend(
-                pool.get_args(norm_args_id)
-                    .iter()
-                    .map(|&id| NormExprHandle::new_unchecked(id)),
-            );
+            flattened.extend(pool.get_args(norm_args_id).iter());
         } else {
-            flattened.push(norm);
+            flattened.push(norm.id());
         }
     }
 
-    flattened
+    pool.insert_args(flattened)
 }
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {

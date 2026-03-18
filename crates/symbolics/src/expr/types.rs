@@ -89,7 +89,7 @@ impl ExprPool {
         &self.args[id as usize]
     }
 
-    fn insert_args(&mut self, args: Vec<ExprId>) -> ArgsId {
+    pub(super) fn insert_args(&mut self, args: Vec<ExprId>) -> ArgsId {
         if let Some(&id) = self.args_map.get(&args) {
             return id;
         }
@@ -99,7 +99,7 @@ impl ExprPool {
         id
     }
 
-    fn insert(&mut self, obj: ExprCell) -> ExprId {
+    pub(super) fn insert(&mut self, obj: ExprCell) -> ExprId {
         if let Some(&id) = self.obj_map.get(&obj) {
             return id;
         }
