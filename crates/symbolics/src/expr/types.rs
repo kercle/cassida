@@ -3,6 +3,8 @@ use std::{
     marker::PhantomData,
 };
 
+use numbers::Number;
+
 use crate::atom::Atom;
 
 #[derive(Clone, Copy)]
@@ -56,7 +58,7 @@ pub(crate) type ExprId = u32;
 pub(crate) type ArgsId = u32;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-enum ExprCell {
+pub(super) enum ExprCell {
     Atom(Atom),
     Node { head_id: ExprId, args_id: ArgsId },
 }
@@ -79,11 +81,11 @@ impl ExprPool {
         }
     }
 
-    fn get_obj(&self, id: ExprId) -> &ExprCell {
+    pub(super) fn get_obj(&self, id: ExprId) -> &ExprCell {
         &self.objs[id as usize]
     }
 
-    fn get_args(&self, id: ArgsId) -> &[ExprId] {
+    pub(super) fn get_args(&self, id: ArgsId) -> &[ExprId] {
         &self.args[id as usize]
     }
 
@@ -107,16 +109,64 @@ impl ExprPool {
         id
     }
 
-    fn atom(&mut self, a: Atom) -> ExprId {
+    pub(crate) fn atom(&mut self, a: Atom) -> ExprId {
         self.insert(ExprCell::Atom(a))
     }
 
-    fn node(&mut self, head: ExprId, args: Vec<ExprId>) -> ExprId {
+    pub(crate) fn number(&mut self, n: Number) -> ExprId {
+        self.insert(ExprCell::Atom(Atom::number(n)))
+    }
+
+    pub(crate) fn number_from_i64(&mut self, n: i64) -> ExprId {
+        self.insert(ExprCell::Atom(Atom::number(Number::from_i64(n))))
+    }
+
+    pub(crate) fn rational_from_i64(
+        &mut self,
+        numerator: i64,
+        denominator: u64,
+    ) -> Result<ExprId, String> {
+        let num = Number::new_rational_from_i64(numerator, denominator)?;
+        Ok(self.insert(ExprCell::Atom(Atom::number(num))))
+    }
+
+    pub(crate) fn symbol<T: AsRef<str>>(&mut self, s: T) -> ExprId {
+        self.insert(ExprCell::Atom(Atom::symbol(s)))
+    }
+
+    pub(crate) fn node(&mut self, head: ExprId, args: Vec<ExprId>) -> ExprId {
         let args_id = self.insert_args(args);
         self.insert(ExprCell::Node {
             head_id: head,
             args_id,
         })
+    }
+
+    pub(crate) fn binary_node(&mut self, head: ExprId, lhs: ExprId, rhs: ExprId) -> ExprId {
+        self.node(head, vec![lhs, rhs])
+    }
+
+    pub(crate) fn binary_node_with_head_symbol<T: AsRef<str>>(
+        &mut self,
+        head: T,
+        lhs: ExprId,
+        rhs: ExprId,
+    ) -> ExprId {
+        let head_id = self.symbol(head);
+        self.node(head_id, vec![lhs, rhs])
+    }
+
+    pub(crate) fn unary_node(&mut self, head: ExprId, child: ExprId) -> ExprId {
+        self.node(head, vec![child])
+    }
+
+    pub(crate) fn unary_node_with_head_symbol<T: AsRef<str>>(
+        &mut self,
+        head: T,
+        child: ExprId,
+    ) -> ExprId {
+        let head_id = self.symbol(head);
+        self.node(head_id, vec![child])
     }
 
     pub fn insert_expr<S>(&mut self, expr: &Expr<S>) -> ExprId {
@@ -137,7 +187,7 @@ impl ExprPool {
 
     pub fn insert_norm(&mut self, expr: &NormExpr) -> NormExprHandle {
         let id = self.insert_expr(expr);
-        ExprHandle::new(id)
+        ExprHandle::new_unchecked(id)
     }
 }
 
@@ -150,8 +200,14 @@ pub struct ExprHandle<S> {
 pub type RawExprHandle = ExprHandle<Raw>;
 pub type NormExprHandle = ExprHandle<Normalized>;
 
+impl RawExprHandle {
+    pub(crate) fn new(id: ExprId) -> Self {
+        Self::new_unchecked(id)
+    }
+}
+
 impl<S> ExprHandle<S> {
-    pub(super) fn new(id: ExprId) -> Self {
+    pub(super) fn new_unchecked(id: ExprId) -> Self {
         ExprHandle {
             id,
             _state: PhantomData,
@@ -168,14 +224,41 @@ impl<S> ExprHandle<S> {
                 entry: atom.clone(),
             }),
             ExprCell::Node { head_id, args_id } => Expr::new_unchecked(ExprKind::Node {
-                head: Box::new(Self::new(*head_id).materialize(pool)),
+                head: Box::new(Self::new_unchecked(*head_id).materialize(pool)),
                 args: pool
                     .get_args(*args_id)
                     .iter()
-                    .map(|a| Self::new(*a).materialize(&pool))
+                    .map(|a| Self::new_unchecked(*a).materialize(&pool))
                     .collect(),
             }),
         }
+    }
+}
+
+impl<S: Copy> ExprHandle<S> {
+    pub(crate) fn view(self, pool: &ExprPool) -> ExprView<S> {
+        match &pool.objs[self.id as usize] {
+            ExprCell::Atom(a) => ExprView::Atom(a),
+            ExprCell::Node {
+                head_id: head,
+                args_id: args,
+            } => ExprView::Node {
+                head: ExprHandle::new_unchecked(*head),
+                args: &pool.args[*args as usize],
+            },
+        }
+    }
+
+    fn children(self, pool: &ExprPool) -> impl Iterator<Item = ExprHandle<S>> {
+        let args = match &pool.objs[self.id as usize] {
+            ExprCell::Node { args_id: args, .. } => &pool.args[*args as usize],
+            ExprCell::Atom(_) => &[] as &[ExprId],
+        };
+        args.iter().map(move |&id| ExprHandle::new_unchecked(id))
+    }
+
+    fn eq(self, other: ExprHandle<S>) -> bool {
+        self.id == other.id
     }
 }
 
@@ -187,29 +270,11 @@ pub enum ExprView<'a, S> {
     },
 }
 
-impl<S: Copy> ExprHandle<S> {
-    pub(crate) fn view(self, pool: &ExprPool) -> ExprView<S> {
-        match &pool.objs[self.id as usize] {
-            ExprCell::Atom(a) => ExprView::Atom(a),
-            ExprCell::Node {
-                head_id: head,
-                args_id: args,
-            } => ExprView::Node {
-                head: ExprHandle::new(*head),
-                args: &pool.args[*args as usize],
-            },
+impl<'a, S> ExprView<'a, S> {
+    pub fn get_symbol(&self) -> Option<&str> {
+        match self {
+            Self::Atom(Atom::Symbol(sym)) => Some(sym),
+            _ => None,
         }
-    }
-
-    fn children(self, pool: &ExprPool) -> impl Iterator<Item = ExprHandle<S>> {
-        let args = match &pool.objs[self.id as usize] {
-            ExprCell::Node { args_id: args, .. } => &pool.args[*args as usize],
-            ExprCell::Atom(_) => &[] as &[ExprId],
-        };
-        args.iter().map(move |&id| ExprHandle::new(id))
-    }
-
-    fn eq(self, other: ExprHandle<S>) -> bool {
-        self.id == other.id
     }
 }

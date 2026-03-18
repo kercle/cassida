@@ -9,10 +9,37 @@ use crate::{
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
     expr::{
-        ArgsId, ExprId, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawExpr,
+        ArgsId, ExprCell, ExprId, ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawExpr,
         RawExprHandle,
     },
 };
+
+enum ReducibleHead {
+    Add,
+    Sub,
+    Neg,
+    Mul,
+    Div,
+    Pow,
+    Sqrt,
+    Hold,
+}
+
+impl ReducibleHead {
+    fn from_node(pool: &ExprPool, expr_id: ExprId, arity: usize) -> Option<Self> {
+        match RawExprHandle::new(expr_id).view(pool).get_symbol() {
+            Some(ADD_HEAD) => Some(ReducibleHead::Add),
+            Some(SUB_HEAD) if arity == 2 => Some(ReducibleHead::Sub),
+            Some(MUL_HEAD) => Some(ReducibleHead::Mul),
+            Some(DIV_HEAD) if arity == 2 => Some(ReducibleHead::Div),
+            Some(NEG_HEAD) if arity == 1 => Some(ReducibleHead::Neg),
+            Some(POW_HEAD) if arity == 2 => Some(ReducibleHead::Pow),
+            Some(CANNONICAL_HEAD_SQRT) if arity == 1 => Some(ReducibleHead::Sqrt),
+            Some(CANNONICAL_HEAD_HOLD) if arity == 1 => Some(ReducibleHead::Hold),
+            _ => None,
+        }
+    }
+}
 
 impl RawExpr {
     pub fn normalize(self) -> NormExpr {
@@ -31,12 +58,8 @@ impl RawExprHandle {
     pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
         match self.view(pool) {
             ExprView::Atom(_) => todo!(),
-            ExprView::Node { head, args } => todo!(),
+            ExprView::Node { .. } => normalize_raw_node_handle(pool, self),
         }
-    }
-
-    fn into_normexpr_unchecked(self) -> NormExprHandle {
-        NormExprHandle::new(self.id())
     }
 }
 
@@ -116,8 +139,87 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     }
 }
 
-fn normalize_raw_node_handle(head_expr_id: ExprId, args_id: ArgsId) -> NormExprHandle {
-    todo!()
+fn normalize_raw_node_handle(pool: &mut ExprPool, expr: RawExprHandle) -> NormExprHandle {
+    let (head_id, args_id) = match pool.get_obj(expr.id()) {
+        ExprCell::Node { head_id, args_id } => (*head_id, *args_id),
+        ExprCell::Atom(_) => unreachable!(),
+    };
+
+    let redu_head = ReducibleHead::from_node(pool, head_id, pool.get_args(args_id).len());
+    match redu_head {
+        Some(ReducibleHead::Add) => todo!(),
+        Some(ReducibleHead::Sub) => {
+            // Takes Sub[a, b] and produces Add[a, Mul[-1, b]]
+
+            let [lhs, rhs]: [ArgsId; 2] = pool.get_args(args_id).try_into().unwrap();
+
+            let minus_one = pool.number_from_i64(-1);
+            let neg_rhs = pool.binary_node_with_head_symbol(MUL_HEAD, minus_one, rhs);
+            let new_expr =
+                RawExprHandle::new(pool.binary_node_with_head_symbol(ADD_HEAD, lhs, neg_rhs));
+
+            new_expr.normalize(pool)
+        }
+        Some(ReducibleHead::Mul) => todo!(),
+        Some(ReducibleHead::Div) => {
+            // Takes Div[a, b] and produces Mul[a, Pow[b, -1]] if
+            // b != 0, otherwise Indeterminate
+
+            let [lhs, rhs]: [ArgsId; 2] = pool.get_args(args_id).try_into().unwrap();
+
+            if let ExprView::Atom(Atom::Number(n)) = RawExprHandle::new(rhs).view(pool)
+                && n.is_zero()
+            {
+                NormExprHandle::new_unchecked(pool.symbol(CANNONICAL_SYM_INDETERMINATE))
+            } else {
+                let minus_one = pool.number_from_i64(-1);
+                let rec_rhs = pool.binary_node_with_head_symbol(POW_HEAD, rhs, minus_one);
+                let new_expr =
+                    RawExprHandle::new(pool.binary_node_with_head_symbol(MUL_HEAD, lhs, rec_rhs));
+
+                new_expr.normalize(pool)
+            }
+        }
+        Some(ReducibleHead::Neg) => {
+            // Takes Neg[a] and produces Mul[-1, a]
+
+            let [child]: [ArgsId; 1] = pool.get_args(args_id).try_into().unwrap();
+
+            let minus_one = pool.number_from_i64(-1);
+            let new_expr =
+                RawExprHandle::new(pool.binary_node_with_head_symbol(MUL_HEAD, minus_one, child));
+
+            new_expr.normalize(pool)
+        }
+        Some(ReducibleHead::Pow) => todo!(),
+        Some(ReducibleHead::Sqrt) => {
+            // Takes Sqrt[a] and produces Pow[a, 1/2]
+
+            let [child]: [ArgsId; 1] = pool.get_args(args_id).try_into().unwrap();
+
+            let one_half = pool.rational_from_i64(1, 2).unwrap();
+            let new_expr =
+                RawExprHandle::new(pool.binary_node_with_head_symbol(POW_HEAD, child, one_half));
+
+            new_expr.normalize(pool)
+        }
+        Some(ReducibleHead::Hold) => {
+            // Takes Hold[a] and produces Hold[a] without
+            // normalize further.
+
+            NormExprHandle::new_unchecked(expr.id())
+        }
+        None => {
+            let head = RawExprHandle::new(head_id).normalize(pool);
+            let mut args = pool.get_args(args_id).to_vec();
+
+            for a in args.iter_mut() {
+                *a = RawExprHandle::new(*a).normalize(pool).id();
+            }
+
+            NormExprHandle::new_unchecked(pool.node(head.id(), args))
+        }
+    }
 }
 
 fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
