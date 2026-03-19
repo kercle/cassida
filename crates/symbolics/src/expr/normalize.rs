@@ -16,10 +16,9 @@ use crate::{
 
 impl RawExpr {
     pub fn normalize(self) -> NormExpr {
-        match self.kind {
-            ExprKind::Atom { .. } => self.into_normexpr_unsafe(),
-            ExprKind::Node { head, args } => normalize_raw_node(*head, args),
-        }
+        let mut pool = ExprPool::new();
+        let handle = pool.insert_expr(self);
+        handle.normalize(&mut pool).materialize(&pool)
     }
 
     fn into_normexpr_unsafe(self) -> NormExpr {
@@ -30,7 +29,7 @@ impl RawExpr {
 impl RawExprHandle {
     pub fn normalize(self, pool: &mut ExprPool) -> NormExprHandle {
         match self.view(pool) {
-            ExprView::Atom(_) => todo!(),
+            ExprView::Atom(_) => self.into_normexpr_unchecked(),
             ExprView::Node { head, args } => normalize_raw_node_handle(pool, head, args),
         }
     }
@@ -231,7 +230,7 @@ fn flatten_node_handle(
     for arg in args {
         let norm_arg = arg.normalize(pool);
 
-        if norm_arg.view(pool).is_symbol(head_symbol) {
+        if norm_arg.view(pool).is_node(pool, head_symbol, None) {
             let ExprView::Node { args, .. } = norm_arg.view(pool) else {
                 unreachable!("We know at this point Expr has head symbol");
             };
@@ -579,7 +578,7 @@ fn normalize_raw_mul_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
             continue;
         }
 
-        let (base, exponent) = if arg_view.is_node(pool, POW_HEAD, 2) {
+        let (base, exponent) = if arg_view.is_node(pool, POW_HEAD, Some(2)) {
             let a = arg_view.get_args().unwrap();
             (a.get(pool, 0).unwrap(), a.get(pool, 1).unwrap().as_raw())
         } else {
@@ -614,13 +613,15 @@ fn normalize_raw_mul_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
     }
 
     for (base, exponents) in terms.into_iter() {
-        let assembled_exp = pool.variadic_node_with_head_symbol(ADD_HEAD, exponents);
+        let assembled_exp = pool
+            .variadic_node_with_head_symbol(ADD_HEAD, exponents)
+            .normalize(pool);
 
         if assembled_exp
             .view(pool)
             .is_symbol(CANNONICAL_SYM_INDETERMINATE)
         {
-            return assembled_exp.into_normexpr_unchecked();
+            return assembled_exp;
         }
 
         // Note: base cannot be zero as we filter this case
@@ -632,7 +633,7 @@ fn normalize_raw_mul_handle(pool: &mut ExprPool, args: RawArgsHandle) -> NormExp
             new_args.push(pool.binary_node_with_head_symbol(
                 POW_HEAD,
                 base.as_raw(),
-                assembled_exp,
+                assembled_exp.as_raw(),
             ));
         }
     }
@@ -751,6 +752,21 @@ fn normalize_raw_pow_handle(
                 )
                 .into_normexpr_unchecked()
             }
+        } else if norm_base.view(pool).is_node(pool, POW_HEAD, Some(2)) {
+            let base_args = norm_base.view(pool).get_args().unwrap();
+
+            let lhs = base_args.get(pool, 0).unwrap();
+
+            let rhs = base_args.get(pool, 1).unwrap();
+
+            let exp_num = pool.number(exp_num.clone());
+            let new_exponent = pool
+                .binary_node_with_head_symbol(MUL_HEAD, rhs.as_raw(), exp_num)
+                .normalize(pool)
+                .as_raw();
+
+            pool.binary_node_with_head_symbol(POW_HEAD, lhs.as_raw(), new_exponent)
+                .into_normexpr_unchecked()
         } else {
             pool.binary_node_with_head_symbol(POW_HEAD, norm_base.as_raw(), norm_exponent.as_raw())
                 .into_normexpr_unchecked()

@@ -253,7 +253,7 @@ impl<S> ExprHandle<S> {
         self.id
     }
 
-    fn materialize(&self, pool: &ExprPool) -> Expr<S> {
+    pub fn materialize(&self, pool: &ExprPool) -> Expr<S> {
         match pool.get_obj(self.id()) {
             ExprCell::Atom(atom) => Expr::new_unchecked(ExprKind::Atom {
                 entry: atom.clone(),
@@ -387,10 +387,16 @@ where
             .unwrap_or(false)
     }
 
-    pub fn is_node<T: AsRef<str>>(&self, pool: &ExprPool, head_sym: T, arity: usize) -> bool {
+    pub fn is_node<T: AsRef<str>>(
+        &self,
+        pool: &ExprPool,
+        head_sym: T,
+        arity: Option<usize>,
+    ) -> bool {
         match self {
             Self::Node { head, args } => {
-                head.view(pool).is_symbol(head_sym) && args.len(pool) == arity
+                head.view(pool).is_symbol(head_sym)
+                    && arity.map(|arity| args.len(pool) == arity).unwrap_or(true)
             }
             _ => false,
         }
