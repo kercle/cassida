@@ -1,4 +1,37 @@
-use crate::expr::{Expr, ExprKind};
+use crate::expr::{
+    Expr, ExprKind,
+    pool::{ExprHandle, ExprPool, ExprView},
+};
+
+pub struct ExprHandleTopDownWalker<'a, S> {
+    stack: Vec<ExprHandle<S>>,
+    pool: &'a ExprPool,
+}
+
+impl<'a, S> ExprHandleTopDownWalker<'a, S> {
+    pub fn new(pool: &'a ExprPool, root: ExprHandle<S>) -> Self {
+        Self {
+            stack: vec![root],
+            pool,
+        }
+    }
+}
+
+impl<'a, S: Copy + 'static> Iterator for ExprHandleTopDownWalker<'a, S> {
+    type Item = ExprHandle<S>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let node = self.stack.pop()?;
+        if let ExprView::Node { head, args } = node.view(self.pool) {
+            for a in args.iter(self.pool).rev() {
+                self.stack.push(a);
+            }
+            self.stack.push(head);
+        }
+
+        Some(node)
+    }
+}
 
 pub struct ExprTopDownWalker<'a, S> {
     stack: Vec<&'a Expr<S>>,

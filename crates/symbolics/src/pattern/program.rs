@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 use crate::builtin::*;
-use crate::expr::walk::ExprTopDownWalker;
-use crate::expr::{ExprKind, NormExpr};
+use crate::expr::pool::{ExprPool, ExprView, NormArgsHandle, NormExprHandle};
+use crate::expr::walk::ExprHandleTopDownWalker;
 use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
@@ -24,7 +24,7 @@ pub enum Quantity {
 
 pub enum Instruction {
     Literal {
-        inner: NormExpr,
+        inner: NormExprHandle,
         bind: Option<VarId>,
     },
     Variadic {
@@ -72,46 +72,44 @@ pub enum ArgOrder {
     Multiset,
 }
 
-#[derive(Debug)]
 pub struct MultisetPlan {
-    pub literals: Vec<NormExpr>,
+    pub literals: Vec<NormExprHandle>,
     pub fixed: Vec<InstrId>,
     pub rest: Vec<(VarId, usize)>,
 }
 
-pub struct Compiler {
+pub struct Compiler<'ep> {
     instructions: Vec<Instruction>,
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
-    is_multiset: fn(&NormExpr) -> bool,
+    is_multiset: fn(pool: &ExprPool, expr: NormExprHandle) -> bool,
+    pool: &'ep ExprPool,
 }
 
-fn is_multiset_default(expr: &NormExpr) -> bool {
-    expr.has_head_symbol(ADD_HEAD) || expr.has_head_symbol(MUL_HEAD)
+fn is_multiset_default(pool: &ExprPool, expr: NormExprHandle) -> bool {
+    expr.view(pool).is_node(pool, ADD_HEAD, None) || expr.view(pool).is_node(pool, MUL_HEAD, None)
 }
 
-impl Default for Compiler {
-    fn default() -> Self {
+impl<'ep> Compiler<'ep> {
+    pub fn new(pool: &'ep ExprPool) -> Self {
         Self {
             instructions: Vec::new(),
             var_ids: HashMap::new(),
             vars: Vec::new(),
             is_multiset: is_multiset_default,
+            pool,
         }
     }
-}
 
-impl Compiler {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_multiset_predicate(mut self, f: fn(&NormExpr) -> bool) -> Self {
+    pub fn with_multiset_predicate(
+        mut self,
+        f: fn(pool: &ExprPool, expr: NormExprHandle) -> bool,
+    ) -> Self {
         self.is_multiset = f;
         self
     }
 
-    pub fn compile(mut self, pattern: &NormExpr) -> Program {
+    pub fn compile(mut self, pattern: NormExprHandle) -> Program {
         let entry = self.compile_pattern(pattern, None);
 
         Program {
@@ -138,37 +136,46 @@ impl Compiler {
         id
     }
 
-    fn compile_pattern(&mut self, pat_expr: &NormExpr, bind: Option<VarId>) -> InstrId {
-        use ExprKind::*;
-        match pat_expr.kind() {
+    fn compile_pattern(&mut self, pat_expr: NormExprHandle, bind: Option<VarId>) -> InstrId {
+        use ExprView::*;
+
+        match pat_expr.view(self.pool) {
             Atom { .. } => self.emit(Instruction::Literal {
                 inner: pat_expr.clone(),
                 bind,
             }),
-            Node { args, .. } if Self::is_blank(pat_expr) => {
-                self.compile_blank_with_head_constraint(Quantity::One, args.first(), bind)
+            Node { args, .. } if self.is_blank(pat_expr) => {
+                self.compile_blank_with_head_constraint(Quantity::One, args.get(self.pool, 0), bind)
             }
-            Node { args, .. } if Self::is_blank_seq(pat_expr) => self
-                .compile_blank_with_head_constraint(Quantity::Many { min: 1 }, args.first(), bind),
-            Node { args, .. } if Self::is_blank_null_seq(pat_expr) => self
-                .compile_blank_with_head_constraint(Quantity::Many { min: 0 }, args.first(), bind),
-            Node { args, .. } if Self::is_pattern(pat_expr) => {
-                let [lhs, rhs] = args.as_slice() else {
-                    unreachable!()
-                };
+            Node { args, .. } if self.is_blank_seq(pat_expr) => self
+                .compile_blank_with_head_constraint(
+                    Quantity::Many { min: 1 },
+                    args.get(self.pool, 0),
+                    bind,
+                ),
+            Node { args, .. } if self.is_blank_null_seq(pat_expr) => self
+                .compile_blank_with_head_constraint(
+                    Quantity::Many { min: 0 },
+                    args.get(self.pool, 0),
+                    bind,
+                ),
+            Node { args, .. } if self.is_pattern(pat_expr) => {
+                let lhs = args.get(self.pool, 0).unwrap();
+                let rhs = args.get(self.pool, 1).unwrap();
 
                 // Unwrap is safe here: guaranteed by is_pattern
+                let lhs = lhs.view(self.pool);
                 let bind_var_name = lhs.get_symbol().unwrap();
 
                 let var_id = self.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
             }
-            Node { head, args } if Self::is_pattern_test(pat_expr) => {
-                let [lhs, rhs] = args.as_slice() else {
-                    unreachable!()
-                };
+            Node { head, args } if self.is_pattern_test(pat_expr) => {
+                let lhs = args.get(self.pool, 0).unwrap();
+                let rhs = args.get(self.pool, 1).unwrap();
 
                 // Unwrap is safe here: guaranteed by is_pattern_test
+                let rhs = rhs.view(self.pool);
                 let predicate_symbol = rhs.get_symbol().unwrap();
 
                 let Ok(predicate) = PatternPredicate::from_str(predicate_symbol) else {
@@ -201,7 +208,7 @@ impl Compiler {
     fn compile_blank_with_head_constraint(
         &mut self,
         quantity: Quantity,
-        head_pattern: Option<&NormExpr>,
+        head_pattern: Option<NormExprHandle>,
         bind: Option<VarId>,
     ) -> InstrId {
         let head_pattern = head_pattern.map(|e| self.compile_pattern(e, None));
@@ -218,15 +225,15 @@ impl Compiler {
 
     fn compile_node(
         &mut self,
-        head: &NormExpr,
+        head: NormExprHandle,
         arg_order: ArgOrder,
-        children: &[NormExpr],
+        children: NormArgsHandle,
         bind: Option<VarId>,
     ) -> InstrId {
         let head = Self::compile_pattern(self, head, None);
 
         let pats = children
-            .iter()
+            .iter(self.pool)
             .map(|c| self.compile_pattern(c, None))
             .collect();
         let plan = match arg_order {
@@ -237,56 +244,70 @@ impl Compiler {
         self.emit(Instruction::Node { head, plan, bind })
     }
 
-    fn arg_order(&self, expr: &NormExpr) -> ArgOrder {
-        if (self.is_multiset)(expr) {
+    fn arg_order(&self, expr: NormExprHandle) -> ArgOrder {
+        if (self.is_multiset)(self.pool, expr) {
             ArgOrder::Multiset
         } else {
             ArgOrder::Sequence
         }
     }
 
-    fn is_blank(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK) && args.len() <= 1
+    fn is_blank(&self, expr: NormExprHandle) -> bool {
+        if let ExprView::Node { head, args } = expr.view(self.pool) {
+            head.view(self.pool).is_symbol(HEAD_BLANK) && args.len(self.pool) <= 1
         } else {
             false
         }
     }
 
-    fn is_blank_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK_SEQUENCE) && args.len() <= 1
+    fn is_blank_seq(&self, expr: NormExprHandle) -> bool {
+        if let ExprView::Node { head, args } = expr.view(self.pool) {
+            head.view(self.pool).is_symbol(HEAD_BLANK_SEQUENCE) && args.len(self.pool) <= 1
         } else {
             false
         }
     }
 
-    fn is_blank_null_seq(expr: &NormExpr) -> bool {
-        if let ExprKind::Node { head, args } = expr.kind() {
-            head.matches_symbol(HEAD_BLANK_NULL_SEQUENCE) && args.len() <= 1
+    fn is_blank_null_seq(&self, expr: NormExprHandle) -> bool {
+        if let ExprView::Node { head, args } = expr.view(self.pool) {
+            head.view(self.pool).is_symbol(HEAD_BLANK_NULL_SEQUENCE) && args.len(self.pool) <= 1
         } else {
             false
         }
     }
 
-    fn is_pattern(expr: &NormExpr) -> bool {
-        if !expr.is_application_of(HEAD_PATTERN, 2) {
-            return false;
+    fn is_pattern(&self, expr: NormExprHandle) -> bool {
+        if let ExprView::Node { head, args } = expr.view(self.pool) {
+            head.view(self.pool).is_symbol(HEAD_PATTERN)
+                && args.len(self.pool) == 2
+                && args
+                    .get(self.pool, 1)
+                    .unwrap()
+                    .view(self.pool)
+                    .get_symbol()
+                    .is_some()
+        } else {
+            false
         }
-
-        expr.get_arg(0).unwrap().is_symbol()
     }
 
-    fn is_pattern_test(expr: &NormExpr) -> bool {
-        if !expr.is_application_of(HEAD_PATTERN_TEST, 2) {
-            return false;
+    fn is_pattern_test(&self, expr: NormExprHandle) -> bool {
+        if let ExprView::Node { head, args } = expr.view(self.pool) {
+            head.view(self.pool).is_symbol(HEAD_PATTERN_TEST)
+                && args.len(self.pool) == 2
+                && args
+                    .get(self.pool, 1)
+                    .unwrap()
+                    .view(self.pool)
+                    .get_symbol()
+                    .is_some()
+        } else {
+            false
         }
-
-        expr.get_arg(1).unwrap().is_symbol()
     }
 
-    fn is_literal(&self, root: &NormExpr) -> bool {
-        for expr in ExprTopDownWalker::new(root) {
+    fn is_literal(&self, root: NormExprHandle) -> bool {
+        for expr in ExprHandleTopDownWalker::new(&self.pool, root) {
             if matches!(self.arg_order(expr), ArgOrder::Multiset) {
                 // Since multisets can be ordered arbitrary
                 // expressions can match, even if the don't
@@ -295,11 +316,11 @@ impl Compiler {
                 return false;
             }
 
-            if Self::is_blank(expr)
-                || Self::is_blank_null_seq(expr)
-                || Self::is_blank_seq(expr)
-                || Self::is_pattern(expr)
-                || Self::is_pattern_test(expr)
+            if self.is_blank(expr)
+                || self.is_blank_null_seq(expr)
+                || self.is_blank_seq(expr)
+                || self.is_pattern(expr)
+                || self.is_pattern_test(expr)
             {
                 return false;
             }

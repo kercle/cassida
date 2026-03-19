@@ -321,7 +321,11 @@ impl<S> ArgsHandle<S> {
 }
 
 impl<S: Copy + 'static> ArgsHandle<S> {
-    pub(crate) fn iter(self, pool: &ExprPool) -> impl ExactSizeIterator<Item = ExprHandle<S>> + '_ {
+    pub(crate) fn iter(
+        self,
+        pool: &ExprPool,
+    ) -> impl ExactSizeIterator<Item = ExprHandle<S>> + DoubleEndedIterator<Item = ExprHandle<S>> + '_
+    {
         debug_assert!(pool.pool_id == self.pool_id);
 
         let pool_id = self.pool_id;
