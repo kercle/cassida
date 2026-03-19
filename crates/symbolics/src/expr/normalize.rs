@@ -9,8 +9,9 @@ use crate::{
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
     expr::{
-        ExprKind, ExprPool, ExprView, NormExpr, NormExprHandle, RawArgsHandle, RawExpr,
-        RawExprHandle, ops::cmp_expr_handle,
+        ExprKind, NormExpr, RawExpr,
+        ops::cmp_expr_handle,
+        pool::{ExprPool, ExprView, NormExprHandle, RawArgsHandle, RawExprHandle},
     },
 };
 

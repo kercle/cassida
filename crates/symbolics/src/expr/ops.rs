@@ -1,6 +1,9 @@
 use std::cmp::Ordering;
 
-use crate::expr::{Expr, ExprHandle, ExprKind, ExprPool, ExprView};
+use crate::expr::{
+    Expr, ExprKind,
+    pool::{ExprHandle, ExprPool, ExprView},
+};
 
 fn cmp_expr<S>(lhs: &ExprKind<Expr<S>>, rhs: &ExprKind<Expr<S>>) -> Ordering {
     use ExprKind::*;
@@ -54,7 +57,11 @@ impl<S> Ord for Expr<S> {
 
 impl<S> Eq for Expr<S> {}
 
-pub(crate) fn cmp_expr_handle<S: Copy>(pool: &ExprPool, lhs: &ExprHandle<S>, rhs: &ExprHandle<S>) -> Ordering {
+pub(crate) fn cmp_expr_handle<S: Copy>(
+    pool: &ExprPool,
+    lhs: &ExprHandle<S>,
+    rhs: &ExprHandle<S>,
+) -> Ordering {
     use ExprView::*;
 
     let lhs = lhs.view(pool);
