@@ -41,3 +41,14 @@ macro_rules! rules {
         r
     }};
 }
+
+macro_rules! timed_eprintln {
+    ($($arg:tt)*) => {{
+        use std::sync::OnceLock;
+        use std::time::Instant;
+        static START: OnceLock<Instant> = OnceLock::new();
+        let start = START.get_or_init(Instant::now);
+        let elapsed = start.elapsed().as_millis();
+        eprintln!("[{elapsed}ms] {}", format_args!($($arg)*));
+    }};
+}
