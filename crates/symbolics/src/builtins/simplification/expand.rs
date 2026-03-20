@@ -113,6 +113,24 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
         },
     );
 
+    let rw = rw.with_rule(
+        norm_expr!(Expand[a_ + r__]),
+        move |ctx: &Environment<'_, '_>| {
+            let a = ctx.get_one("a").unwrap();
+            let r = ctx.get_seq("r").unwrap();
+
+            let mut args = Vec::with_capacity(r.len() + 1);
+
+            args.push(RawExpr::new_unary_node(EXPAND_HEAD, a.clone().into_raw()));
+            args.extend(
+                r.iter()
+                    .map(|&a| RawExpr::new_unary_node(EXPAND_HEAD, a.clone().into_raw())),
+            );
+
+            RawExpr::new_node(ADD_HEAD, args).normalize()
+        },
+    );
+
     let rules = vec![
         (
             norm_expr!(Expand[a_ + b__]),
