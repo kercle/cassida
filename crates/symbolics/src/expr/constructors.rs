@@ -7,9 +7,15 @@ use crate::{
     pattern::BLANK_ONE_HEAD,
 };
 
+pub static EXPR_PLACEHOLDER: std::sync::LazyLock<RawExpr> = std::sync::LazyLock::new(RawExpr::new_placeholder);
+
 impl RawExpr {
     pub fn new(kind: ExprKind<RawExpr>) -> Self {
         Self::new_unchecked(kind)
+    }
+
+    pub fn new_placeholder() -> Self {
+        Self::new_symbol("")
     }
 
     pub fn new_node<T: Into<RawExpr>>(head: T, args: Vec<RawExpr>) -> Self {

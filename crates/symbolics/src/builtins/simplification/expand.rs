@@ -4,7 +4,7 @@ use crate::{
     atom::Atom,
     builtin::{ADD_HEAD, MUL_HEAD, POW_HEAD},
     builtins::traits::{BuiltIn, BuiltInDoc, PatternDoc},
-    expr::{ExprKind, NormExpr, RawExpr},
+    expr::{ExprKind, NormExpr, RawExpr, constructors::EXPR_PLACEHOLDER},
     kernel::Shared,
     norm_expr,
     pattern::environment::Environment,
@@ -114,18 +114,19 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
     );
 
     let rw = rw.with_rule(
-        norm_expr!(Expand[a_ + r__]),
+        norm_expr!(Expand[Pattern[sum, _ + __]]),
         move |ctx: &Environment<'_, '_>| {
-            let a = ctx.get_one("a").unwrap();
-            let r = ctx.get_seq("r").unwrap();
+            let ExprKind::Node { mut args, .. } =
+                ctx.get_one("sum").unwrap().clone().into_raw().into_kind()
+            else {
+                unreachable!();
+            };
 
-            let mut args = Vec::with_capacity(r.len() + 1);
-
-            args.push(RawExpr::new_unary_node(EXPAND_HEAD, a.clone().into_raw()));
-            args.extend(
-                r.iter()
-                    .map(|&a| RawExpr::new_unary_node(EXPAND_HEAD, a.clone().into_raw())),
-            );
+            for arg in args.iter_mut() {
+                let old_expr = std::mem::replace(arg, EXPR_PLACEHOLDER.clone());
+                let new_expr = RawExpr::new_unary_node(EXPAND_HEAD, old_expr);
+                *arg = new_expr;
+            }
 
             RawExpr::new_node(ADD_HEAD, args).normalize()
         },
