@@ -702,6 +702,9 @@ impl Compiler {
         program_b: &Program,
         bind_b: Option<VarId>,
     ) -> bool {
+        // Check if two (optional) bindings are identical in terms
+        // of their symbols.
+
         if let (Some(var_a), Some(var_b)) = (bind_a, bind_b) {
             program_a.var(var_a) == program_b.var(var_b)
         } else {
