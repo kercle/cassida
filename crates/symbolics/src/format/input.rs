@@ -1,4 +1,5 @@
 use crate::builtin::*;
+use crate::builtins::elementary::arithmetic::factorial::FACTORIAL_HEAD;
 use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
@@ -19,6 +20,7 @@ enum Position {
     DivRhs,     // Denominator of Div
     PowBase,    // Base of Pow
     PowExp,     // Exponent of Pow
+    FactArg,    // Factorial argument
     NegOperand, // Operand of unary Neg
     FnArg,      // Argument of a function
 }
@@ -74,6 +76,16 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
                 || expr.has_head_symbol(MUL_HEAD)
                 || expr.is_application_of(DIV_HEAD, 2)
                 || expr.is_application_of(NEG_HEAD, 1)
+        }
+
+        Position::FactArg => {
+            // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
+            expr.has_head_symbol(ADD_HEAD)
+                || expr.is_application_of(SUB_HEAD, 2)
+                || expr.has_head_symbol(MUL_HEAD)
+                || expr.is_application_of(DIV_HEAD, 2)
+                || expr.is_application_of(NEG_HEAD, 1)
+                || expr.is_application_of(POW_HEAD, 2)
         }
     }
 }
@@ -181,6 +193,14 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             let exp = expr_to_input_with_pos(&args[1], Position::PowExp);
             format!("{base}^{exp}")
         }
+
+        ExprKind::Node { args, .. } if expr.is_application_of(FACTORIAL_HEAD, 1) => {
+            format!(
+                "{}!",
+                expr_to_input_with_pos(&args[0], Position::FactArg)
+            )
+        }
+
         ExprKind::Node { head, args } => {
             let Some(name) = head.get_symbol() else {
                 unimplemented!()

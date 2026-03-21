@@ -1,4 +1,5 @@
 use crate::builtin::*;
+use crate::builtins::elementary::arithmetic::factorial::FACTORIAL_HEAD;
 use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
@@ -20,6 +21,7 @@ enum Position {
     SubRhs,     // Right-hand side of Sub; needs parens for add/sub/neg
     MulOperand, // Any operand of Mul
     DivChild,   // Numerator or denominator of Div
+    FactArg,    // Factorial argument
     PowBase,    // Base of Pow
     PowExp,     // Exponent of Pow
     NegOperand, // Operand of unary Neg
@@ -55,6 +57,15 @@ fn needs_parens(expr: &RawExpr, pos: Position) -> bool {
 
         Position::PowBase => {
             // (a+b)^n,  (a*b)^n,  (a/b)^n,  (-a)^n
+            expr.has_head_symbol(ADD_HEAD)
+                || expr.is_application_of(SUB_HEAD, 2)
+                || expr.has_head_symbol(MUL_HEAD)
+                || expr.is_application_of(DIV_HEAD, 2)
+                || expr.is_application_of(NEG_HEAD, 1)
+        }
+
+        Position::FactArg => {
+            // (a+b)!,  (a*b)!,  (a/b)!,  (-a)!
             expr.has_head_symbol(ADD_HEAD)
                 || expr.is_application_of(SUB_HEAD, 2)
                 || expr.has_head_symbol(MUL_HEAD)
@@ -217,6 +228,13 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             let base = expr_to_latex_with_pos(&args[0], Position::PowBase);
             let exp = expr_to_latex_with_pos(&args[1], Position::PowExp);
             format!("{{{base}}}^{{{exp}}}")
+        }
+
+        ExprKind::Node { args, .. } if expr.is_application_of(FACTORIAL_HEAD, 1) => {
+            format!(
+                "{}!",
+                expr_to_latex_with_pos(&args[0], Position::FactArg)
+            )
         }
 
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SQRT, 1) => {
