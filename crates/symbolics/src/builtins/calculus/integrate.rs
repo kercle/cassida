@@ -93,22 +93,22 @@ fn build_rewriter() -> Rewriter {
             ]),
             raw_expr!(c * x),
         ),
-        (
-            norm_expr!(
-            Integrate[
-                x_ * f__,
-                PatternTest[x_, IsSymbol]
-            ]),
-            raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
-        ),
-        (
-            norm_expr!(
-            Integrate[
-                x_^PatternTest[n_, IsPositiveInteger] * f__,
-                PatternTest[x_, IsSymbol]
-            ]),
-            raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
-        ),
+        // (
+        //     norm_expr!(
+        //     Integrate[
+        //         x_ * f__,
+        //         PatternTest[x_, IsSymbol]
+        //     ]),
+        //     raw_expr!(x * Integrate[Mul[f], x] - Integrate[Integrate[Mul[f], x], x]),
+        // ),
+        // (
+        //     norm_expr!(
+        //     Integrate[
+        //         x_^PatternTest[n_, IsPositiveInteger] * f__,
+        //         PatternTest[x_, IsSymbol]
+        //     ]),
+        //     raw_expr!(x^n * Integrate[Mul[f], x] - n * Integrate[x^(n-1) * Integrate[Mul[f], x], x]),
+        // ),
         // =============== Powers ===============
         (
             norm_expr!(
