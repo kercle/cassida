@@ -73,11 +73,10 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                     POW_HEAD,
                     sum.clone().into_raw(),
                     m.clone().into_raw(),
-                )
-                .normalize();
+                );
             };
 
-            RawExpr::new_unary_node(EXPAND_HEAD, expand_multinomial(sum, None, n)).normalize()
+            RawExpr::new_unary_node(EXPAND_HEAD, expand_multinomial(sum, None, n))
         },
     );
 
@@ -104,15 +103,13 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                     POW_HEAD,
                     sum.clone().into_raw(),
                     m.clone().into_raw(),
-                )
-                .normalize();
+                );
             };
 
             RawExpr::new_unary_node(
                 EXPAND_HEAD,
                 expand_multinomial(sum, Some(overall_factors), n),
             )
-            .normalize()
         },
     );
 
@@ -131,7 +128,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                 *arg = new_expr;
             }
 
-            RawExpr::new_node(ADD_HEAD, args).normalize()
+            RawExpr::new_node(ADD_HEAD, args)
         },
     );
 
@@ -147,11 +144,11 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
         (norm_expr!(Expand[a_]), raw_expr!(a)),
     ];
 
-    rw.with_rules(rules.into_iter().map(|(pat, repl)| {
-        (pat, move |ctx: &Environment<'_, '_>| {
-            ctx.fill(repl.clone()).normalize()
-        })
-    }))
+    rw.with_rules(
+        rules
+            .into_iter()
+            .map(|(pat, repl)| (pat, move |ctx: &Environment<'_, '_>| ctx.fill(repl.clone()))),
+    )
 }
 
 struct CombinationGenerator {

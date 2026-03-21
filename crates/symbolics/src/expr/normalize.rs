@@ -8,6 +8,7 @@ use crate::{
         ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE,
         DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
+    builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD,
     expr::{ExprKind, NormExpr, RawExpr},
 };
 
@@ -83,10 +84,12 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             let one_half = Number::new_rational_from_i64(1, 2).unwrap();
             RawExpr::new_binary_node(POW_HEAD, arg, one_half.into()).normalize()
         }
-        Some(CANNONICAL_HEAD_HOLD) if args.len() == 1 => NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.into_normexpr_unsafe()),
-            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
-        }),
+        Some(CANNONICAL_HEAD_HOLD) | Some(HOLD_PATTERN_HEAD) if args.len() == 1 => {
+            NormExpr::new_unchecked(ExprKind::Node {
+                head: Box::new(head_expr.into_normexpr_unsafe()),
+                args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
+            })
+        }
         _ => NormExpr::new_unchecked(ExprKind::Node {
             head: Box::new(head_expr.normalize()),
             args: args.into_iter().map(|a| a.normalize()).collect(),
@@ -377,6 +380,13 @@ mod normalize_comprehensive_tests {
     fn test_hold_does_not_evaluate() {
         let expr = raw_expr!(Hold[1 + 1]).normalize();
         let expected = raw_expr!(Hold[1 + 1]);
+        assert_eq!(expr.into_raw(), expected);
+    }
+
+    #[test]
+    fn test_hold_pattern_does_not_evaluate() {
+        let expr = raw_expr!(HoldPattern[Add[x__]]).normalize();
+        let expected = raw_expr!(HoldPattern[Add[x__]]);
         assert_eq!(expr.into_raw(), expected);
     }
 

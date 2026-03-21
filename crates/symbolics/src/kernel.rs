@@ -124,11 +124,8 @@ impl Kernel {
         let ast_in = parse(input.as_ref())
             .map_err(|err| KernelError::EvaluationError(format!("Error parsing input: {}", err)))?;
 
-        // TODO: release all holds here is just a workaround until rules are
-        // properly integrate into the core of the expression rewriting.
-        Ok(self
-            .apply_auto_builtins_until_stable(RawExpr::from(ast_in).normalize(), 100)
-            .release_all_holds())
+        let input_expr = RawExpr::from(ast_in);
+        Ok(self.apply_auto_builtins_until_stable(input_expr.normalize(), 100))
     }
 
     fn apply_auto_builtins_until_stable(&self, mut expr: NormExpr, limit: usize) -> NormExpr {

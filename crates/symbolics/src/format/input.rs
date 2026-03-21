@@ -132,11 +132,21 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             )
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => args
-            .iter()
-            .map(|arg| expr_to_input_with_pos(arg, Position::AddOperand))
-            .collect::<Vec<_>>()
-            .join(" + "),
+        ExprKind::Node { args, .. } if expr.has_head_symbol(ADD_HEAD) => {
+            if args.is_empty() {
+                return format!("{ADD_HEAD}[]");
+            } else if args.len() == 1 {
+                return format!(
+                    "{ADD_HEAD}[{}]",
+                    expr_to_input_with_pos(args.first().unwrap(), Position::FnArg)
+                );
+            } else {
+                args.iter()
+                    .map(|arg| expr_to_input_with_pos(arg, Position::AddOperand))
+                    .collect::<Vec<_>>()
+                    .join(" + ")
+            }
+        }
 
         ExprKind::Node { args, .. } if expr.is_application_of(SUB_HEAD, 2) => {
             let lhs = expr_to_input_with_pos(&args[0], Position::SubLhs);
@@ -144,11 +154,21 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{lhs} - {rhs}")
         }
 
-        ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => args
-            .iter()
-            .map(|arg| expr_to_input_with_pos(arg, Position::MulOperand))
-            .collect::<Vec<_>>()
-            .join(" * "),
+        ExprKind::Node { args, .. } if expr.has_head_symbol(MUL_HEAD) => {
+            if args.is_empty() {
+                return format!("{MUL_HEAD}[]");
+            } else if args.len() == 1 {
+                return format!(
+                    "{MUL_HEAD}[{}]",
+                    expr_to_input_with_pos(args.first().unwrap(), Position::FnArg)
+                );
+            } else {
+                args.iter()
+                    .map(|arg| expr_to_input_with_pos(arg, Position::MulOperand))
+                    .collect::<Vec<_>>()
+                    .join(" * ")
+            }
+        }
 
         ExprKind::Node { args, .. } if expr.is_application_of(DIV_HEAD, 2) => format!(
             "{}/{}",
@@ -244,5 +264,14 @@ mod tests {
     fn test_neg_sum_parens() {
         let expr = RawExpr::from(parse("-(a + b)").unwrap());
         assert_eq!(render(&expr), "-(a + b)");
+    }
+
+    #[test]
+    fn test_hold_pattern_with_add() {
+        let expr = RawExpr::from(parse("HoldPattern[Add[x__]]").unwrap()).normalize();
+        assert_eq!(
+            render(&expr.into_raw()),
+            "HoldPattern[Add[Pattern[x, BlankSeq[]]]]"
+        );
     }
 }

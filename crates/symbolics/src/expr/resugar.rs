@@ -98,6 +98,12 @@ impl NormExpr {
 
     fn resugar_add(args: Vec<Self>) -> RawExpr {
         assert!(!args.is_empty());
+        if args.is_empty() || args.len() == 1 {
+            // This is for the case when the addition is wrapped in
+            // Hold or HoldPattern.
+            // Otherwise, normalization would collapse those.
+            return RawExpr::new_node(ADD_HEAD, args.into_iter().map(|a| a.into_raw()).collect());
+        }
 
         let mut positives = Vec::new();
         let mut negatives = Vec::new();
@@ -147,6 +153,13 @@ impl NormExpr {
     }
 
     fn resugar_mul(args: Vec<Self>) -> RawExpr {
+        if args.is_empty() || args.len() == 1 {
+            // This is for the case when the addition is wrapped in
+            // Hold or HoldPattern.
+            // Otherwise, normalization would collapse those.
+            return RawExpr::new_node(MUL_HEAD, args.into_iter().map(|a| a.into_raw()).collect());
+        }
+
         let mut numerator = FactorList::new();
         let mut denominator = FactorList::new();
 
@@ -280,5 +293,12 @@ mod tests {
         let expr = norm_expr! { x - y };
 
         assert_eq!(expr.resugar(), raw_expr! { Sub[x, y] });
+    }
+
+    #[test]
+    fn test_resugar_handles_hold_pattern() {
+        let expr = norm_expr! { HoldPattern[Add[x__]] };
+
+        assert_eq!(expr.resugar(), raw_expr! { HoldPattern[Add[x__]] });
     }
 }
