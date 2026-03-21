@@ -89,6 +89,9 @@ impl Debug for Instruction {
             Literal { inner, bind } => {
                 write!(f, "literal{} {inner:?}", format_bind(bind))
             }
+            Alternatives { branches, bind } => {
+                write!(f, "alternatives{} {branches:?}", format_bind(bind))
+            }
             Variadic {
                 min_len,
                 head_pattern,

@@ -48,6 +48,10 @@ pub enum Instruction {
         plan: ArgPlan,
         bind: Option<VarId>,
     },
+    Alternatives {
+        branches: Vec<InstrId>,
+        bind: Option<VarId>,
+    },
 }
 
 impl Instruction {
@@ -59,6 +63,7 @@ impl Instruction {
             Wildcard { bind, .. } => *bind,
             Predicate { bind, .. } => *bind,
             Node { bind, .. } => *bind,
+            Alternatives { bind, .. } => *bind,
         }
     }
 }

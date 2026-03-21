@@ -33,6 +33,13 @@ enum Frame<'p, 's> {
         instr: InstrId,
         subject: &'s NormExpr,
     },
+    MatchBranches {
+        instr: InstrId,
+    },
+    ResumeNextBranch {
+        instr: InstrId,
+        next_branch: usize,
+    },
     MatchSequence {
         instrs: &'p [InstrId],
         subjects: &'s [NormExpr],
@@ -75,6 +82,11 @@ impl<'p, 's> Frame<'p, 's> {
             Frame::Exec { instr, subject } => Frame::Exec {
                 instr: *instr,
                 subject,
+            },
+            Frame::MatchBranches { instr } => Frame::MatchBranches { instr: *instr },
+            Frame::ResumeNextBranch { instr, next_branch } => Frame::ResumeNextBranch {
+                instr: *instr,
+                next_branch: *next_branch,
             },
             Frame::MatchSequence { instrs, subjects } => Frame::MatchSequence { instrs, subjects },
             Frame::ResumeMatchSequence {
@@ -181,6 +193,8 @@ impl<'p, 's> Runtime<'p, 's> {
         use Frame::*;
         match frame {
             Exec { instr, subject } => self.exec(instr, subject),
+            MatchBranches { instr } => todo!(),
+            ResumeNextBranch { instr, next_branch } => todo!(),
             MatchSequence { instrs, subjects } => self.match_sequence(instrs, subjects),
             ResumeMatchSequence {
                 instrs,
@@ -222,6 +236,9 @@ impl<'p, 's> Runtime<'p, 's> {
         use Instruction::*;
         match instr {
             Literal { inner, bind } => self.match_literal(inner, subject, *bind),
+            Alternatives { branches, bind } => {
+                todo!()
+            }
             Node { head, plan, .. } => {
                 let ExprKind::Node {
                     head: subject_head,
@@ -313,6 +330,8 @@ impl<'p, 's> Runtime<'p, 's> {
             self.push_frame(Frame::BindOne { bind_var, subject });
         }
     }
+
+    // ---- Branching ----
 
     // ---- Literal Matching ----
 
