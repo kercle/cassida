@@ -620,15 +620,33 @@ impl Compiler {
         program_b: &Program,
         instr_b: InstrId,
     ) -> InstrId {
-        let branch_a = self.import_sub_program(program_a, instr_a);
-        let branch_b = self.import_sub_program(program_b, instr_b);
+        let mut branches = Vec::new();
 
-        self.emit(Instruction::Alternatives {
-            branches: vec![
-                (program_a.pattern_id(), branch_a),
-                (program_b.pattern_id(), branch_b),
-            ],
-        })
+        self.collect_branches(&mut branches, program_a, instr_a);
+        self.collect_branches(&mut branches, program_b, instr_b);
+
+        self.emit(Instruction::Alternatives { branches })
+    }
+
+    fn collect_branches(
+        &mut self,
+        branches: &mut Vec<(PatternId, InstrId)>,
+        program: &Program,
+        instr: InstrId,
+    ) {
+        if let Instruction::Alternatives {
+            branches: sub_branches,
+        } = &program.instructions[instr]
+        {
+            for (pat_idx, branch) in sub_branches {
+                let branch = self.import_sub_program(program, *branch);
+
+                branches.push((*pat_idx, branch));
+            }
+        } else {
+            let branch = self.import_sub_program(program, instr);
+            branches.push((program.pattern_id(), branch));
+        }
     }
 
     fn import_sub_program(&mut self, program: &Program, instr_pos: InstrId) -> InstrId {
@@ -686,7 +704,7 @@ impl Compiler {
                     .collect();
 
                 self.emit(Alternatives { branches })
-            },
+            }
             Predicate { .. } => todo!(),
         }
     }
