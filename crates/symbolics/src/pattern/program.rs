@@ -44,6 +44,7 @@ pub enum Quantity {
     Many { min: usize },
 }
 
+#[derive(Clone)]
 pub enum Instruction {
     Literal {
         inner: NormExpr,
@@ -87,9 +88,38 @@ impl Instruction {
     }
 }
 
+#[derive(Clone)]
 pub enum ArgPlan {
     Sequence(Vec<InstrId>),
     Multiset(Vec<InstrId>),
+}
+
+impl ArgPlan {
+    pub fn len(&self) -> usize {
+        match self {
+            ArgPlan::Sequence(a) => a.len(),
+            ArgPlan::Multiset(a) => a.len(),
+        }
+    }
+
+    pub fn iter(&self) -> core::slice::Iter<'_, InstrId> {
+        match self {
+            ArgPlan::Sequence(a) => a.iter(),
+            ArgPlan::Multiset(a) => a.iter(),
+        }
+    }
+}
+
+impl PartialEq for ArgPlan {
+    fn eq(&self, other: &ArgPlan) -> bool {
+        use ArgPlan::*;
+
+        match (self, other) {
+            (Sequence(a), Sequence(b)) => a.len() == b.len(),
+            (Multiset(a), Multiset(b)) => a.len() == b.len(),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -350,9 +380,307 @@ impl Compiler {
         true
     }
 
-    // pub fn merge(mut self, program_a: Program, program_b: Program) -> Program {
-    //     let
-    // }
+    pub fn merge(mut self, program_a: Program, program_b: Program) -> Program {
+        let entry = self.merge_inner(&program_a, program_a.entry(), &program_b, program_b.entry());
 
-    // fn merge_
+        Program {
+            entry_pattern_id: self.pattern_id,
+            entry,
+            instructions: self.instructions,
+            vars: self.vars,
+            var_ids: self.var_ids,
+        }
+    }
+
+    fn merge_inner(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        use Instruction::*;
+
+        match (
+            program_a.instruction(instr_a).unwrap(),
+            program_b.instruction(instr_b).unwrap(),
+        ) {
+            (Literal { .. }, Literal { .. }) => {
+                self.merge_literals(program_a, instr_a, program_b, instr_b)
+            }
+            (
+                Variadic {
+                    min_len: min_len_a,
+                    head_pattern: head_pattern_a,
+                    bind: bind_a,
+                },
+                Variadic {
+                    min_len: min_len_b,
+                    head_pattern: head_pattern_b,
+                    bind: bind_b,
+                },
+            ) => {
+                if min_len_a != min_len_b
+                    || !Self::same_bind(program_a, *bind_a, program_b, *bind_b)
+                {
+                    self.branch(program_a, instr_a, program_b, instr_b)
+                } else {
+                    let bind = if let Some(bind_a) = bind_a {
+                        Some(self.bind_name_id(program_a.var(*bind_a).unwrap()))
+                    } else {
+                        None
+                    };
+
+                    let (Some(head_instr_a), Some(head_instr_b)) = (head_pattern_a, head_pattern_b)
+                    else {
+                        return self.branch(program_a, instr_a, program_b, instr_b);
+                    };
+
+                    let head_pattern =
+                        self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
+
+                    self.emit(Instruction::Variadic {
+                        min_len: *min_len_a,
+                        head_pattern: Some(head_pattern),
+                        bind,
+                    })
+                }
+            }
+            (
+                Wildcard {
+                    head_pattern: head_pattern_a,
+                    bind: bind_a,
+                },
+                Wildcard {
+                    head_pattern: head_pattern_b,
+                    bind: bind_b,
+                },
+            ) => {
+                if !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+                    return self.branch(program_a, instr_a, program_b, instr_b);
+                }
+
+                let bind = if let Some(bind_a) = bind_a {
+                    Some(self.bind_name_id(program_a.var(*bind_a).unwrap()))
+                } else {
+                    None
+                };
+
+                match (head_pattern_a, head_pattern_b) {
+                    (Some(head_instr_a), Some(head_instr_b)) => {
+                        let head_pattern =
+                            self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
+
+                        self.emit(Instruction::Wildcard {
+                            head_pattern: Some(head_pattern),
+                            bind,
+                        })
+                    }
+                    (None, None) => self.emit(Instruction::Wildcard {
+                        head_pattern: None,
+                        bind,
+                    }),
+                    _ => self.branch(program_a, instr_a, program_b, instr_b),
+                }
+            }
+            (Predicate { .. }, Predicate { .. }) => todo!(),
+            (Node { .. }, Node { .. }) => self.merge_nodes(program_a, instr_a, program_b, instr_b),
+            (Alternatives { .. }, Alternatives { .. }) => todo!(),
+            _ => self.branch(program_a, instr_a, program_b, instr_b),
+        }
+    }
+
+    fn merge_literals(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Literal {
+            inner: inner_a,
+            bind: bind_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Literal {
+            inner: inner_b,
+            bind: bind_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if inner_a != inner_b || !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+            self.branch(program_a, instr_a, program_b, instr_b)
+        } else {
+            if let Some(bind_a) = bind_a {
+                self.bind_name_id(program_a.var(*bind_a).unwrap());
+            }
+
+            self.import_sub_program(program_a, instr_a)
+        }
+    }
+
+    fn merge_nodes(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::Node {
+            head: head_a,
+            plan: plan_a,
+            bind: bind_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::Node {
+            head: head_b,
+            plan: plan_b,
+            bind: bind_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if plan_a != plan_b || !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
+            return self.branch(program_a, instr_a, program_b, instr_b);
+        }
+
+        let instructions_checkpoint = self.instructions.len();
+
+        let merged_head_instr = self.merge_inner(program_a, *head_a, program_b, *head_b);
+
+        let mut branch_count = if matches!(
+            self.instructions[merged_head_instr],
+            Instruction::Alternatives { .. }
+        ) {
+            1
+        } else {
+            0
+        };
+
+        debug_assert!(plan_a.len() == plan_b.len());
+
+        let mut merged_plan_instrs = Vec::with_capacity(plan_a.len());
+        for (arg_instr_a, arg_instr_b) in plan_a.iter().zip(plan_b.iter()) {
+            let instr = self.merge_inner(program_a, *arg_instr_a, program_b, *arg_instr_b);
+
+            if matches!(self.instructions[instr], Instruction::Alternatives { .. }) {
+                if branch_count == 1 {
+                    self.instructions.truncate(instructions_checkpoint);
+                    return self.branch(program_a, instr_a, program_b, instr_b);
+                }
+
+                branch_count += 1;
+            }
+
+            merged_plan_instrs.push(instr);
+        }
+
+        let plan = match plan_a {
+            ArgPlan::Multiset { .. } => ArgPlan::Multiset(merged_plan_instrs),
+            ArgPlan::Sequence { .. } => ArgPlan::Sequence(merged_plan_instrs),
+        };
+
+        if let Some(bind_a) = bind_a {
+            self.bind_name_id(program_a.var(*bind_a).unwrap());
+        }
+
+        self.emit(Instruction::Node {
+            head: merged_head_instr,
+            plan,
+            bind: *bind_a,
+        })
+    }
+
+    fn same_bind(
+        program_a: &Program,
+        bind_a: Option<VarId>,
+        program_b: &Program,
+        bind_b: Option<VarId>,
+    ) -> bool {
+        if let (Some(var_a), Some(var_b)) = (bind_a, bind_b) {
+            program_a.var(var_a) == program_b.var(var_b)
+        } else {
+            bind_a == bind_b
+        }
+    }
+
+    fn branch(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let branch_a = self.import_sub_program(program_a, instr_a);
+        let branch_b = self.import_sub_program(program_b, instr_b);
+
+        self.emit(Instruction::Alternatives {
+            branches: vec![
+                (program_a.pattern_id(), branch_a),
+                (program_b.pattern_id(), branch_b),
+            ],
+        })
+    }
+
+    fn import_sub_program(&mut self, program: &Program, instr_pos: InstrId) -> InstrId {
+        use Instruction::*;
+
+        match program.instruction(instr_pos).unwrap() {
+            Literal { inner, bind } => {
+                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                self.emit(Literal {
+                    inner: inner.clone(),
+                    bind,
+                })
+            }
+            Node { head, plan, bind } => {
+                let head = self.import_sub_program(program, *head);
+
+                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+
+                let plan_instrs = plan
+                    .iter()
+                    .map(|instr| self.import_sub_program(program, *instr))
+                    .collect();
+
+                let plan = match plan {
+                    ArgPlan::Multiset { .. } => ArgPlan::Multiset(plan_instrs),
+                    ArgPlan::Sequence { .. } => ArgPlan::Sequence(plan_instrs),
+                };
+
+                self.emit(Node { head, plan, bind })
+            }
+            Wildcard { head_pattern, bind } => {
+                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let head_pattern = head_pattern.map(|p| self.import_sub_program(program, p));
+
+                self.emit(Wildcard { head_pattern, bind })
+            }
+            Variadic {
+                min_len,
+                head_pattern,
+                bind,
+            } => {
+                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let head_pattern = head_pattern.map(|p| self.import_sub_program(program, p));
+
+                self.emit(Variadic {
+                    min_len: *min_len,
+                    head_pattern,
+                    bind,
+                })
+            }
+            Alternatives { .. } => todo!(),
+            Predicate { .. } => todo!(),
+        }
+    }
 }
