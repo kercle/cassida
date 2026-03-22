@@ -45,6 +45,7 @@ impl Kernel {
         self.register_builtin_default::<builtins::elementary::arithmetic::Sub>(false);
         self.register_builtin_default::<builtins::elementary::arithmetic::Mul>(false);
         self.register_builtin_default::<builtins::elementary::arithmetic::Div>(false);
+        self.register_builtin_default::<builtins::elementary::arithmetic::Pow>(false);
         self.register_builtin_default::<builtins::elementary::arithmetic::Factorial>(false);
 
         self.register_builtin_default::<builtins::scoping::Compound>(false);

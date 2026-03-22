@@ -5,8 +5,8 @@ use numbers::Number;
 use crate::{
     atom::Atom,
     builtin::{
-        ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_INDETERMINATE,
-        DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
+        ADD_HEAD, CANNONICAL_HEAD_HOLD, CANNONICAL_HEAD_SQRT, CANNONICAL_SYM_ABSENT,
+        CANNONICAL_SYM_INDETERMINATE, DIV_HEAD, MUL_HEAD, NEG_HEAD, POW_HEAD, SUB_HEAD,
     },
     builtins::{
         elementary::arithmetic::factorial::FACTORIAL_HEAD,
@@ -48,6 +48,16 @@ impl NormExpr {
 }
 
 fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
+    // Absent is a special symbol used in pattern matching optionals
+    // Usually, it is just removed, but we want Pow[x, Absent] to
+    // reduce to x, while Pow[Absent, x] reduces to Pow[x]. Contrary
+    // to Mathematica, Cassidoid does not normalize Pow[x] to x.
+    let args = if head_expr.matches_symbol(POW_HEAD) && args.len() == 2 {
+        args
+    } else {
+        filter_absent(args)
+    };
+
     match head_expr.get_symbol() {
         Some(ADD_HEAD) => normalize_raw_add(args),
         Some(SUB_HEAD) if args.len() == 2 => {
@@ -107,10 +117,24 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
                 args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
             })
         }
-        _ => NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.normalize()),
-            args: args.into_iter().map(|a| a.normalize()).collect(),
-        }),
+        _ => {
+            // Note: Propagate
+            NormExpr::new_unchecked(ExprKind::Node {
+                head: Box::new(head_expr.normalize()),
+                args: args.into_iter().map(|a| a.normalize()).collect(),
+            })
+        }
+    }
+}
+
+fn filter_absent(args: Vec<RawExpr>) -> Vec<RawExpr> {
+    if args.iter().any(|a| a.matches_symbol(CANNONICAL_SYM_ABSENT)) {
+        args.into_iter()
+            .filter(|a| !a.matches_symbol(CANNONICAL_SYM_ABSENT))
+            .collect()
+    } else {
+        // no allocation needed — reuse existing slice/vec
+        args
     }
 }
 
@@ -325,6 +349,16 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
 }
 
 fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
+    if exponent.matches_symbol(CANNONICAL_SYM_ABSENT) {
+        if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
+            return RawExpr::new_node(POW_HEAD, vec![]).into_normexpr_unsafe();
+        }
+
+        return base.normalize();
+    } else if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
+        return RawExpr::new_unary_node(POW_HEAD, exponent).normalize();
+    }
+
     let norm_base = base.normalize();
     let norm_exponent = exponent.normalize();
 
@@ -793,6 +827,41 @@ mod normalize_comprehensive_tests {
     fn test_add_nodes_same_head_same_args_sort_by_arity() {
         let expr = raw_expr!(Add[f[x, y], f[x]]);
         let expected = raw_expr!(Add[f[x], f[x, y]]);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_absent_in_add() {
+        let expr = raw_expr!(Add[x, Absent]);
+        let expected = raw_expr!(x);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_absent_in_generic_f() {
+        let expr = raw_expr!(f[x, Absent]);
+        let expected = raw_expr!(f[x]);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_absent_in_pow_exp() {
+        let expr = raw_expr!(Pow[x, Absent]);
+        let expected = raw_expr!(x);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_absent_in_pow_base() {
+        let expr = raw_expr!(Pow[Absent, x]);
+        let expected = raw_expr!(Pow[x]);
+        assert_eq!(expr.normalize().into_raw(), expected);
+    }
+
+    #[test]
+    fn test_absent_in_pow_base_and_exp() {
+        let expr = raw_expr!(Pow[Absent, Absent]);
+        let expected = raw_expr!(Pow[]);
         assert_eq!(expr.normalize().into_raw(), expected);
     }
 }
