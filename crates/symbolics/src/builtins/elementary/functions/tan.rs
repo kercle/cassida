@@ -25,7 +25,7 @@ impl BuiltIn for Tan {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::ElementaryFunctions,
             title: Self::head(),
             summary: "Tangens function $\\tan(x)$.",
             pattern_doc: vec![PatternDoc::new(raw_expr!(Tan[x_]), "Tangens of $x$")],

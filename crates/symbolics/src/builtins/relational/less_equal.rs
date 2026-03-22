@@ -18,7 +18,7 @@ impl BuiltIn for LessEqual {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::Relational,
             title: Self::head(),
             summary: "Internal representation of the $\\leq$ relation.",
             pattern_doc: vec![],

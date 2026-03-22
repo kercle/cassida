@@ -25,7 +25,7 @@ impl BuiltIn for Sin {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::ElementaryFunctions,
             title: Self::head(),
             summary: "Sine function $\\sin(x)$.",
             pattern_doc: vec![PatternDoc::new(raw_expr!(Sin[x_]), "Sine of $x$")],

@@ -18,7 +18,7 @@ impl BuiltIn for Greater {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::Relational,
             title: Self::head(),
             summary: "Internal representation of the $>$ comparison relation.",
             pattern_doc: vec![],

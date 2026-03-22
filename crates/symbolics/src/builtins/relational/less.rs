@@ -18,7 +18,7 @@ impl BuiltIn for Less {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::Relational,
             title: Self::head(),
             summary: "Internal representation of the $<$ relation.",
             pattern_doc: vec![],
