@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 
+use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
-use crate::{builtin::*, builtins};
 
 pub type InstrId = usize;
 pub type VarId = u32;
@@ -344,7 +344,7 @@ impl Compiler {
 
         let optional_inner = std::mem::replace(
             &mut children[optional_child_pos],
-            RawExpr::new_symbol(CANNONICAL_SYM_ABSENT),
+            RawExpr::new_symbol(builtins::symbols::ABSENT),
         );
         let branch_absent =
             self.reduce_node_in_optional_branch(head, &children, optional_child_pos, bind);

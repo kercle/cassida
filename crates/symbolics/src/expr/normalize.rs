@@ -4,7 +4,6 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::{CANNONICAL_SYM_ABSENT, CANNONICAL_SYM_INDETERMINATE},
     builtins::{self, traits::BuiltIn},
     expr::{ExprKind, NormExpr, RawExpr},
 };
@@ -73,7 +72,7 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
             let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
 
             if rhs.is_number_zero() {
-                return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
+                return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
             }
 
             RawExpr::new_binary_node(
@@ -125,9 +124,12 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
 }
 
 fn filter_absent(args: Vec<RawExpr>) -> Vec<RawExpr> {
-    if args.iter().any(|a| a.matches_symbol(CANNONICAL_SYM_ABSENT)) {
+    if args
+        .iter()
+        .any(|a| a.matches_symbol(builtins::symbols::ABSENT))
+    {
         args.into_iter()
-            .filter(|a| !a.matches_symbol(CANNONICAL_SYM_ABSENT))
+            .filter(|a| !a.matches_symbol(builtins::symbols::ABSENT))
             .collect()
     } else {
         // no allocation needed — reuse existing slice/vec
@@ -298,7 +300,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
 
         if base.is_number_zero() {
             if exponent.is_number_negative() || exponent.is_number_zero() {
-                return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
+                return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
             } else {
                 // return zero
                 return base;
@@ -352,13 +354,13 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
 }
 
 fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
-    if exponent.matches_symbol(CANNONICAL_SYM_ABSENT) {
-        if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
+    if exponent.matches_symbol(builtins::symbols::ABSENT) {
+        if base.matches_symbol(builtins::symbols::ABSENT) {
             return RawExpr::new_node(builtins::Pow::head(), vec![]).into_normexpr_unsafe();
         }
 
         return base.normalize();
-    } else if base.matches_symbol(CANNONICAL_SYM_ABSENT) {
+    } else if base.matches_symbol(builtins::symbols::ABSENT) {
         return RawExpr::new_unary_node(builtins::Pow::head(), exponent).normalize();
     }
 
@@ -367,7 +369,7 @@ fn normalize_raw_pow(base: RawExpr, exponent: RawExpr) -> NormExpr {
 
     if norm_base.is_number_zero() {
         if norm_exponent.is_number_zero() || norm_exponent.is_number_negative() {
-            return RawExpr::new_symbol(CANNONICAL_SYM_INDETERMINATE).normalize();
+            return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
         } else {
             // return zero
             return norm_base;

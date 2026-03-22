@@ -2,7 +2,7 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtin::CANNONICAL_SYM_INDETERMINATE,
+    builtins,
     expr::{Expr, ExprKind},
 };
 
@@ -110,7 +110,7 @@ impl<S> Expr<S> {
     }
 
     pub fn is_indeterminate(&self) -> bool {
-        self.matches_symbol(CANNONICAL_SYM_INDETERMINATE)
+        self.matches_symbol(builtins::symbols::INDETERMINATE)
     }
 
     pub fn is_application_of<T: AsRef<str>>(&self, head_sym: T, arity: usize) -> bool {

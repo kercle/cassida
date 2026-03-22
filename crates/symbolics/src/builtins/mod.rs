@@ -11,6 +11,8 @@ pub mod simplification;
 pub mod system;
 pub mod traits;
 
+pub mod symbols;
+
 mod prelude;
 pub use prelude::*;
 

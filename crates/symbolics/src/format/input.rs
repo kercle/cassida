@@ -1,10 +1,7 @@
+use crate::atom::Atom;
 use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::expr::{ExprKind, RawExpr};
-use crate::{
-    atom::Atom,
-    builtin::{CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY},
-};
 use numbers::Number;
 
 // Determines the placement of paranthesis, depending on
@@ -128,12 +125,12 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
-        } if name == CANNONICAL_SYM_INDETERMINATE => name.to_string(),
+        } if name == builtins::symbols::INDETERMINATE => name.to_string(),
 
         ExprKind::Atom {
             entry: Atom::Symbol(name),
             ..
-        } if name == CANNONICAL_SYM_PLUS_INFINITY => r#"\infty"#.to_string(),
+        } if name == builtins::symbols::INFINITY => r#"\infty"#.to_string(),
 
         ExprKind::Atom {
             entry: Atom::Symbol(name),
