@@ -231,10 +231,7 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
         }
 
         ExprKind::Node { args, .. } if expr.is_application_of(FACTORIAL_HEAD, 1) => {
-            format!(
-                "{}!",
-                expr_to_latex_with_pos(&args[0], Position::FactArg)
-            )
+            format!("{}!", expr_to_latex_with_pos(&args[0], Position::FactArg))
         }
 
         ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SQRT, 1) => {

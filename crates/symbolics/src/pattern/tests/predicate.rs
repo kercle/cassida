@@ -144,8 +144,7 @@ fn test_predicate_11() {
 
 #[test]
 fn test_predicate_12() {
-    let pattern =
-        norm_expr! { Add[_?IsNumber, _?IsSymbol] };
+    let pattern = norm_expr! { Add[_?IsNumber, _?IsSymbol] };
     let subject = norm_expr! { Add[x, 1] };
     assert_eq!(
         count_matches(&pattern, &subject),
@@ -156,8 +155,7 @@ fn test_predicate_12() {
 
 #[test]
 fn test_predicate_13() {
-    let pattern =
-        norm_expr! { Add[_?IsNumber, _?IsSymbol] };
+    let pattern = norm_expr! { Add[_?IsNumber, _?IsSymbol] };
     let subject = norm_expr! { Add[1, 2] };
     assert_eq!(
         count_matches(&pattern, &subject),

@@ -9,5 +9,5 @@ pub use add::Add;
 pub use div::Div;
 pub use factorial::Factorial;
 pub use mul::Mul;
-pub use sub::Sub;
 pub use pow::Pow;
+pub use sub::Sub;

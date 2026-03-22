@@ -69,18 +69,9 @@ fn build_rewriter() -> Rewriter {
             raw_expr!( c * Diff[Mul[r],x] ),
         ),
         // =============== Basic ===============
-        (
-            norm_expr!( Diff[x_, x_?IsSymbol] ),
-            raw_expr!(1),
-        ),
-        (
-            norm_expr!( Diff[c_?IsNumber, x_?IsSymbol] ),
-            raw_expr!(0),
-        ),
-        (
-            norm_expr!( Diff[a_?IsSymbol,x_?IsSymbol] ),
-            raw_expr!(0),
-        ),
+        (norm_expr!( Diff[x_, x_?IsSymbol] ), raw_expr!(1)),
+        (norm_expr!( Diff[c_?IsNumber, x_?IsSymbol] ), raw_expr!(0)),
+        (norm_expr!( Diff[a_?IsSymbol,x_?IsSymbol] ), raw_expr!(0)),
         (
             norm_expr!( Diff[f_ * g__, x_?IsSymbol] ),
             raw_expr!(Diff[f, x] * g + f * Diff[Mul[g], x]),

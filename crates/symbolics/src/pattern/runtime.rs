@@ -844,8 +844,7 @@ impl<'p, 's> Runtime<'p, 's> {
         self.frame_stack = choice_point.frame_stack;
         self.push_frame(choice_point.resume_frame);
 
-        self.environment
-            .set_pattern_id(choice_point.pattern_id);
+        self.environment.set_pattern_id(choice_point.pattern_id);
 
         true
     }
