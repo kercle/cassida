@@ -17,13 +17,14 @@ pub enum Quantity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     // Double-character operators
-    EqEq,       // '=='
-    NotEq,      // '!='
-    LesserEq,   // '<='
-    GreaterEq,  // '>='
-    ColonEq,    // ':='
-    ColonGt,    // ':>'
-    DoubleExcl, // '!!'
+    EqEq,           // '=='
+    NotEq,          // '!='
+    LesserEq,       // '<='
+    GreaterEq,      // '>='
+    ColonEq,        // ':='
+    ColonGt,        // ':>'
+    DoubleExcl,     // '!!'
+    SlashSemicolon, // '/;'
 
     // Single-character operators
     LeftBrace,       // '{'
@@ -381,6 +382,15 @@ impl TokenStream {
             } else {
                 tokens.push((Token::Colon, pos));
             }
+        } else if c == '/' {
+            iter.next(); // Consume '/'
+
+            if matches!(iter.peek(), Some(';')) {
+                iter.next(); // Consume ';'
+                tokens.push((Token::SlashSemicolon, pos));
+            } else {
+                tokens.push((Token::Slash, pos));
+            }
         } else {
             let token = match c {
                 '{' => Token::LeftBrace,
@@ -394,7 +404,6 @@ impl TokenStream {
                 '+' => Token::Plus,
                 '-' => Token::Minus,
                 '*' => Token::Asterisk,
-                '/' => Token::Slash,
                 '%' => Token::Percent,
                 '&' => Token::Ampersand,
                 '|' => Token::Pipe,
