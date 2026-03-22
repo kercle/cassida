@@ -42,6 +42,7 @@ pub use patterns::condition::Condition;
 pub use patterns::optional::Optional;
 pub use patterns::pattern::Pattern;
 pub use patterns::pattern_test::PatternTest;
+pub use patterns::free_of::FreeOf;
 
 // --- Plotting ---------------------------------------------------------------
 

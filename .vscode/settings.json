@@ -3,6 +3,6 @@
         "**/mod.rs": "${dirname}/mod.rs"
     },
     "rust-analyzer.procMacro.ignored": {
-        "parser-macros": ["tcas_parse"]
+        "parser-macros": ["parse"]
     }
 }

@@ -165,6 +165,10 @@ impl<'p, 's> Runtime<'p, 's> {
         }
     }
 
+    pub fn is_match(&mut self) -> bool {
+        self.next().is_some()
+    }
+
     pub fn first_match(&mut self) -> Option<&Environment<'p, 's>> {
         self.next_match()
     }

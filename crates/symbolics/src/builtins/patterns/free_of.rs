@@ -3,6 +3,8 @@ use crate::{
         BuiltInCategory,
         traits::{BuiltIn, BuiltInDoc, PatternDoc},
     },
+    expr::{ExprKind, NormExpr, RawExpr, walk::ExprTopDownWalker},
+    pattern::{program::Compiler, runtime::Runtime},
     raw_expr,
 };
 
@@ -37,6 +39,30 @@ impl BuiltIn for FreeOf {
                 ("Free[x^2+1,x]", "False"),
             ],
             related: vec![],
+        }
+    }
+
+    fn apply_all(&self, expr: NormExpr) -> NormExpr {
+        if !expr.is_application_of(Self::HEAD, 2) {
+            return expr;
+        }
+
+        let ExprKind::Node { args, .. } = expr.into_kind() else {
+            unreachable!()
+        };
+
+        let [subject, pattern]: [NormExpr; 2] = args.try_into().unwrap();
+
+        let program = Compiler::default().compile(&pattern);
+
+        let contains_pattern = ExprTopDownWalker::new(&subject)
+            .find(|s| Runtime::new(&program, s).is_match())
+            .is_some();
+
+        if contains_pattern {
+            RawExpr::new_symbol("False").normalize()
+        } else {
+            RawExpr::new_symbol("True").normalize()
         }
     }
 }
