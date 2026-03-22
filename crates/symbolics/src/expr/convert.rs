@@ -21,6 +21,10 @@ impl<S> Expr<S> {
     pub fn into_raw(self) -> RawExpr {
         unsafe { std::mem::transmute(self) }
     }
+
+    pub fn as_raw_ref(&self) -> &RawExpr {
+        unsafe { std::mem::transmute(self) }
+    }
 }
 
 impl<T: Into<Atom>> From<T> for RawExpr {

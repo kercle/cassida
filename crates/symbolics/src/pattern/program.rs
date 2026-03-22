@@ -6,7 +6,7 @@ use crate::builtin::*;
 use crate::builtins::patterns::hold_pattern::HOLD_PATTERN_HEAD;
 use crate::builtins::patterns::optional::OPTIONAL_HEAD;
 use crate::expr::walk::ExprTopDownWalker;
-use crate::expr::{ExprKind, NormExpr};
+use crate::expr::{ExprKind, NormExpr, RawExpr};
 use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
@@ -129,7 +129,7 @@ impl PartialEq for ArgPlan {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ArgOrder {
     Sequence,
     Multiset,
@@ -148,6 +148,9 @@ pub struct Compiler {
     vars: Vec<String>,
     is_multiset: fn(&NormExpr) -> bool,
     pattern_id: PatternId,
+
+    // used to keep track of nested hold patterns
+    hold_pattern_counter: usize,
 }
 
 fn is_multiset_default(expr: &NormExpr) -> bool {
@@ -162,6 +165,7 @@ impl Default for Compiler {
             vars: Vec::new(),
             is_multiset: is_multiset_default,
             pattern_id: 0,
+            hold_pattern_counter: 0,
         }
     }
 }
@@ -301,7 +305,18 @@ impl Compiler {
     ) -> InstrId {
         if head.matches_symbol(HOLD_PATTERN_HEAD) && children.len() == 1 {
             // HoldPattern is not compiled to an instruction.
-            return self.compile_pattern(children.first().unwrap(), bind);
+            self.hold_pattern_counter += 1;
+            let instr_id = self.compile_pattern(children.first().unwrap(), bind);
+            self.hold_pattern_counter -= 1;
+
+            return instr_id;
+        }
+
+        if let Some(optional_pos) = children
+            .iter()
+            .position(|expr| expr.is_application_of(OPTIONAL_HEAD, 1))
+        {
+            return self.compile_node_with_optional_child(head, children, optional_pos, bind);
         }
 
         let head = self.compile_pattern(head, None);
@@ -316,6 +331,57 @@ impl Compiler {
         };
 
         self.emit(Instruction::Node { head, plan, bind })
+    }
+
+    fn compile_node_with_optional_child(
+        &mut self,
+        head: &NormExpr,
+        children: &[NormExpr],
+        optional_child_pos: usize,
+        bind: Option<VarId>,
+    ) -> InstrId {
+        let mut children: Vec<_> = children.iter().map(|e| e.clone().into_raw()).collect();
+
+        // that's the node Optional[...]
+        let Some(optional) = children.get(optional_child_pos) else {
+            unreachable!();
+        };
+
+        // we need the inner part
+        let Some(optional_inner) = optional.get_arg(0) else {
+            // compile_node_with_optional_child is only called when this child
+            // is Optional with arity 1.
+            unreachable!()
+        };
+
+        children[optional_child_pos] = optional_inner.clone();
+        let branch_a = self.reduce_node_in_optional_branch(head, &children, bind);
+
+        children.remove(optional_child_pos);
+        let branch_b = self.reduce_node_in_optional_branch(head, &children, bind);
+
+        self.emit(Instruction::Alternatives {
+            branches: vec![(self.pattern_id, branch_a), (self.pattern_id, branch_b)],
+        })
+    }
+
+    fn reduce_node_in_optional_branch(
+        &mut self,
+        head: &NormExpr,
+        children: &[RawExpr],
+        bind: Option<VarId>,
+    ) -> InstrId {
+        let children = if self.hold_pattern_counter > 0 {
+            children
+                .iter()
+                .map(|e| RawExpr::new_unary_node(HOLD_PATTERN_HEAD, e.clone().into_raw()))
+                .collect()
+        } else {
+            children.to_vec()
+        };
+
+        let alternative_node = RawExpr::new_node(head.clone().into_raw(), children).normalize();
+        self.compile_pattern(&alternative_node, bind)
     }
 
     fn arg_order(&self, expr: &NormExpr) -> ArgOrder {
