@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 
 #[proc_macro]
-pub fn tcas_parse(input: TokenStream) -> TokenStream {
+pub fn parse(input: TokenStream) -> TokenStream {
     let input_string = token_stream_to_string(input.into());
 
     match parser::parse(&input_string) {
