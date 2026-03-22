@@ -4,7 +4,7 @@ use numbers::alg::binomial::BinomialGenerator;
 use parser::parse;
 
 use crate::{
-    builtins::{self, traits::BuiltIn},
+    builtins::traits::BuiltIn,
     expr::{NormExpr, RawExpr},
 };
 
