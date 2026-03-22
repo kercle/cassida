@@ -46,7 +46,7 @@ fn test_program_executation_one_blank_no_multiset() {
 
 #[test]
 fn test_predicate_matching() {
-    let pattern = norm_expr! { f[PatternTest[Pattern[x, Blank[]], IsNumber]] };
+    let pattern = norm_expr! { f[x_?IsNumber] };
     let program = Compiler::new().compile(&pattern);
 
     dbg!(&program);

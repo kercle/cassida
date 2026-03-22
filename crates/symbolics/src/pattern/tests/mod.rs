@@ -15,7 +15,7 @@ use super::*;
 #[test]
 fn test_built_pattern_from_expr() {
     let expr = norm_expr! {
-        PatternTest[Blank[], IsSymbol]
+        _?IsSymbol
     };
     let pattern = Pattern::from_expr(&expr);
     assert_eq!(
@@ -24,7 +24,7 @@ fn test_built_pattern_from_expr() {
     );
 
     let expr = norm_expr! {
-        PatternTest[Pattern[x, Blank[]], IsSymbol]
+        x_?IsSymbol
     };
     let pattern = Pattern::from_expr(&expr);
 
