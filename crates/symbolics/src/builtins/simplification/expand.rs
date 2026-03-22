@@ -54,7 +54,7 @@ impl BuiltIn for Expand {
 
 pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewriter {
     let rw = Rewriter::new().with_rule(
-        norm_expr!( Expand[HoldPattern[Pattern[sum, Add[__]]]^m_?IsPositiveInteger] ),
+        norm_expr!( Expand[a__. * HoldPattern[Pattern[sum, Add[__]]]^m_?IsPositiveInteger] ),
         move |ctx: &Environment<'_, '_>| {
             let sum = ctx.get_one("sum").unwrap();
             let m = ctx.get_one("m").unwrap();
@@ -76,40 +76,7 @@ pub(super) fn build_rewriter(_binomial_gen: Shared<BinomialGenerator>) -> Rewrit
                 );
             };
 
-            RawExpr::new_unary_node(EXPAND_HEAD, expand_multinomial(sum, None, n))
-        },
-    );
-
-    // TODO: once Optional is implemented in pattern matching, this rule can be merged
-    // with the previous one! For now, let's just copy&paste it :/
-    let rw = rw.with_rule(
-        norm_expr!(Expand[a__ * Pattern[sum, _ + __] ^ PatternTest[m_, IsPositiveInteger]]),
-        move |ctx: &Environment<'_, '_>| {
-            let sum = ctx.get_one("sum").unwrap();
-            let m = ctx.get_one("m").unwrap();
-            let overall_factors = ctx.get_seq("a").unwrap();
-
-            let Number::Integer(n) = m.get_number().unwrap() else {
-                unreachable!("m is guaranteed to be a positive integer.");
-            };
-
-            let Some(n) = n.to_u64() else {
-                // n is too large to be expandable. For now: silently fall back
-                // to input expression.
-                // TODO: at some point report this to user, but these large
-                // polynomials would not be feasable anyway.
-
-                return RawExpr::new_binary_node(
-                    POW_HEAD,
-                    sum.clone().into_raw(),
-                    m.clone().into_raw(),
-                );
-            };
-
-            RawExpr::new_unary_node(
-                EXPAND_HEAD,
-                expand_multinomial(sum, Some(overall_factors), n),
-            )
+            RawExpr::new_unary_node(EXPAND_HEAD, expand_multinomial(sum, ctx.get_seq("a"), n))
         },
     );
 
