@@ -54,19 +54,19 @@ impl From<ParserAst> for RawExpr {
             Constant { value } => Self::new_number(value),
             Symbol { name } => Self::new_symbol(name),
             LesserThan { lhs, rhs } => {
-                Self::new_binary_node(LT_HEAD, Self::from(*lhs), Self::from(*rhs))
+                Self::new_binary_node(builtins::Less::head(), Self::from(*lhs), Self::from(*rhs))
             }
             LesserEq { lhs, rhs } => {
-                Self::new_binary_node(LE_HEAD, Self::from(*lhs), Self::from(*rhs))
+                Self::new_binary_node(builtins::LessEqual::head(), Self::from(*lhs), Self::from(*rhs))
             }
             Equals { lhs, rhs } => {
-                Self::new_binary_node(EQ_HEAD, Self::from(*lhs), Self::from(*rhs))
+                Self::new_binary_node(builtins::Equal::head(), Self::from(*lhs), Self::from(*rhs))
             }
             GreaterEq { lhs, rhs } => {
-                Self::new_binary_node(GE_HEAD, Self::from(*lhs), Self::from(*rhs))
+                Self::new_binary_node(builtins::GreaterEqual::head(), Self::from(*lhs), Self::from(*rhs))
             }
             GreaterThan { lhs, rhs } => {
-                Self::new_binary_node(GT_HEAD, Self::from(*lhs), Self::from(*rhs))
+                Self::new_binary_node(builtins::Greater::head(), Self::from(*lhs), Self::from(*rhs))
             }
             Add { lhs, rhs } => Self::new_binary_node(ADD_HEAD, Self::from(*lhs), Self::from(*rhs)),
             Sub { lhs, rhs } => Self::new_binary_node(SUB_HEAD, Self::from(*lhs), Self::from(*rhs)),

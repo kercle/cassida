@@ -4,12 +4,6 @@
 
 use crate::expr::Expr;
 
-pub const LT_HEAD: &str = "Lesser";
-pub const LE_HEAD: &str = "LesserEq";
-pub const EQ_HEAD: &str = "Equals";
-pub const GE_HEAD: &str = "GreaterEq";
-pub const GT_HEAD: &str = "Greater";
-
 pub const ADD_HEAD: &str = "Add";
 pub const SUB_HEAD: &str = "Sub";
 pub const MUL_HEAD: &str = "Mul";

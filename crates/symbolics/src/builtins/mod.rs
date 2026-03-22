@@ -2,7 +2,9 @@ use std::fmt::{Debug, Display, Formatter};
 
 pub mod calculus;
 pub mod elementary;
+pub mod logic;
 pub mod patterns;
+pub mod relational;
 pub mod scoping;
 pub mod simplification;
 pub mod system;
