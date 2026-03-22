@@ -3,11 +3,7 @@ use crate::builtins::traits::BuiltIn;
 use crate::expr::{ExprKind, RawExpr};
 use crate::{
     atom::Atom,
-    builtin::{
-        CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN,
-        CANNONICAL_HEAD_SQRT, CANNONICAL_HEAD_TAN, CANNONICAL_SYM_INDETERMINATE,
-        CANNONICAL_SYM_PLUS_INFINITY,
-    },
+    builtin::{CANNONICAL_SYM_INDETERMINATE, CANNONICAL_SYM_PLUS_INFINITY},
 };
 use numbers::Number;
 
@@ -239,26 +235,26 @@ fn expr_to_latex_inner(expr: &RawExpr) -> String {
             format!("{}!", expr_to_latex_with_pos(&args[0], Position::FactArg))
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SQRT, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sqrt::head(), 1) => {
             format!(
                 "\\sqrt{{{}}}",
                 expr_to_latex_with_pos(&args[0], Position::FnArg)
             )
         }
 
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_EXP, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Exp::head(), 1) => {
             render_one_arg("\\exp", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_LOG, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Log::head(), 1) => {
             render_one_arg("\\log", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_SIN, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Sin::head(), 1) => {
             render_one_arg("\\sin", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_COS, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Cos::head(), 1) => {
             render_one_arg("\\cos", &args[0])
         }
-        ExprKind::Node { args, .. } if expr.is_application_of(CANNONICAL_HEAD_TAN, 1) => {
+        ExprKind::Node { args, .. } if expr.is_application_of(builtins::Tan::head(), 1) => {
             render_one_arg("\\tan", &args[0])
         }
 

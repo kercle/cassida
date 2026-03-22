@@ -17,6 +17,17 @@ pub use elementary::arithmetic::neg::Neg;
 pub use elementary::arithmetic::factorial::Factorial;
 pub use elementary::arithmetic::pow::Pow;
 
+// --- Elementary Functions ---------------------------------------------------
+
+pub use elementary::functions::sqrt::Sqrt;
+
+pub use elementary::functions::cos::Cos;
+pub use elementary::functions::sin::Sin;
+pub use elementary::functions::tan::Tan;
+
+pub use elementary::functions::exp::Exp;
+pub use elementary::functions::log::Log;
+
 // --- Evaluation Control -----------------------------------------------------
 
 pub use evaluation_control::hold::Hold;

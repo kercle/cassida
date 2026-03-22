@@ -7,13 +7,13 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Sin;
+pub struct Sqrt;
 
-impl Sin {
-    pub const HEAD: &'static str = "Sin";
+impl Sqrt {
+    pub const HEAD: &'static str = "Sqrt";
 }
 
-impl BuiltIn for Sin {
+impl BuiltIn for Sqrt {
     #[inline(always)]
     fn head() -> &'static str {
         Self::HEAD
@@ -25,10 +25,10 @@ impl BuiltIn for Sin {
 
     fn doc(&self) -> BuiltInDoc {
         BuiltInDoc {
-            category: BuiltInCategory::ElementaryArithmetic,
+            category: BuiltInCategory::ElementaryFunctions,
             title: Self::head(),
-            summary: "Sine function $\\sin(x)$.",
-            pattern_doc: vec![PatternDoc::new(raw_expr!(Sin[x_]), "Sine of $x$")],
+            summary: "Square root $\\sqrt(x)$.",
+            pattern_doc: vec![PatternDoc::new(raw_expr!(Sqrt[x_]), "Square root of $x$")],
             examples: vec![],
             related: vec![],
         }

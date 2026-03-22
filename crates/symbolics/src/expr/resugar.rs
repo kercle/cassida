@@ -1,6 +1,5 @@
 use crate::{
     atom::Atom,
-    builtin::*,
     builtins::{self, traits::BuiltIn},
     expr::{Expr, ExprKind, NormExpr, RawExpr, normalize::split_coefficient},
 };
@@ -276,7 +275,7 @@ impl NormExpr {
         let res = if rhs_num.is_one() {
             Self::resugar_inner(lhs)
         } else if rhs_num == one_half {
-            RawExpr::new_unary_node(CANNONICAL_HEAD_SQRT, Self::resugar_inner(lhs))
+            RawExpr::new_unary_node(builtins::Sqrt::head(), Self::resugar_inner(lhs))
         } else {
             RawExpr::new_binary_node(
                 builtins::Pow::head(),

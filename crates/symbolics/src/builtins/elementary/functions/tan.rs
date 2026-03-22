@@ -7,13 +7,13 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct Sin;
+pub struct Tan;
 
-impl Sin {
-    pub const HEAD: &'static str = "Sin";
+impl Tan {
+    pub const HEAD: &'static str = "Tan";
 }
 
-impl BuiltIn for Sin {
+impl BuiltIn for Tan {
     #[inline(always)]
     fn head() -> &'static str {
         Self::HEAD
@@ -27,8 +27,8 @@ impl BuiltIn for Sin {
         BuiltInDoc {
             category: BuiltInCategory::ElementaryArithmetic,
             title: Self::head(),
-            summary: "Sine function $\\sin(x)$.",
-            pattern_doc: vec![PatternDoc::new(raw_expr!(Sin[x_]), "Sine of $x$")],
+            summary: "Tangens function $\\tan(x)$.",
+            pattern_doc: vec![PatternDoc::new(raw_expr!(Tan[x_]), "Tangens of $x$")],
             examples: vec![],
             related: vec![],
         }

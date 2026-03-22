@@ -4,7 +4,6 @@ use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::{
     atom::Atom,
-    builtin::{CANNONICAL_HEAD_COS, CANNONICAL_HEAD_EXP, CANNONICAL_HEAD_LOG, CANNONICAL_HEAD_SIN},
     expr::{Expr, ExprKind},
 };
 
@@ -99,13 +98,13 @@ impl EvalProgram {
             self.instructions.push(Instruction::MulMany(args.len()));
         } else if head.matches_symbol(builtins::Pow::head()) {
             self.instructions.push(Instruction::Pow);
-        } else if head.matches_symbol(CANNONICAL_HEAD_EXP) {
+        } else if head.matches_symbol(builtins::Exp::head()) {
             self.instructions.push(Instruction::Exp);
-        } else if head.matches_symbol(CANNONICAL_HEAD_LOG) {
+        } else if head.matches_symbol(builtins::Log::head()) {
             self.instructions.push(Instruction::Log);
-        } else if head.matches_symbol(CANNONICAL_HEAD_SIN) {
+        } else if head.matches_symbol(builtins::Sin::head()) {
             self.instructions.push(Instruction::Sin);
-        } else if head.matches_symbol(CANNONICAL_HEAD_COS) {
+        } else if head.matches_symbol(builtins::Cos::head()) {
             self.instructions.push(Instruction::Cos);
         } else {
             return Err(CompileError::UnevaluableHead);
