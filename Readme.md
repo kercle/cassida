@@ -42,7 +42,7 @@ The syntax of the expressions is Mathematica inspired.
 - `BlankNullSeq[]` analogous to `BlankSeq` but may also match no elements.
 - `Pattern[x, p]` binds the pattern `p` to `x`.
 - `PatternTest[p, pred]` Evaluates the predicate `pred` on the pattern `p`. Currently supports: `IsSymbol`, `IsNumber`, `IsInteger`, `IsRational`, `IsPositive`, `IsNegative`
-- `Plot[f[x], x, x0, x1]` for plotting `f[x]`. It is still a very early-prototype implementation and the signature of the plot pattern will align more with the Mathematica syntax.
+- `Plot[f[x], (x, x0, x1)]` for plotting `f[x]`.
 
 ## Goals
 
@@ -65,13 +65,12 @@ The syntax of the expressions is Mathematica inspired.
 - [ ] Numerical evaluation and dynamical variables for dashboards
 - [ ] Numerical integration and ODE/PDE solving
 - [ ] Numerical solver for equations
-- [ ] UI maybe with Tauri
 - [x] Web frontend built with Svelte
 - [x] Compile to Web-Assembly and bundle with frontend
 
 ## Logo
 
-The logo features a [tortoise beetle (cassidoid)](https://en.wikipedia.org/wiki/Cassidinae). Initially my inspiration is comming from [SerenityOS](https://serenityos.org) with its ladybug logo. I looked for beetles featuring pretty patterns and then tortoise beetles showed up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
+The logo features a [tortoise beetle (cassidoid)](https://en.wikipedia.org/wiki/Cassidinae). I looked for bugs featuring pretty patterns when then tortoise beetles showed up. Coincidentally, the subfamily is also called *Cassidinae*, which - starting with CAS - was the perfect match. 🙂
 
 ## Disclaimer on use of AI
 

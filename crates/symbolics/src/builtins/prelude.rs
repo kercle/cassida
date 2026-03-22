@@ -43,6 +43,10 @@ pub use patterns::optional::Optional;
 pub use patterns::pattern::Pattern;
 pub use patterns::pattern_test::PatternTest;
 
+// --- Plotting ---------------------------------------------------------------
+
+pub use plotting::plot::Plot;
+
 // --- Relational -------------------------------------------------------------
 
 pub use relational::equal::Equal;

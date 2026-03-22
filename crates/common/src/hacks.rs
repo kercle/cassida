@@ -51,7 +51,7 @@ pub fn process_message(inbound_msg: String) -> Result<KernelMessage, KernelMessa
 
 pub fn generate_data_if_plot(expr: &NormExpr) -> Option<Vec<(f64, f64)>> {
     let program = PatternCompiler::new().compile(&norm_expr!(
-        Plot[f_, x_?IsSymbol, x0_?IsNumber, x1_?IsNumber]
+        Plot[f_, (x_?IsSymbol, x0_?IsNumber, x1_?IsNumber)]
     ));
 
     let mut runtime = PatternRuntime::new(&program, expr);

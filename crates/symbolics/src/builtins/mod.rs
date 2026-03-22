@@ -5,6 +5,7 @@ pub mod elementary;
 pub mod evaluation_control;
 pub mod logic;
 pub mod patterns;
+pub mod plotting;
 pub mod relational;
 pub mod scoping;
 pub mod simplification;
