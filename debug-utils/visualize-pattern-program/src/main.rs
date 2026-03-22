@@ -115,6 +115,8 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "component".to_string());
                 node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "lightred".to_string());
 
                 self.walk_program(*inner, format!("i{cur_instr}:h"));
             }
@@ -143,6 +145,8 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "record".to_string());
                 node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "lightyellow".to_string());
                 self.walk_program(*head, format!("i{cur_instr}:h"));
             }
             Alternatives { branches } => {
@@ -158,6 +162,8 @@ impl<'p> InstructionGraph<'p> {
 
                 node_opts.insert("shape", "record".to_string());
                 node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "lightblue".to_string());
             }
         }
 
