@@ -346,7 +346,7 @@ impl<'p, 's> Runtime<'p, 's> {
         subject: &'s NormExpr,
     ) -> bool {
         if remaining_branches.is_empty() {
-            return true;
+            return false;
         }
 
         self.push_choice_point(Frame::MatchBranch {
