@@ -1,4 +1,4 @@
-import { h as p, aR as A, aS as S, N as T, aT as x, aU as E, aV as M, aW as L, aX as N } from "./BfX1JZpI.js";
+import { h as p, aR as A, aS as S, N as T, aT as E, aU as M, aV as x, aW as L, aX as N } from "./BfX1JZpI.js";
 let te, Q, ee, y;
 let __tla = (async () => {
   const U = /* @__PURE__ */ Symbol("is custom element"), W = /* @__PURE__ */ Symbol("is html"), I = S ? "link" : "LINK";
@@ -16,12 +16,12 @@ let __tla = (async () => {
           }
         }
       };
-      e.__on_r = n, T(n), x();
+      e.__on_r = n, T(n), E();
     }
   };
   y = function(e, t, n, o) {
     var s = O(e);
-    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === I) || s[t] !== (s[t] = n) && (t === "loading" && (e[E] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+    p && (s[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === I) || s[t] !== (s[t] = n) && (t === "loading" && (e[M] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && k(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
   };
   function O(e) {
     return e.__attributes ?? (e.__attributes = {
@@ -37,11 +37,11 @@ let __tla = (async () => {
     for (var o, s = e, a = Element.prototype; a !== s; ) {
       o = L(s);
       for (var r in o) o[r].set && n.push(r);
-      s = M(s);
+      s = x(s);
     }
     return n;
   }
-  const B = "" + new URL("../assets/kernel_bg.BCxG76iA.wasm", import.meta.url).href, C = async (e = {}, t) => {
+  const B = "" + new URL("../assets/kernel_bg.BidFwFwf.wasm", import.meta.url).href, C = async (e = {}, t) => {
     let n;
     if (t.startsWith("data:")) {
       const o = t.replace(/^data:.*?base64,/, "");
@@ -67,7 +67,7 @@ let __tla = (async () => {
     let t, n;
     try {
       const o = j(e, _.__wbindgen_malloc, _.__wbindgen_realloc), s = w, a = _.eval_input(o, s);
-      return t = a[0], n = a[1], G(a[0], a[1]);
+      return t = a[0], n = a[1], F(a[0], a[1]);
     } finally {
       _.__wbindgen_free(t, n, 1);
     }
@@ -76,7 +76,7 @@ let __tla = (async () => {
     const e = _.__wbindgen_externrefs, t = e.grow(4);
     e.set(0, void 0), e.set(t + 0, void 0), e.set(t + 1, null), e.set(t + 2, true), e.set(t + 3, false);
   }
-  function G(e, t) {
+  function F(e, t) {
     return e = e >>> 0, H(e, t);
   }
   let l = null;
@@ -108,10 +108,10 @@ let __tla = (async () => {
     fatal: true
   });
   b.decode();
-  const F = 2146435072;
+  const G = 2146435072;
   let g = 0;
   function H(e, t) {
-    return g += t, g >= F && (b = new TextDecoder("utf-8", {
+    return g += t, g >= G && (b = new TextDecoder("utf-8", {
       ignoreBOM: true,
       fatal: true
     }), b.decode(), g = t), b.decode(u().subarray(e, e + t));
