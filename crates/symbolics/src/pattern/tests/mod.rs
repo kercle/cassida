@@ -8,6 +8,7 @@ mod program;
 mod sequence;
 mod utils;
 mod wildcards;
+mod condition;
 
 use crate::norm_expr;
 

@@ -73,7 +73,7 @@ pub enum Instruction {
     },
     CheckCondition {
         inner: InstrId,
-        test_expr: NormExpr,
+        test_expr: RawExpr,
     },
 }
 
@@ -278,7 +278,7 @@ impl Compiler {
                 let inner = self.compile_pattern(pat_expr, None);
                 self.emit(Instruction::CheckCondition {
                     inner,
-                    test_expr: test_expr.clone(),
+                    test_expr: test_expr.clone().into_raw(),
                 })
             }
             Node { head, args } => {

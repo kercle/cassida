@@ -38,7 +38,7 @@ impl Kernel {
         // --- Patterns -------------------------------------------------------
 
         self.register_builtin_default::<builtins::Optional>(false);
-        self.register_builtin_default::<builtins::FreeOf>(true);
+        self.register_builtin_default::<builtins::FreeOf>(false);
 
         // --- Relational -----------------------------------------------------
 

@@ -113,6 +113,26 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
                 args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
             })
         }
+        Some(builtins::Condition::HEAD) if args.len() == 2 => {
+            let [inner, cond]: [RawExpr; 2] = args.try_into().unwrap();
+
+            // Condition here is not actually normalized, since it's populated later
+            // during pattern matching. This prevents from e.g. FreeOf[a,x] to be
+            // resolved early.
+            let inner = inner.normalize();
+            let cond = cond.into_normexpr_unsafe();
+
+            RawExpr::new_binary_node(builtins::Condition::HEAD, inner.into_raw(), cond.into_raw())
+                .into_normexpr_unsafe()
+        }
+        Some(builtins::FreeOf::HEAD) if args.len() == 2 => {
+            let [subj, pat]: [RawExpr; 2] = args.try_into().unwrap();
+
+            let subj = subj.normalize();
+            let pat = pat.normalize();
+
+            RawExpr::new_boolean(subj.free_of(&pat)).into_normexpr_unsafe()
+        }
         _ => {
             // Note: Propagate
             NormExpr::new_unchecked(ExprKind::Node {

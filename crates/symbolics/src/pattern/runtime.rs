@@ -1,7 +1,7 @@
 use std::{fmt::Debug, rc::Rc};
 
 use crate::{
-    expr::{ExprKind, NormExpr},
+    expr::{ExprKind, NormExpr, RawExpr},
     pattern::{
         PatternPredicate,
         bit_mask::BitMaskArena,
@@ -73,7 +73,7 @@ enum Frame<'p, 's> {
         predicate: PatternPredicate,
     },
     CheckCondition {
-        predicate_expr: &'p NormExpr,
+        predicate_expr: &'p RawExpr,
     },
 }
 
