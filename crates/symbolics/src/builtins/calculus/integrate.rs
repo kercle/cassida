@@ -70,7 +70,7 @@ fn build_rewriter() -> Rewriter {
             raw_expr!( Integrate[f, x] + Integrate[Add[r],x] ),
         ),
         (
-            norm_expr!( Integrate[c_?IsNumber * r__, x_?IsSymbol] ),
+            norm_expr!( Integrate[c_ * r__, x_?IsSymbol] /; FreeOf[c, x] ),
             raw_expr!( c * Integrate[Mul[r],x] ),
         ),
         // =============== Basic ===============
