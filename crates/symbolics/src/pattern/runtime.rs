@@ -72,6 +72,9 @@ enum Frame<'p, 's> {
         subject: &'s NormExpr,
         predicate: PatternPredicate,
     },
+    CheckCondition {
+        predicate_expr: &'p NormExpr,
+    },
 }
 
 impl<'p, 's> Frame<'p, 's> {
@@ -134,6 +137,7 @@ impl<'p, 's> Frame<'p, 's> {
                 subject,
                 predicate: *predicate,
             },
+            Frame::CheckCondition { predicate_expr } => Frame::CheckCondition { predicate_expr },
         }
     }
 }
@@ -229,6 +233,14 @@ impl<'p, 's> Runtime<'p, 's> {
             BindOne { bind_var, subject } => self.bind_one(bind_var, subject),
             BindSeq { bind_var, subjects } => self.bind_seq(bind_var, subjects),
             TestPredicate { subject, predicate } => predicate.check(subject),
+            CheckCondition { predicate_expr } => {
+                // TODO: Add some sort of "normalize with bindings" s.t.
+                // we can get rid of the entire cloning of the tree.
+                self.environment
+                    .fill(predicate_expr.clone())
+                    .normalize()
+                    .is_true()
+            }
         }
     }
 
@@ -310,6 +322,18 @@ impl<'p, 's> Runtime<'p, 's> {
                 self.push_frame(Frame::TestPredicate {
                     subject,
                     predicate: *predicate,
+                });
+
+                self.push_frame(Frame::Exec {
+                    instr: *inner,
+                    subject,
+                });
+
+                true
+            }
+            CheckCondition { inner, test_expr } => {
+                self.push_frame(Frame::CheckCondition {
+                    predicate_expr: test_expr,
                 });
 
                 self.push_frame(Frame::Exec {

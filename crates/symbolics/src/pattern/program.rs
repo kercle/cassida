@@ -71,6 +71,10 @@ pub enum Instruction {
     Alternatives {
         branches: Vec<(PatternId, InstrId)>,
     },
+    CheckCondition {
+        inner: InstrId,
+        test_expr: NormExpr,
+    },
 }
 
 impl Instruction {
@@ -83,6 +87,7 @@ impl Instruction {
             Predicate { bind, .. } => *bind,
             Node { bind, .. } => *bind,
             Alternatives { .. } => None,
+            CheckCondition { .. } => None,
         }
     }
 }
@@ -264,6 +269,17 @@ impl Compiler {
             Node { args, .. } if pat_expr.is_application_of(builtins::Optional::HEAD, 1) => {
                 let inner = args.first().unwrap();
                 self.compile_pattern(inner, bind)
+            }
+            Node { args, .. } if pat_expr.is_application_of(builtins::Condition::HEAD, 2) => {
+                let [pat_expr, test_expr] = args.as_slice() else {
+                    unreachable!()
+                };
+
+                let inner = self.compile_pattern(pat_expr, None);
+                self.emit(Instruction::CheckCondition {
+                    inner,
+                    test_expr: test_expr.clone(),
+                })
             }
             Node { head, args } => {
                 if self.is_literal(pat_expr) {
@@ -509,7 +525,44 @@ impl Compiler {
                 self.merge_alternatives(program_a, instr_a, program_b, instr_b)
             }
             (Node { .. }, Node { .. }) => self.merge_nodes(program_a, instr_a, program_b, instr_b),
+            (CheckCondition { .. }, CheckCondition { .. }) => {
+                self.merge_check_condition(program_a, instr_a, program_b, instr_b)
+            }
             _ => self.branch(program_a, instr_a, program_b, instr_b),
+        }
+    }
+
+    fn merge_check_condition(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::CheckCondition {
+            inner: inner_a,
+            test_expr: test_expr_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::CheckCondition {
+            inner: inner_b,
+            test_expr: test_expr_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if test_expr_a != test_expr_b {
+            self.branch(program_a, instr_a, program_b, instr_b)
+        } else {
+            let inner = self.merge_inner(program_a, *inner_a, program_b, *inner_b);
+            self.emit(Instruction::CheckCondition {
+                inner,
+                test_expr: test_expr_a.clone(),
+            })
         }
     }
 
@@ -906,6 +959,14 @@ impl Compiler {
                     predicate: *predicate,
                     inner,
                     bind,
+                })
+            }
+            CheckCondition { inner, test_expr } => {
+                let inner = self.import_sub_program(program, *inner);
+
+                self.emit(CheckCondition {
+                    inner,
+                    test_expr: test_expr.clone(),
                 })
             }
         }

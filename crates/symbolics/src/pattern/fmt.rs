@@ -114,6 +114,9 @@ impl Debug for Instruction {
             } => {
                 write!(f, "predicate{} {predicate:?} {inner:?}", format_bind(bind))
             }
+            CheckCondition { inner, test_expr } => {
+                write!(f, "condition inner={inner:?} predicate={test_expr:?}")
+            }
         }
     }
 }

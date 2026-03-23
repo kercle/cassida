@@ -63,6 +63,26 @@ impl<S> Expr<S> {
         )
     }
 
+    pub fn is_true(&self) -> bool {
+        match self.kind() {
+            ExprKind::Atom {
+                entry: Atom::Boolean(v),
+                ..
+            } => *v,
+            _ => false,
+        }
+    }
+
+    pub fn is_false(&self) -> bool {
+        match self.kind() {
+            ExprKind::Atom {
+                entry: Atom::Boolean(v),
+                ..
+            } => !*v,
+            _ => false,
+        }
+    }
+
     pub fn get_symbol(&self) -> Option<&str> {
         match self.kind() {
             ExprKind::Atom {

@@ -117,7 +117,7 @@ impl<'p> InstructionGraph<'p> {
                 let bind = self.bind_to(*bind);
                 let label = format!("{bind}Predicate {predicate:?}");
 
-                node_opts.insert("shape", "component".to_string());
+                node_opts.insert("shape", "invhouse".to_string());
                 node_opts.insert("label", label);
                 node_opts.insert("style", "filled".to_string());
                 node_opts.insert("fillcolor", "pink".to_string());
@@ -168,6 +168,16 @@ impl<'p> InstructionGraph<'p> {
                 node_opts.insert("label", label);
                 node_opts.insert("style", "filled".to_string());
                 node_opts.insert("fillcolor", "lightblue".to_string());
+            }
+            CheckCondition { inner, test_expr } => {
+                let label = format!("Condition {test_expr:?}");
+
+                node_opts.insert("shape", "house".to_string());
+                node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "pink".to_string());
+
+                self.walk_program(*inner, format!("i{cur_instr}:h"));
             }
         }
 
