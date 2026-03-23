@@ -13,7 +13,10 @@ pub(super) enum EnvBinding<'s> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Environment<'p, 's> {
+pub struct Environment<'p, 's>
+where
+    'p: 's,
+{
     bindings: HashMap<VarId, EnvBinding<'s>>,
     program: &'p Program,
     pattern_id: PatternId,

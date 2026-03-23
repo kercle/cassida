@@ -6,6 +6,7 @@ use crate::builtins;
 use crate::builtins::traits::BuiltIn;
 use crate::expr::walk::ExprTopDownWalker;
 use crate::expr::{ExprKind, NormExpr, RawExpr};
+use crate::pattern::runtime::Runtime;
 use crate::pattern::{PatternPredicate, builtin::*};
 
 pub type InstrId = usize;
@@ -35,6 +36,10 @@ impl Program {
 
     pub fn var(&self, var_id: VarId) -> Option<&str> {
         self.vars.get(var_id as usize).map(|x| x.as_str())
+    }
+
+    pub fn run<'p, 's>(&'p self, subject: &'s NormExpr) -> Runtime<'p, 's> {
+        Runtime::new(self, subject)
     }
 }
 
@@ -71,6 +76,11 @@ pub enum Instruction {
     Alternatives {
         branches: Vec<(PatternId, InstrId)>,
     },
+    With {
+        bind: VarId,
+        value: NormExpr,
+        next: InstrId,
+    },
     CheckCondition {
         inner: InstrId,
         test_expr: RawExpr,
@@ -86,6 +96,7 @@ impl Instruction {
             Wildcard { bind, .. } => *bind,
             Predicate { bind, .. } => *bind,
             Node { bind, .. } => *bind,
+            With { .. } => None,
             Alternatives { .. } => None,
             CheckCondition { .. } => None,
         }
@@ -151,14 +162,47 @@ pub struct Compiler {
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
     is_multiset: fn(&NormExpr) -> bool,
+    optional_default: for<'s> fn(&NormExpr, &'s NormExpr) -> Option<(&'s str, NormExpr)>,
     pattern_id: PatternId,
 
     // used to keep track of nested hold patterns
     hold_pattern_counter: usize,
 }
 
-fn is_multiset_default(expr: &NormExpr) -> bool {
-    expr.has_head_symbol(builtins::Add::head()) || expr.has_head_symbol(builtins::Mul::head())
+struct DefaultCallbacks;
+
+impl DefaultCallbacks {
+    fn is_multiset(expr: &NormExpr) -> bool {
+        expr.has_head_symbol(builtins::Add::head()) || expr.has_head_symbol(builtins::Mul::head())
+    }
+
+    fn optional_default<'s>(
+        parent_head: &NormExpr,
+        opt_pattern: &'s NormExpr,
+    ) -> Option<(&'s str, NormExpr)> {
+        // For now, optional defaults only support patterns like x_.
+
+        if !opt_pattern.is_application_of(builtins::Pattern::head(), 2) {
+            return None;
+        }
+
+        if !opt_pattern
+            .get_arg(1)?
+            .is_application_of(builtins::Blank::head(), 0)
+        {
+            return None;
+        }
+
+        let bind_var = opt_pattern.get_arg(0)?.get_symbol()?;
+
+        if parent_head.matches_symbol(builtins::Add::head()) {
+            Some((bind_var, RawExpr::from_i64(0).normalize()))
+        } else if parent_head.matches_symbol(builtins::Mul::head()) {
+            Some((bind_var, RawExpr::from_i64(1).normalize()))
+        } else {
+            None
+        }
+    }
 }
 
 impl Default for Compiler {
@@ -167,7 +211,8 @@ impl Default for Compiler {
             instructions: Vec::new(),
             var_ids: HashMap::new(),
             vars: Vec::new(),
-            is_multiset: is_multiset_default,
+            is_multiset: DefaultCallbacks::is_multiset,
+            optional_default: DefaultCallbacks::optional_default,
             pattern_id: 0,
             hold_pattern_counter: 0,
         }
@@ -356,22 +401,34 @@ impl Compiler {
         optional_child_pos: usize,
         bind: Option<VarId>,
     ) -> InstrId {
-        let mut children: Vec<_> = children.iter().map(|e| e.clone().into_raw()).collect();
+        let mut children_raw: Vec<_> = children.iter().map(|e| e.clone().into_raw()).collect();
 
         let optional_inner = std::mem::replace(
-            &mut children[optional_child_pos],
+            &mut children_raw[optional_child_pos],
             RawExpr::new_symbol(builtins::symbols::ABSENT),
         );
-        let branch_absent =
-            self.reduce_node_in_optional_branch(head, &children, optional_child_pos, bind);
+        let mut branch_absent =
+            self.reduce_node_in_optional_branch(head, &children_raw, optional_child_pos, bind);
+
+        if let Some((var_name, default_value)) =
+            (self.optional_default)(head, children[optional_child_pos].get_arg(0).unwrap())
+        {
+            let bind = self.bind_name_id(var_name);
+
+            branch_absent = self.emit(Instruction::With {
+                bind,
+                value: default_value,
+                next: branch_absent,
+            })
+        }
 
         let ExprKind::Node { mut args, .. } = optional_inner.into_kind() else {
             unreachable!()
         };
 
-        children[optional_child_pos] = args.pop().unwrap();
+        children_raw[optional_child_pos] = args.pop().unwrap();
         let branch_present =
-            self.reduce_node_in_optional_branch(head, &children, optional_child_pos, bind);
+            self.reduce_node_in_optional_branch(head, &children_raw, optional_child_pos, bind);
 
         self.emit(Instruction::Alternatives {
             branches: vec![
@@ -528,8 +585,50 @@ impl Compiler {
             (CheckCondition { .. }, CheckCondition { .. }) => {
                 self.merge_check_condition(program_a, instr_a, program_b, instr_b)
             }
+            (With { .. }, With { .. }) => self.merge_with(program_a, instr_a, program_b, instr_b),
             _ => self.branch(program_a, instr_a, program_b, instr_b),
         }
+    }
+
+    fn merge_with(
+        &mut self,
+        program_a: &Program,
+        instr_a: InstrId,
+        program_b: &Program,
+        instr_b: InstrId,
+    ) -> InstrId {
+        let Some(Instruction::With {
+            bind: bind_a,
+            value: value_a,
+            next: next_a,
+        }) = program_a.instructions.get(instr_a)
+        else {
+            unreachable!();
+        };
+
+        let Some(Instruction::With {
+            bind: bind_b,
+            value: value_b,
+            next: next_b,
+        }) = program_b.instructions.get(instr_b)
+        else {
+            unreachable!();
+        };
+
+        if !Self::same_bind(program_a, Some(*bind_a), program_b, Some(*bind_b))
+            || value_a != value_b
+        {
+            return self.branch(program_a, instr_a, program_b, instr_b);
+        }
+
+        let bind = self.bind_name_id(program_a.var(*bind_a).unwrap());
+        let next = self.merge_inner(program_a, *next_a, program_b, *next_b);
+
+        self.emit(Instruction::With {
+            bind,
+            value: value_a.clone(),
+            next,
+        })
     }
 
     fn merge_check_condition(
@@ -967,6 +1066,15 @@ impl Compiler {
                 self.emit(CheckCondition {
                     inner,
                     test_expr: test_expr.clone(),
+                })
+            }
+            With { bind, value, next } => {
+                let next = self.import_sub_program(program, *next);
+
+                self.emit(With {
+                    bind: *bind,
+                    value: value.clone(),
+                    next,
                 })
             }
         }

@@ -343,6 +343,19 @@ impl<'p, 's> Runtime<'p, 's> {
 
                 true
             }
+            With { bind, value, next } => {
+                self.push_frame(Frame::BindOne {
+                    bind_var: *bind,
+                    subject: value,
+                });
+
+                self.push_frame(Frame::Exec {
+                    instr: *next,
+                    subject,
+                });
+
+                true
+            }
         }
     }
 

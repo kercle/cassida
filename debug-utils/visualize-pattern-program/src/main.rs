@@ -177,7 +177,17 @@ impl<'p> InstructionGraph<'p> {
                 node_opts.insert("style", "filled".to_string());
                 node_opts.insert("fillcolor", "pink".to_string());
 
-                self.walk_program(*inner, format!("i{cur_instr}:h"));
+                self.walk_program(*inner, format!("i{cur_instr}"));
+            }
+            With { bind, value, next } => {
+                let label = format!("With {}{value:?}", self.bind_to(Some(*bind)));
+
+                node_opts.insert("shape", "parallelogram".to_string());
+                node_opts.insert("label", label);
+                node_opts.insert("style", "filled".to_string());
+                node_opts.insert("fillcolor", "aliceblue".to_string());
+
+                self.walk_program(*next, format!("i{cur_instr}"));
             }
         }
 

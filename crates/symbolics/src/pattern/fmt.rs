@@ -117,6 +117,13 @@ impl Debug for Instruction {
             CheckCondition { inner, test_expr } => {
                 write!(f, "condition inner={inner:?} predicate={test_expr:?}")
             }
+            With { bind, value, next } => {
+                write!(
+                    f,
+                    "with {}:={value:?} goto {next}",
+                    format_bind(&Some(*bind))
+                )
+            }
         }
     }
 }
