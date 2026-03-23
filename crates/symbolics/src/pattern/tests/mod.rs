@@ -1,3 +1,4 @@
+mod condition;
 mod literals;
 mod mixed;
 mod multiset;
@@ -8,7 +9,6 @@ mod program;
 mod sequence;
 mod utils;
 mod wildcards;
-mod condition;
 
 use crate::norm_expr;
 

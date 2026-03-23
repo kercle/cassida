@@ -34,7 +34,7 @@ impl BuiltIn for FreeOf {
             )],
             examples: vec![
                 ("FreeOf[u^2 (1 - 1 / Exp[v]), x]", "True"),
-                ("Free[x^2+1,x]", "False"),
+                ("FreeOf[x^2+1,x]", "False"),
             ],
             related: vec![],
         }

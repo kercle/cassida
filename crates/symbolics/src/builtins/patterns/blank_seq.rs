@@ -29,8 +29,14 @@ impl BuiltIn for BlankSeq {
             title: Self::head(),
             summary: "Matches any non-empty sub-sequence of subset in node arguments.",
             pattern_doc: vec![
-                PatternDoc::new(raw_expr!(BlankSeq[]), "Matches any non-empty sub-sequence of subset in node arguments."),
-                PatternDoc::new(raw_expr!(BlankSeq[h_?IsSymbol]), "Matches any non-empty sub-sequence of subset in node arguments with head $h$."),
+                PatternDoc::new(
+                    raw_expr!(BlankSeq[]),
+                    "Matches any non-empty sub-sequence of subset in node arguments.",
+                ),
+                PatternDoc::new(
+                    raw_expr!(BlankSeq[h_?IsSymbol]),
+                    "Matches any non-empty sub-sequence of subset in node arguments with head $h$.",
+                ),
             ],
             examples: vec![],
             related: vec![],

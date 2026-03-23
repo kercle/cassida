@@ -5,10 +5,10 @@ pub mod fmt;
 pub mod hash;
 pub mod normalize;
 pub mod ops;
+pub mod predicates;
 pub mod resugar;
 pub mod transform;
 pub mod types;
 pub mod walk;
-pub mod predicates;
 
 pub use types::*;

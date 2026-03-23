@@ -30,7 +30,10 @@ impl BuiltIn for Blank {
             summary: "Wildcard in pattern matching.",
             pattern_doc: vec![
                 PatternDoc::new(raw_expr!(Blank[]), "Matches any given subject."),
-                PatternDoc::new(raw_expr!(Blank[h_?IsSymbol]), "Matches any given subject with head $h$."),
+                PatternDoc::new(
+                    raw_expr!(Blank[h_?IsSymbol]),
+                    "Matches any given subject with head $h$.",
+                ),
             ],
             examples: vec![],
             related: vec![],

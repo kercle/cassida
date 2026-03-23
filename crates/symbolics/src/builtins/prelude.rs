@@ -39,10 +39,10 @@ pub use patterns::blank::Blank;
 pub use patterns::blank_null_seq::BlankNullSeq;
 pub use patterns::blank_seq::BlankSeq;
 pub use patterns::condition::Condition;
+pub use patterns::free_of::FreeOf;
 pub use patterns::optional::Optional;
 pub use patterns::pattern::Pattern;
 pub use patterns::pattern_test::PatternTest;
-pub use patterns::free_of::FreeOf;
 
 // --- Plotting ---------------------------------------------------------------
 
