@@ -1069,10 +1069,11 @@ impl Compiler {
                 })
             }
             With { bind, value, next } => {
+                let bind_new = self.bind_name_id(program.var(*bind).unwrap());
                 let next = self.import_sub_program(program, *next);
 
                 self.emit(With {
-                    bind: *bind,
+                    bind: bind_new,
                     value: value.clone(),
                     next,
                 })

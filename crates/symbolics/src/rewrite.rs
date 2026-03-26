@@ -17,7 +17,8 @@ pub struct Rule {
 
 #[derive(Default)]
 pub struct Rewriter {
-    rules: Vec<Rule>,
+    program: Option<Program>,
+    transformers: Vec<RuleTransformer>,
 }
 
 impl Rewriter {
@@ -25,19 +26,27 @@ impl Rewriter {
         Self::default()
     }
 
-    pub fn with_native_rule<F>(mut self, pattern: NormExpr, transform: F) -> Self
+    pub fn with_native_rule<F>(self, pattern: NormExpr, transform: F) -> Self
     where
         F: Fn(&Environment<'_, '_>) -> RawExpr + Send + Sync + 'static,
     {
-        // let matcher = Matcher::new(pattern.take_expr())
-        //     .with_commutative_predicate(self.is_commutative.clone());
-        // let program = Compiler::default().compile(&pattern.take_expr());
+        let next_program = Compiler::default()
+            .with_pattern_id(self.transformers.len() as u32)
+            .compile(&pattern);
 
-        self.rules.push(Rule {
-            program: Compiler::default().compile(&pattern),
-            transform: Box::new(transform),
-        });
-        self
+        let merged_program = if let Some(current_program) = self.program {
+            Compiler::default().merge(current_program, next_program)
+        } else {
+            next_program
+        };
+
+        let mut transformers = self.transformers;
+        transformers.push(Box::new(transform));
+
+        Rewriter {
+            program: Some(merged_program),
+            transformers,
+        }
     }
 
     pub fn with_rules_from_tuples<I, F>(mut self, rules: I) -> Self
@@ -77,20 +86,24 @@ impl Rewriter {
             self = self.with_rule(rule);
         }
 
+        dbg!(&self.program);
+
         self
     }
 
     pub fn apply_first_match(&self, expr: NormExpr) -> NormExpr {
+        let Some(program) = &self.program else {
+            return expr;
+        };
+
         expr.into_raw()
             .map_bottom_up(&|expr| {
                 let norm_expr = expr.clone().normalize();
 
-                for rule in &self.rules {
-                    let mut runtime = Runtime::new(&rule.program, &norm_expr);
-                    if let Some(env) = runtime.first_match() {
-                        let f = &rule.transform;
-                        return f(env).into_raw();
-                    }
+                let mut runtime = Runtime::new(program, &norm_expr);
+                if let Some(env) = runtime.first_match() {
+                    let f = &self.transformers[env.pattern_id() as usize];
+                    return f(env).into_raw();
                 }
 
                 expr

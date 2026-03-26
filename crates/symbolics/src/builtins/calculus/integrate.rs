@@ -50,6 +50,7 @@ impl BuiltIn for Integrate {
             examples: vec![
                 ("Integrate[x,x]", "x^2/2"),
                 ("Integrate[2 * Sqrt[x] + x^6, x]", "(4/3)*x^(3/2) + x^7/7"),
+                ("Integrate[Cos[x+f[y]],x]", "Sin[x+f[y]]"),
             ],
             related: vec!["Diff"],
         }
