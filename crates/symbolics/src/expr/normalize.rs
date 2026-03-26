@@ -191,7 +191,7 @@ fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
     let mut terms = HashMap::new();
 
     for arg in flatten(builtins::Add::head(), args) {
-        if arg.is_indeterminate() {
+        if arg.matches_symbol(builtins::symbols::INDETERMINATE) {
             // Early exit when we encounter indeterminate
             return arg;
         }
@@ -304,7 +304,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     let mut terms: HashMap<NormExpr, Vec<RawExpr>> = HashMap::new();
 
     for arg in flatten(builtins::Mul::head(), args) {
-        if arg.is_number_zero() || arg.is_indeterminate() {
+        if arg.is_number_zero() || arg.matches_symbol(builtins::symbols::INDETERMINATE) {
             // In these cases we can exit early.
             return arg;
         }
@@ -355,7 +355,7 @@ fn normalize_raw_mul(args: Vec<RawExpr>) -> NormExpr {
     for (base, exponents) in terms.into_iter() {
         let assembled_exp = RawExpr::new_node(builtins::Add::head(), exponents).normalize();
 
-        if assembled_exp.is_indeterminate() {
+        if assembled_exp.matches_symbol(builtins::symbols::INDETERMINATE) {
             return assembled_exp;
         }
 

@@ -2,7 +2,6 @@ use numbers::Number;
 
 use crate::{
     atom::Atom,
-    builtins,
     expr::{Expr, ExprKind},
 };
 
@@ -127,10 +126,6 @@ impl<S> Expr<S> {
             } => Some(n),
             _ => None,
         }
-    }
-
-    pub fn is_indeterminate(&self) -> bool {
-        self.matches_symbol(builtins::symbols::INDETERMINATE)
     }
 
     pub fn is_application_of(&self, head_sym: impl AsRef<str>, arity: usize) -> bool {
