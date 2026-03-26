@@ -4,6 +4,7 @@ mod fmt;
 mod utils;
 
 pub mod environment;
+pub mod merging;
 pub mod predicates;
 pub mod program;
 pub mod runtime;

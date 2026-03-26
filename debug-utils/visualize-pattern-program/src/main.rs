@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use parser::parse;
 use symbolics::{
     expr::RawExpr,
-    pattern::program::{ArgPlan, Compiler, InstrId, Instruction, PatternId, Program},
+    pattern::{
+        merging::Merger,
+        program::{ArgPlan, Compiler, InstrId, Instruction, PatternId, Program},
+    },
 };
 
 struct InstructionGraph<'p> {
@@ -213,7 +216,7 @@ fn main() {
 
     let mut merged_program = programs.remove(0);
     for program in programs.into_iter() {
-        merged_program = Compiler::default().merge(merged_program, program);
+        merged_program = Merger::default().merge(merged_program, program);
     }
 
     let graph = InstructionGraph::new(&merged_program);
