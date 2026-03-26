@@ -43,6 +43,32 @@ impl Program {
         Runtime::new(self, subject)
     }
 
+    /// Merges two programs into a common program.
+    ///
+    /// The resulting program shares the same instructions as long as the two programs coincide
+    /// and branches into both programs successively once they diverge.
+    /// 
+    /// When the resulting program is run against a subject, first the branch from `self` is
+    /// explored followed by `other` once the first branch is exhausted.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use symbolics::norm_expr;
+    /// use symbolics::pattern::program::Compiler;
+    ///
+    /// let prog_a = Compiler::new().compile(&norm_expr!{ a_?IsSymbol });
+    /// let prog_b = Compiler::new().compile(&norm_expr!{ a_?IsNumber });
+    /// let prog_merged = prog_a.merge(prog_b);
+    ///
+    /// let subject = norm_expr!{ 1 };
+    /// let mut runtime = prog_merged.run(&subject);
+    /// assert!(runtime.next().is_some());
+    ///
+    /// let subject = norm_expr!{ x };
+    /// let mut runtime = prog_merged.run(&subject);
+    /// assert!(runtime.next().is_some());
+    /// ```
     pub fn merge(self, other: Program) -> Program {
         Merger::new().merge(self, other)
     }
