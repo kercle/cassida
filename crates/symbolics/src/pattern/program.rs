@@ -157,10 +157,33 @@ pub struct MultisetPlan {
     pub rest: Vec<(VarId, usize)>,
 }
 
-pub struct Compiler {
+#[derive(Default)]
+pub struct BuildContext {
     instructions: Vec<Instruction>,
     var_ids: HashMap<String, VarId>,
     vars: Vec<String>,
+}
+
+impl BuildContext {
+    fn emit(&mut self, instr: Instruction) -> InstrId {
+        let id = self.instructions.len();
+        self.instructions.push(instr);
+        id
+    }
+
+    fn bind_name_id(&mut self, name: &str) -> VarId {
+        if let Some(&id) = self.var_ids.get(name) {
+            return id;
+        }
+        let id = self.vars.len() as VarId;
+        self.vars.push(name.to_string());
+        self.var_ids.insert(name.to_string(), id);
+        id
+    }
+}
+
+pub struct Compiler {
+    build_context: BuildContext,
     is_multiset: fn(&NormExpr) -> bool,
     optional_default: for<'s> fn(&NormExpr, &'s NormExpr) -> Option<(&'s str, NormExpr)>,
     pattern_id: PatternId,
@@ -208,9 +231,7 @@ impl DefaultCallbacks {
 impl Default for Compiler {
     fn default() -> Self {
         Self {
-            instructions: Vec::new(),
-            var_ids: HashMap::new(),
-            vars: Vec::new(),
+            build_context: BuildContext::default(),
             is_multiset: DefaultCallbacks::is_multiset,
             optional_default: DefaultCallbacks::optional_default,
             pattern_id: 0,
@@ -242,32 +263,16 @@ impl Compiler {
         Program {
             entry_pattern_id: self.pattern_id,
             entry,
-            instructions: self.instructions,
-            vars: self.vars,
-            var_ids: self.var_ids,
+            instructions: self.build_context.instructions,
+            vars: self.build_context.vars,
+            var_ids: self.build_context.var_ids,
         }
-    }
-
-    fn emit(&mut self, instr: Instruction) -> InstrId {
-        let id = self.instructions.len();
-        self.instructions.push(instr);
-        id
-    }
-
-    fn bind_name_id(&mut self, name: &str) -> VarId {
-        if let Some(&id) = self.var_ids.get(name) {
-            return id;
-        }
-        let id = self.vars.len() as VarId;
-        self.vars.push(name.to_string());
-        self.var_ids.insert(name.to_string(), id);
-        id
     }
 
     fn compile_pattern(&mut self, pat_expr: &NormExpr, bind: Option<VarId>) -> InstrId {
         use ExprKind::*;
         match pat_expr.kind() {
-            Atom { .. } => self.emit(Instruction::Literal {
+            Atom { .. } => self.build_context.emit(Instruction::Literal {
                 inner: pat_expr.clone(),
                 bind,
             }),
@@ -286,7 +291,7 @@ impl Compiler {
                 // Unwrap is safe here: guaranteed by is_pattern
                 let bind_var_name = lhs.get_symbol().unwrap();
 
-                let var_id = self.bind_name_id(bind_var_name);
+                let var_id = self.build_context.bind_name_id(bind_var_name);
                 self.compile_pattern(rhs, Some(var_id))
             }
             Node { head, args } if Self::is_pattern_test(pat_expr) => {
@@ -305,7 +310,7 @@ impl Compiler {
 
                 let inner = self.compile_pattern(lhs, None);
 
-                self.emit(Instruction::Predicate {
+                self.build_context.emit(Instruction::Predicate {
                     predicate,
                     inner,
                     bind,
@@ -321,14 +326,14 @@ impl Compiler {
                 };
 
                 let inner = self.compile_pattern(pat_expr, None);
-                self.emit(Instruction::CheckCondition {
+                self.build_context.emit(Instruction::CheckCondition {
                     inner,
                     test_expr: test_expr.clone().into_raw(),
                 })
             }
             Node { head, args } => {
                 if self.is_literal(pat_expr) {
-                    self.emit(Instruction::Literal {
+                    self.build_context.emit(Instruction::Literal {
                         inner: pat_expr.clone(),
                         bind,
                     })
@@ -348,12 +353,14 @@ impl Compiler {
         let head_pattern = head_pattern.map(|e| self.compile_pattern(e, None));
 
         match quantity {
-            Quantity::Many { min } => self.emit(Instruction::Variadic {
+            Quantity::Many { min } => self.build_context.emit(Instruction::Variadic {
                 min_len: min,
                 head_pattern,
                 bind,
             }),
-            Quantity::One => self.emit(Instruction::Wildcard { head_pattern, bind }),
+            Quantity::One => self
+                .build_context
+                .emit(Instruction::Wildcard { head_pattern, bind }),
         }
     }
 
@@ -391,7 +398,8 @@ impl Compiler {
             ArgOrder::Multiset => ArgPlan::Multiset(pats),
         };
 
-        self.emit(Instruction::Node { head, plan, bind })
+        self.build_context
+            .emit(Instruction::Node { head, plan, bind })
     }
 
     fn compile_node_with_optional_child(
@@ -413,9 +421,9 @@ impl Compiler {
         if let Some((var_name, default_value)) =
             (self.optional_default)(head, children[optional_child_pos].get_arg(0).unwrap())
         {
-            let bind = self.bind_name_id(var_name);
+            let bind = self.build_context.bind_name_id(var_name);
 
-            branch_absent = self.emit(Instruction::With {
+            branch_absent = self.build_context.emit(Instruction::With {
                 bind,
                 value: default_value,
                 next: branch_absent,
@@ -430,7 +438,7 @@ impl Compiler {
         let branch_present =
             self.reduce_node_in_optional_branch(head, &children_raw, optional_child_pos, bind);
 
-        self.emit(Instruction::Alternatives {
+        self.build_context.emit(Instruction::Alternatives {
             branches: vec![
                 (self.pattern_id, branch_present),
                 (self.pattern_id, branch_absent),
@@ -547,9 +555,9 @@ impl Compiler {
         Program {
             entry_pattern_id: self.pattern_id,
             entry,
-            instructions: self.instructions,
-            vars: self.vars,
-            var_ids: self.var_ids,
+            instructions: self.build_context.instructions,
+            vars: self.build_context.vars,
+            var_ids: self.build_context.var_ids,
         }
     }
 
@@ -621,10 +629,12 @@ impl Compiler {
             return self.branch(program_a, instr_a, program_b, instr_b);
         }
 
-        let bind = self.bind_name_id(program_a.var(*bind_a).unwrap());
+        let bind = self
+            .build_context
+            .bind_name_id(program_a.var(*bind_a).unwrap());
         let next = self.merge_inner(program_a, *next_a, program_b, *next_b);
 
-        self.emit(Instruction::With {
+        self.build_context.emit(Instruction::With {
             bind,
             value: value_a.clone(),
             next,
@@ -658,7 +668,7 @@ impl Compiler {
             self.branch(program_a, instr_a, program_b, instr_b)
         } else {
             let inner = self.merge_inner(program_a, *inner_a, program_b, *inner_b);
-            self.emit(Instruction::CheckCondition {
+            self.build_context.emit(Instruction::CheckCondition {
                 inner,
                 test_expr: test_expr_a.clone(),
             })
@@ -689,7 +699,8 @@ impl Compiler {
         let mut branches = branches_a.clone();
         branches.extend(branches_b);
 
-        self.emit(Instruction::Alternatives { branches })
+        self.build_context
+            .emit(Instruction::Alternatives { branches })
     }
 
     fn merge_wildcard(
@@ -719,19 +730,22 @@ impl Compiler {
             return self.branch(program_a, instr_a, program_b, instr_b);
         }
 
-        let bind = bind_a.map(|bind_a| self.bind_name_id(program_a.var(bind_a).unwrap()));
+        let bind = bind_a.map(|bind_a| {
+            self.build_context
+                .bind_name_id(program_a.var(bind_a).unwrap())
+        });
 
         match (head_pattern_a, head_pattern_b) {
             (Some(head_instr_a), Some(head_instr_b)) => {
                 let head_pattern =
                     self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
 
-                self.emit(Instruction::Wildcard {
+                self.build_context.emit(Instruction::Wildcard {
                     head_pattern: Some(head_pattern),
                     bind,
                 })
             }
-            (None, None) => self.emit(Instruction::Wildcard {
+            (None, None) => self.build_context.emit(Instruction::Wildcard {
                 head_pattern: None,
                 bind,
             }),
@@ -767,7 +781,10 @@ impl Compiler {
         if min_len_a != min_len_b || !Self::same_bind(program_a, *bind_a, program_b, *bind_b) {
             self.branch(program_a, instr_a, program_b, instr_b)
         } else {
-            let bind = bind_a.map(|bind_a| self.bind_name_id(program_a.var(bind_a).unwrap()));
+            let bind = bind_a.map(|bind_a| {
+                self.build_context
+                    .bind_name_id(program_a.var(bind_a).unwrap())
+            });
 
             let (Some(head_instr_a), Some(head_instr_b)) = (head_pattern_a, head_pattern_b) else {
                 return self.branch(program_a, instr_a, program_b, instr_b);
@@ -775,7 +792,7 @@ impl Compiler {
 
             let head_pattern = self.merge_inner(program_a, *head_instr_a, program_b, *head_instr_b);
 
-            self.emit(Instruction::Variadic {
+            self.build_context.emit(Instruction::Variadic {
                 min_len: *min_len_a,
                 head_pattern: Some(head_pattern),
                 bind,
@@ -842,7 +859,8 @@ impl Compiler {
             self.branch(program_a, instr_a, program_b, instr_b)
         } else {
             if let Some(bind_a) = bind_a {
-                self.bind_name_id(program_a.var(*bind_a).unwrap());
+                self.build_context
+                    .bind_name_id(program_a.var(*bind_a).unwrap());
             }
 
             self.import_sub_program(program_a, instr_a)
@@ -878,12 +896,13 @@ impl Compiler {
             return self.branch(program_a, instr_a, program_b, instr_b);
         }
 
-        let instructions_checkpoint = self.instructions.len();
+        // TODO: Integrate checkpoint mechanism into BuildContext
+        let instructions_checkpoint = self.build_context.instructions.len();
 
         let merged_head_instr = self.merge_inner(program_a, *head_a, program_b, *head_b);
 
         let mut branch_count = if matches!(
-            self.instructions[merged_head_instr],
+            self.build_context.instructions[merged_head_instr],
             Instruction::Alternatives { .. }
         ) {
             1
@@ -897,9 +916,14 @@ impl Compiler {
         for (arg_instr_a, arg_instr_b) in plan_a.iter().zip(plan_b.iter()) {
             let instr = self.merge_inner(program_a, *arg_instr_a, program_b, *arg_instr_b);
 
-            if matches!(self.instructions[instr], Instruction::Alternatives { .. }) {
+            if matches!(
+                self.build_context.instructions[instr],
+                Instruction::Alternatives { .. }
+            ) {
                 if branch_count == 1 {
-                    self.instructions.truncate(instructions_checkpoint);
+                    self.build_context
+                        .instructions
+                        .truncate(instructions_checkpoint);
                     return self.branch(program_a, instr_a, program_b, instr_b);
                 }
 
@@ -915,10 +939,11 @@ impl Compiler {
         };
 
         if let Some(bind_a) = bind_a {
-            self.bind_name_id(program_a.var(*bind_a).unwrap());
+            self.build_context
+                .bind_name_id(program_a.var(*bind_a).unwrap());
         }
 
-        self.emit(Instruction::Node {
+        self.build_context.emit(Instruction::Node {
             head: merged_head_instr,
             plan,
             bind: *bind_a,
@@ -957,7 +982,8 @@ impl Compiler {
         self.collect_branches(&mut branches, program_a, instr_a);
         self.collect_branches(&mut branches, program_b, instr_b);
 
-        self.emit(Instruction::Alternatives { branches })
+        self.build_context
+            .emit(Instruction::Alternatives { branches })
     }
 
     fn collect_branches(
@@ -995,8 +1021,8 @@ impl Compiler {
 
         match program.instruction(instr_pos).unwrap() {
             Literal { inner, bind } => {
-                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
-                self.emit(Literal {
+                let bind = bind.map(|b| self.build_context.bind_name_id(program.var(b).unwrap()));
+                self.build_context.emit(Literal {
                     inner: inner.clone(),
                     bind,
                 })
@@ -1004,7 +1030,7 @@ impl Compiler {
             Node { head, plan, bind } => {
                 let head = self.import_sub_program(program, *head);
 
-                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let bind = bind.map(|b| self.build_context.bind_name_id(program.var(b).unwrap()));
 
                 let plan_instrs = plan
                     .iter()
@@ -1016,23 +1042,23 @@ impl Compiler {
                     ArgPlan::Sequence { .. } => ArgPlan::Sequence(plan_instrs),
                 };
 
-                self.emit(Node { head, plan, bind })
+                self.build_context.emit(Node { head, plan, bind })
             }
             Wildcard { head_pattern, bind } => {
-                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let bind = bind.map(|b| self.build_context.bind_name_id(program.var(b).unwrap()));
                 let head_pattern = head_pattern.map(|p| self.import_sub_program(program, p));
 
-                self.emit(Wildcard { head_pattern, bind })
+                self.build_context.emit(Wildcard { head_pattern, bind })
             }
             Variadic {
                 min_len,
                 head_pattern,
                 bind,
             } => {
-                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let bind = bind.map(|b| self.build_context.bind_name_id(program.var(b).unwrap()));
                 let head_pattern = head_pattern.map(|p| self.import_sub_program(program, p));
 
-                self.emit(Variadic {
+                self.build_context.emit(Variadic {
                     min_len: *min_len,
                     head_pattern,
                     bind,
@@ -1044,17 +1070,17 @@ impl Compiler {
                     .map(|(pat_id, instr)| (*pat_id, self.import_sub_program(program, *instr)))
                     .collect();
 
-                self.emit(Alternatives { branches })
+                self.build_context.emit(Alternatives { branches })
             }
             Predicate {
                 predicate,
                 inner,
                 bind,
             } => {
-                let bind = bind.map(|b| self.bind_name_id(program.var(b).unwrap()));
+                let bind = bind.map(|b| self.build_context.bind_name_id(program.var(b).unwrap()));
                 let inner = self.import_sub_program(program, *inner);
 
-                self.emit(Predicate {
+                self.build_context.emit(Predicate {
                     predicate: *predicate,
                     inner,
                     bind,
@@ -1063,16 +1089,16 @@ impl Compiler {
             CheckCondition { inner, test_expr } => {
                 let inner = self.import_sub_program(program, *inner);
 
-                self.emit(CheckCondition {
+                self.build_context.emit(CheckCondition {
                     inner,
                     test_expr: test_expr.clone(),
                 })
             }
             With { bind, value, next } => {
-                let bind_new = self.bind_name_id(program.var(*bind).unwrap());
+                let bind_new = self.build_context.bind_name_id(program.var(*bind).unwrap());
                 let next = self.import_sub_program(program, *next);
 
-                self.emit(With {
+                self.build_context.emit(With {
                     bind: bind_new,
                     value: value.clone(),
                     next,
