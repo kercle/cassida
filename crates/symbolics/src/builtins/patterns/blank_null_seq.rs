@@ -45,7 +45,7 @@ impl BuiltIn for BlankNullSeq {
         }
     }
 
-    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
         ensure!(expr.args_len() <= 1, ApplicationError::ArityMismatch);
         ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
         Ok(())

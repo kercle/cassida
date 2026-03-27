@@ -57,7 +57,7 @@ impl BuiltIn for Integrate {
         expr.rewrite_all(&self.rewriter, 1000)
     }
 
-    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
         ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
         ensure!(
             expr.get_arg(1).is_some_and(|a| a.is_symbol()),

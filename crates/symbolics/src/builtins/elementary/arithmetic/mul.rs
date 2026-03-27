@@ -39,7 +39,7 @@ impl BuiltIn for Mul {
         }
     }
 
-    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
+    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
         ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
         Ok(())
     }

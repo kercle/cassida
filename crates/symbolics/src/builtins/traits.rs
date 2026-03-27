@@ -48,7 +48,7 @@ pub trait BuiltIn {
 
     fn head_dyn(&self) -> &'static str;
 
-    fn check_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError>
+    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError>
     where
         Self: Sized;
 
@@ -56,6 +56,6 @@ pub trait BuiltIn {
     where
         Self: Sized,
     {
-        Self::check_application(expr).is_ok()
+        Self::validate_application(expr).is_ok()
     }
 }
