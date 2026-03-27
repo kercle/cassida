@@ -54,60 +54,23 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     if builtins::Add::is_application_of(&head_expr, &args) {
         normalize_raw_add(args)
     } else if builtins::Sub::is_application_of(&head_expr, &args) {
-        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
-        RawExpr::new_binary_node(
-            builtins::Add::head(),
-            lhs,
-            RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), rhs),
-        )
-        .normalize()
+        normalize_raw_sub(args)
     } else if builtins::Neg::is_application_of(&head_expr, &args) {
         let [arg]: [RawExpr; 1] = args.try_into().unwrap();
         RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), arg).normalize()
     } else if builtins::Mul::is_application_of(&head_expr, &args) {
         normalize_raw_mul(args)
     } else if builtins::Div::is_application_of(&head_expr, &args) {
-        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
-
-        if rhs.is_number_zero() {
-            return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
-        }
-
-        RawExpr::new_binary_node(
-            builtins::Mul::head(),
-            lhs,
-            RawExpr::new_binary_node(builtins::Pow::head(), rhs, Number::minus_one().into()),
-        )
-        .normalize()
+        normalize_raw_div(args)
     } else if builtins::Pow::is_application_of(&head_expr, &args) {
         let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
         normalize_raw_pow(base, exponent)
     } else if builtins::Factorial::is_application_of(&head_expr, &args) {
-        let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-        let arg = arg.normalize();
-
-        if let Some(num) = arg.get_number() {
-            if let Ok(res) = num.factorial() {
-                RawExpr::new_number(res).into_normexpr_unsafe()
-            } else {
-                RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
-                    .into_normexpr_unsafe()
-            }
-        } else {
-            RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
-                .into_normexpr_unsafe()
-        }
+        normalize_raw_factorial(args)
     } else if builtins::Sqrt::is_application_of(&head_expr, &args) {
         let [arg]: [RawExpr; 1] = args.try_into().unwrap();
         let one_half = Number::new_rational_from_i64(1, 2).unwrap();
         RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
-    } else if builtins::Hold::is_application_of(&head_expr, &args)
-        || builtins::HoldPattern::is_application_of(&head_expr, &args)
-    {
-        NormExpr::new_unchecked(ExprKind::Node {
-            head: Box::new(head_expr.into_normexpr_unsafe()),
-            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
-        })
     } else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
         let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
 
@@ -135,6 +98,13 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
         let pat = pat.normalize();
 
         RawExpr::new_boolean(subj.free_of(&pat)).into_normexpr_unsafe()
+    } else if builtins::Hold::is_application_of(&head_expr, &args)
+        || builtins::HoldPattern::is_application_of(&head_expr, &args)
+    {
+        NormExpr::new_unchecked(ExprKind::Node {
+            head: Box::new(head_expr.into_normexpr_unsafe()),
+            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
+        })
     } else {
         // Note: Propagate
         NormExpr::new_unchecked(ExprKind::Node {
@@ -175,6 +145,47 @@ fn flatten(head_symbol: &str, args: Vec<RawExpr>) -> Vec<NormExpr> {
     }
 
     flattened_args
+}
+
+fn normalize_raw_sub(args: Vec<RawExpr>) -> NormExpr {
+    let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+    RawExpr::new_binary_node(
+        builtins::Add::head(),
+        lhs,
+        RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), rhs),
+    )
+    .normalize()
+}
+
+fn normalize_raw_div(args: Vec<RawExpr>) -> NormExpr {
+    let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+
+    if rhs.is_number_zero() {
+        return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
+    }
+
+    RawExpr::new_binary_node(
+        builtins::Mul::head(),
+        lhs,
+        RawExpr::new_binary_node(builtins::Pow::head(), rhs, Number::minus_one().into()),
+    )
+    .normalize()
+}
+
+fn normalize_raw_factorial(args: Vec<RawExpr>) -> NormExpr {
+    let [arg]: [RawExpr; 1] = args.try_into().unwrap();
+    let arg = arg.normalize();
+
+    if let Some(num) = arg.get_number() {
+        if let Ok(res) = num.factorial() {
+            RawExpr::new_number(res).into_normexpr_unsafe()
+        } else {
+            RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
+                .into_normexpr_unsafe()
+        }
+    } else {
+        RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw()).into_normexpr_unsafe()
+    }
 }
 
 fn normalize_raw_add(args: Vec<RawExpr>) -> NormExpr {
