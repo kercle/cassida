@@ -42,8 +42,14 @@ impl BuiltIn for Add {
         }
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        _children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
         Ok(())
     }
 }

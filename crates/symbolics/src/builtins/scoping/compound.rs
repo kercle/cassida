@@ -2,7 +2,10 @@ use crate::{
     builtins::{
         BuiltInCategory,
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
-    }, ensure, expr::{Expr, }, raw_expr
+    },
+    ensure,
+    expr::Expr,
+    raw_expr,
 };
 
 #[derive(Default)]
@@ -32,8 +35,14 @@ impl BuiltIn for Compound {
         }
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        _children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
         Ok(())
     }
 }

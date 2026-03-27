@@ -2,7 +2,10 @@ use crate::{
     builtins::{
         BuiltInCategory,
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
-    }, ensure, expr::{Expr, }, raw_expr
+    },
+    ensure,
+    expr::Expr,
+    raw_expr,
 };
 
 #[derive(Default)]
@@ -42,9 +45,15 @@ impl BuiltIn for BlankSeq {
         }
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.args_len() <= 1, ApplicationError::ArityMismatch);
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(children.len() <= 1, ApplicationError::ArityMismatch);
+        ensure!(
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
         Ok(())
     }
 }

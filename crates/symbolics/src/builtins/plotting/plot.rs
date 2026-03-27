@@ -4,7 +4,7 @@ use crate::{
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
     },
     ensure,
-    expr::{Expr, },
+    expr::Expr,
     raw_expr,
 };
 
@@ -39,11 +39,18 @@ impl BuiltIn for Plot {
         }
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(children.len() == 2, ApplicationError::ArityMismatch);
         ensure!(
-            expr.get_arg(1)
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
+        ensure!(
+            children
+                .get(1)
                 .is_some_and(|e| e.is_head(builtins::Tuple::head())),
             ApplicationError::ExpectedTupleAt(1)
         );

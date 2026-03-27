@@ -1,6 +1,6 @@
 use crate::{
     builtins::BuiltInCategory,
-    expr::{Expr, NormExpr, RawExpr},
+    expr::{Expr, ExprKind, NormExpr, RawExpr},
 };
 
 #[derive(Clone, Debug)]
@@ -29,6 +29,7 @@ impl PatternDoc {
 }
 
 pub enum ApplicationError {
+    ExprNotNode,
     HeadMismatch,
     ArityMismatch,
     ExpectedSymbolAt(usize),
@@ -48,9 +49,29 @@ pub trait BuiltIn {
 
     fn head_dyn(&self) -> &'static str;
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError>
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        children: &[Expr<S>],
+    ) -> Result<(), ApplicationError>
     where
         Self: Sized;
+
+    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError>
+    where
+        Self: Sized,
+    {
+        match expr.kind() {
+            ExprKind::Atom { .. } => Err(ApplicationError::ExprNotNode),
+            ExprKind::Node { head, args } => Self::validate_application_of(head, args),
+        }
+    }
+
+    fn is_application_of<S>(head: &Expr<S>, children: &[Expr<S>]) -> bool
+    where
+        Self: Sized,
+    {
+        Self::validate_application_of(head, children).is_ok()
+    }
 
     fn is_application<S>(expr: &Expr<S>) -> bool
     where

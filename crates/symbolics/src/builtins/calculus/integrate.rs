@@ -2,7 +2,11 @@ use crate::{
     builtins::{
         BuiltInCategory,
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
-    }, ensure, expr::{Expr, NormExpr}, norm_expr, raw_expr, rewrite::Rewriter
+    },
+    ensure,
+    expr::{Expr, NormExpr},
+    norm_expr, raw_expr,
+    rewrite::Rewriter,
 };
 
 pub struct Integrate {
@@ -57,13 +61,19 @@ impl BuiltIn for Integrate {
         expr.rewrite_all(&self.rewriter, 1000)
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.args_len() == 2, ApplicationError::ArityMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(children.len() == 2, ApplicationError::ArityMismatch);
         ensure!(
-            expr.get_arg(1).is_some_and(|a| a.is_symbol()),
+            children.get(1).is_some_and(|a| a.is_symbol()),
             ApplicationError::ExpectedSymbolAt(1)
         );
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+        ensure!(
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
         Ok(())
     }
 }

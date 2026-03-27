@@ -3,7 +3,11 @@ use crate::{
         BuiltInCategory,
         simplification::{factor, known_values, trigonometric},
         traits::{ApplicationError, BuiltIn, BuiltInDoc, PatternDoc},
-    }, ensure, expr::{Expr, NormExpr}, raw_expr, rewrite::Rewriter
+    },
+    ensure,
+    expr::{Expr, NormExpr},
+    raw_expr,
+    rewrite::Rewriter,
 };
 
 pub struct Simplify {
@@ -66,9 +70,15 @@ impl BuiltIn for Simplify {
             .rewrite_all(&self.trigonometric_rewriter, 10)
     }
 
-    fn validate_application<S>(expr: &Expr<S>) -> Result<(), ApplicationError> {
-        ensure!(expr.args_len() == 1, ApplicationError::ArityMismatch);
-        ensure!(expr.is_head(Self::head()), ApplicationError::HeadMismatch);
+    fn validate_application_of<S>(
+        head: &Expr<S>,
+        children: &[Expr<S>],
+    ) -> Result<(), ApplicationError> {
+        ensure!(children.len() == 1, ApplicationError::ArityMismatch);
+        ensure!(
+            head.matches_symbol(Self::head()),
+            ApplicationError::HeadMismatch
+        );
         Ok(())
     }
 }
