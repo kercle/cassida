@@ -45,111 +45,102 @@ fn normalize_raw_node(head_expr: RawExpr, args: Vec<RawExpr>) -> NormExpr {
     // Usually, it is just removed, but we want Pow[x, Absent] to
     // reduce to x, while Pow[Absent, x] reduces to Pow[x]. Contrary
     // to Mathematica, Cassida does not normalize Pow[x] to x.
-    let args = if head_expr.matches_symbol(builtins::Pow::head()) && args.len() == 2 {
+    let args = if builtins::Pow::is_application_of(&head_expr, &args) {
         args
     } else {
         filter_absent(args)
     };
 
-    match head_expr.get_symbol() {
-        Some(builtins::Add::HEAD) => normalize_raw_add(args),
-        Some(builtins::Sub::HEAD) if args.len() == 2 => {
-            let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
-            RawExpr::new_binary_node(
-                builtins::Add::head(),
-                lhs,
-                RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), rhs),
-            )
-            .normalize()
-        }
-        Some(builtins::Neg::HEAD) if args.len() == 1 => {
-            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), arg)
-                .normalize()
-        }
-        Some(builtins::Mul::HEAD) => normalize_raw_mul(args),
-        Some(builtins::Div::HEAD) if args.len() == 2 => {
-            let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+    if builtins::Add::is_application_of(&head_expr, &args) {
+        normalize_raw_add(args)
+    } else if builtins::Sub::is_application_of(&head_expr, &args) {
+        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
+        RawExpr::new_binary_node(
+            builtins::Add::head(),
+            lhs,
+            RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), rhs),
+        )
+        .normalize()
+    } else if builtins::Neg::is_application_of(&head_expr, &args) {
+        let [arg]: [RawExpr; 1] = args.try_into().unwrap();
+        RawExpr::new_binary_node(builtins::Mul::head(), Number::minus_one().into(), arg).normalize()
+    } else if builtins::Mul::is_application_of(&head_expr, &args) {
+        normalize_raw_mul(args)
+    } else if builtins::Div::is_application_of(&head_expr, &args) {
+        let [lhs, rhs]: [RawExpr; 2] = args.try_into().unwrap();
 
-            if rhs.is_number_zero() {
-                return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
-            }
-
-            RawExpr::new_binary_node(
-                builtins::Mul::head(),
-                lhs,
-                RawExpr::new_binary_node(builtins::Pow::head(), rhs, Number::minus_one().into()),
-            )
-            .normalize()
+        if rhs.is_number_zero() {
+            return RawExpr::new_symbol(builtins::symbols::INDETERMINATE).normalize();
         }
-        Some(builtins::Pow::HEAD) if args.len() == 2 => {
-            let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
-            normalize_raw_pow(base, exponent)
-        }
-        Some(builtins::Factorial::HEAD) if args.len() == 1 => {
-            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            let arg = arg.normalize();
 
-            if let Some(num) = arg.get_number() {
-                if let Ok(res) = num.factorial() {
-                    RawExpr::new_number(res).into_normexpr_unsafe()
-                } else {
-                    RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
-                        .into_normexpr_unsafe()
-                }
+        RawExpr::new_binary_node(
+            builtins::Mul::head(),
+            lhs,
+            RawExpr::new_binary_node(builtins::Pow::head(), rhs, Number::minus_one().into()),
+        )
+        .normalize()
+    } else if builtins::Pow::is_application_of(&head_expr, &args) {
+        let [base, exponent]: [RawExpr; 2] = args.try_into().unwrap();
+        normalize_raw_pow(base, exponent)
+    } else if builtins::Factorial::is_application_of(&head_expr, &args) {
+        let [arg]: [RawExpr; 1] = args.try_into().unwrap();
+        let arg = arg.normalize();
+
+        if let Some(num) = arg.get_number() {
+            if let Ok(res) = num.factorial() {
+                RawExpr::new_number(res).into_normexpr_unsafe()
             } else {
                 RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
                     .into_normexpr_unsafe()
             }
-        }
-        Some(builtins::Sqrt::HEAD) if args.len() == 1 => {
-            let [arg]: [RawExpr; 1] = args.try_into().unwrap();
-            let one_half = Number::new_rational_from_i64(1, 2).unwrap();
-            RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
-        }
-        Some(builtins::Hold::HEAD) | Some(builtins::HoldPattern::HEAD) if args.len() == 1 => {
-            NormExpr::new_unchecked(ExprKind::Node {
-                head: Box::new(head_expr.into_normexpr_unsafe()),
-                args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
-            })
-        }
-        Some(builtins::RuleDelayed::HEAD) if args.len() == 2 => {
-            let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
-
-            RawExpr::new_binary_node(
-                builtins::RuleDelayed::HEAD,
-                pat.normalize().into_raw(),
-                repl,
-            )
-            .into_normexpr_unsafe()
-        }
-        Some(builtins::Condition::HEAD) if args.len() == 2 => {
-            let [inner, cond]: [RawExpr; 2] = args.try_into().unwrap();
-
-            // Condition here is not actually normalized, since it's populated later
-            // during pattern matching. This prevents from e.g. FreeOf[a,x] to be
-            // resolved early.
-            let inner = inner.normalize();
-            let cond = cond.into_normexpr_unsafe();
-
-            RawExpr::new_binary_node(builtins::Condition::HEAD, inner.into_raw(), cond.into_raw())
+        } else {
+            RawExpr::new_unary_node(builtins::Factorial::HEAD, arg.into_raw())
                 .into_normexpr_unsafe()
         }
-        Some(builtins::FreeOf::HEAD) if args.len() == 2 => {
-            let [subj, pat]: [RawExpr; 2] = args.try_into().unwrap();
+    } else if builtins::Sqrt::is_application_of(&head_expr, &args) {
+        let [arg]: [RawExpr; 1] = args.try_into().unwrap();
+        let one_half = Number::new_rational_from_i64(1, 2).unwrap();
+        RawExpr::new_binary_node(builtins::Pow::head(), arg, one_half.into()).normalize()
+    } else if builtins::Hold::is_application_of(&head_expr, &args)
+        || builtins::HoldPattern::is_application_of(&head_expr, &args)
+    {
+        NormExpr::new_unchecked(ExprKind::Node {
+            head: Box::new(head_expr.into_normexpr_unsafe()),
+            args: args.into_iter().map(|a| a.into_normexpr_unsafe()).collect(),
+        })
+    } else if builtins::RuleDelayed::is_application_of(&head_expr, &args) {
+        let [pat, repl]: [RawExpr; 2] = args.try_into().unwrap();
 
-            let subj = subj.normalize();
-            let pat = pat.normalize();
+        RawExpr::new_binary_node(
+            builtins::RuleDelayed::HEAD,
+            pat.normalize().into_raw(),
+            repl,
+        )
+        .into_normexpr_unsafe()
+    } else if builtins::Condition::is_application_of(&head_expr, &args) {
+        let [inner, cond]: [RawExpr; 2] = args.try_into().unwrap();
 
-            RawExpr::new_boolean(subj.free_of(&pat)).into_normexpr_unsafe()
-        }
-        _ => {
-            // Note: Propagate
-            NormExpr::new_unchecked(ExprKind::Node {
-                head: Box::new(head_expr.normalize()),
-                args: args.into_iter().map(|a| a.normalize()).collect(),
-            })
-        }
+        // Condition here is not actually normalized, since it's populated later
+        // during pattern matching. This prevents from e.g. FreeOf[a,x] to be
+        // resolved early.
+        let inner = inner.normalize();
+        let cond = cond.into_normexpr_unsafe();
+
+        RawExpr::new_binary_node(builtins::Condition::HEAD, inner.into_raw(), cond.into_raw())
+            .into_normexpr_unsafe()
+    } else if builtins::FreeOf::is_application_of(&head_expr, &args) {
+        let [subj, pat]: [RawExpr; 2] = args.try_into().unwrap();
+
+        let subj = subj.normalize();
+        let pat = pat.normalize();
+
+        RawExpr::new_boolean(subj.free_of(&pat)).into_normexpr_unsafe()
+    } else {
+        // Note: Propagate
+        NormExpr::new_unchecked(ExprKind::Node {
+            head: Box::new(head_expr.normalize()),
+            args: args.into_iter().map(|a| a.normalize()).collect(),
+        })
     }
 }
 
